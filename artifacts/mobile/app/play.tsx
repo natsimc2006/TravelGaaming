@@ -31,6 +31,8 @@ import {
   speakText,
   stopHostVoice,
 } from '@/utils/voiceHost';
+import { checkSoundAnswer } from '@/data/guessTheSound';
+import { checkRiddleAnswer } from '@/data/riddles';
 
 function getGameColor(gameId: string) {
   const map: Record<string, keyof typeof GAME_COLORS> = {
@@ -38,6 +40,11 @@ function getGameColor(gameId: string) {
     'what-am-i': 'whatAmI',
     'category-dash': 'categoryDash',
     'forbidden-word': 'forbiddenWord',
+    'would-you-rather': 'wouldYouRather',
+    'rapid-fire': 'rapidFire',
+    'guess-the-sound': 'guessTheSound',
+    'this-or-that': 'thisOrThat',
+    'riddles': 'riddles',
   };
   return GAME_COLORS[map[gameId] ?? 'alphabet'];
 }
@@ -89,7 +96,7 @@ function PromptFade({ children, triggerKey }: { children: React.ReactNode; trigg
 export default function PlayScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { session, addPlayerScore, advanceRound, advancePlayer, newLetter, newCategory, revealClue, finishGame, resetGame, bumpStreak, breakStreak } = useGame();
+  const { session, addPlayerScore, advanceRound, advancePlayer, newLetter, newCategory, revealClue, finishGame, resetGame, bumpStreak, breakStreak, selectWYROption, bumpTotStreak, addRapidFireCount } = useGame();
   const [hostMsg, setHostMsg] = useState('');
   const [hostMsgVisible, setHostMsgVisible] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -417,6 +424,110 @@ export default function PlayScreen() {
                 advancePlayer();
               }}
               currentPlayer={currentPlayer}
+            />
+          )}
+
+          {session.gameId === 'would-you-rather' && session.wouldYouRatherState && (
+            <WouldYouRatherGame
+              session={session}
+              gameColor={gameColor}
+              currentPlayer={currentPlayer}
+              onSelectOption={(opt: 'A' | 'B') => {
+                selectWYROption(opt);
+                voice('correct');
+              }}
+              onNext={() => {
+                showHostMsg('next');
+                voice('roundStart');
+                advanceRound();
+                if (!session.isSoloMode) advancePlayer();
+              }}
+            />
+          )}
+
+          {session.gameId === 'rapid-fire' && session.rapidFireState && (
+            <RapidFireGame
+              session={session}
+              gameColor={gameColor}
+              currentPlayer={currentPlayer}
+              timerRunning={timerRunning}
+              timerKey={timerKey}
+              onTimerToggle={() => setTimerRunning(r => !r)}
+              onTimerEnd={() => {
+                setTimerRunning(false);
+                showHostMsg('roundEnd');
+                voice('roundEnd');
+              }}
+              onAddCount={(playerId: string) => {
+                addRapidFireCount(playerId);
+              }}
+              onNextRound={() => {
+                setTimerRunning(false);
+                setTimerKey(k => k + 1);
+                voice('roundStart');
+                advanceRound();
+                if (!session.isSoloMode) advancePlayer();
+              }}
+            />
+          )}
+
+          {session.gameId === 'guess-the-sound' && session.guessSoundState && (
+            <GuessSoundGame
+              session={session}
+              gameColor={gameColor}
+              currentPlayer={currentPlayer}
+              onCorrect={() => {
+                addPlayerScore(currentPlayer?.id ?? session.players[0]?.id, 1);
+                showHostMsg('correct');
+                voice('correct', { playerName: currentPlayer?.name });
+                advanceRound();
+                if (!session.isSoloMode) advancePlayer();
+              }}
+              onSkip={() => {
+                showHostMsg('skip');
+                voice('skip');
+                advanceRound();
+                if (!session.isSoloMode) advancePlayer();
+              }}
+            />
+          )}
+
+          {session.gameId === 'this-or-that' && session.thisOrThatState && (
+            <ThisOrThatGame
+              session={session}
+              gameColor={gameColor}
+              currentPlayer={currentPlayer}
+              onSelectOption={(_opt: 'A' | 'B') => {
+                bumpTotStreak();
+                const streak = (session.thisOrThatState?.streak ?? 0) + 1;
+                if (streak >= 3) voice('streak', { streak });
+              }}
+              onNext={() => {
+                voice('roundStart');
+                advanceRound();
+                if (!session.isSoloMode) advancePlayer();
+              }}
+            />
+          )}
+
+          {session.gameId === 'riddles' && session.riddleState && (
+            <RiddlesGame
+              session={session}
+              gameColor={gameColor}
+              currentPlayer={currentPlayer}
+              onCorrect={() => {
+                addPlayerScore(currentPlayer?.id ?? session.players[0]?.id, 1);
+                showHostMsg('correct');
+                voice('correct', { playerName: currentPlayer?.name });
+                advanceRound();
+                if (!session.isSoloMode) advancePlayer();
+              }}
+              onSkip={() => {
+                showHostMsg('skip');
+                voice('skip');
+                advanceRound();
+                if (!session.isSoloMode) advancePlayer();
+              }}
             />
           )}
         </ScrollView>
@@ -1027,6 +1138,433 @@ function ForbiddenWordGame({ session, gameColor, voiceKey, voiceEnabled, timerRu
     </View>
   );
 }
+
+/* ─── Would You Rather ─── */
+function WouldYouRatherGame({ session, gameColor, onNext, onSelectOption, currentPlayer }: any) {
+  const colors = useColors();
+  const s = session.wouldYouRatherState!;
+  const isSolo = session.isSoloMode;
+  const [whyOpen, setWhyOpen] = useState(false);
+
+  useEffect(() => { setWhyOpen(false); }, [s.currentCardId]);
+
+  const modeLabel: Record<string, string> = { silly: '😄 Silly', thoughtful: '🤔 Thoughtful', chaos: '🤪 Chaos' };
+
+  return (
+    <View style={styles.gameBlock}>
+      {!isSolo && currentPlayer && <PlayerTurnCard player={currentPlayer} color={gameColor} />}
+
+      <PromptFade triggerKey={s.currentCardId}>
+        <View style={[wyrStyles.modeBadge, { backgroundColor: gameColor + '18', borderRadius: 100, alignSelf: 'center' }]}>
+          <Text style={[wyrStyles.modeText, { color: gameColor }]}>{modeLabel[s.mode] ?? s.mode}</Text>
+        </View>
+        <Text style={[wyrStyles.question, { color: colors.foreground }]}>Would you rather…</Text>
+        <View style={wyrStyles.optionsCol}>
+          <AnimatedPressable
+            onPress={() => { onSelectOption('A'); setWhyOpen(true); }}
+            style={[wyrStyles.optionBtn, {
+              backgroundColor: s.selectedOption === 'A' ? gameColor : colors.muted,
+              borderRadius: 20,
+              borderWidth: s.selectedOption === 'A' ? 0 : 2,
+              borderColor: gameColor + '40',
+            }]}
+            scaleDown={0.97}
+          >
+            <Text style={[wyrStyles.optionLabel, { color: s.selectedOption === 'A' ? '#FFF' : gameColor }]}>Option A</Text>
+            <Text style={[wyrStyles.optionText, { color: s.selectedOption === 'A' ? '#FFF' : colors.foreground }]}>{s.optionA}</Text>
+          </AnimatedPressable>
+
+          <View style={wyrStyles.orDivider}>
+            <View style={[wyrStyles.orLine, { backgroundColor: colors.border }]} />
+            <Text style={[wyrStyles.orText, { color: colors.mutedForeground }]}>or</Text>
+            <View style={[wyrStyles.orLine, { backgroundColor: colors.border }]} />
+          </View>
+
+          <AnimatedPressable
+            onPress={() => { onSelectOption('B'); setWhyOpen(true); }}
+            style={[wyrStyles.optionBtn, {
+              backgroundColor: s.selectedOption === 'B' ? gameColor : colors.muted,
+              borderRadius: 20,
+              borderWidth: s.selectedOption === 'B' ? 0 : 2,
+              borderColor: gameColor + '40',
+            }]}
+            scaleDown={0.97}
+          >
+            <Text style={[wyrStyles.optionLabel, { color: s.selectedOption === 'B' ? '#FFF' : gameColor }]}>Option B</Text>
+            <Text style={[wyrStyles.optionText, { color: s.selectedOption === 'B' ? '#FFF' : colors.foreground }]}>{s.optionB}</Text>
+          </AnimatedPressable>
+        </View>
+      </PromptFade>
+
+      {s.selectedOption && whyOpen && (
+        <View style={[wyrStyles.whyCard, { backgroundColor: gameColor + '12', borderRadius: 16, borderColor: gameColor + '30', borderWidth: 1 }]}>
+          <Text style={[wyrStyles.whyText, { color: colors.mutedForeground }]}>
+            {isSolo ? 'Why did you choose that? (think it through!)' : 'Defend your choice!'}
+          </Text>
+        </View>
+      )}
+
+      {s.selectedOption && (
+        <ActionBtn label="Next Question" icon="arrow-right" onPress={onNext} color={gameColor} size="lg" />
+      )}
+      {!s.selectedOption && (
+        <ActionBtn label="Skip" icon="skip-forward" onPress={onNext} color={colors.muted} textColor={colors.mutedForeground} size="lg" />
+      )}
+    </View>
+  );
+}
+
+const wyrStyles = StyleSheet.create({
+  modeBadge: { paddingHorizontal: 16, paddingVertical: 6, marginBottom: 6 },
+  modeText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  question: { fontFamily: 'Inter_700Bold', fontSize: 22, textAlign: 'center', marginBottom: 16 },
+  optionsCol: { gap: 0 },
+  optionBtn: { padding: 22, gap: 6, minHeight: 90, justifyContent: 'center' },
+  optionLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
+  optionText: { fontFamily: 'Inter_700Bold', fontSize: 18, lineHeight: 24 },
+  orDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  orLine: { flex: 1, height: 1 },
+  orText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  whyCard: { padding: 16 },
+  whyText: { fontFamily: 'Inter_500Medium', fontSize: 15, textAlign: 'center', lineHeight: 22 },
+});
+
+/* ─── Rapid Fire ─── */
+function RapidFireGame({ session, gameColor, timerRunning, timerKey, onTimerToggle, onTimerEnd, onAddCount, onNextRound, currentPlayer }: any) {
+  const colors = useColors();
+  const s = session.rapidFireState!;
+  const isSolo = session.isSoloMode;
+
+  return (
+    <View style={styles.gameBlock}>
+      {!isSolo && currentPlayer && <PlayerTurnCard player={currentPlayer} color={gameColor} />}
+
+      <PromptFade triggerKey={s.currentPromptId}>
+        <View style={[rfStyles.promptCard, { backgroundColor: gameColor, borderRadius: 22 }]}>
+          <Text style={rfStyles.promptHint}>Your challenge</Text>
+          <Text style={rfStyles.promptText}>{s.currentPrompt}</Text>
+          <Text style={rfStyles.promptSub}>As fast as you can!</Text>
+        </View>
+      </PromptFade>
+
+      <TimerRow timerKey={timerKey} timerSeconds={s.timerSeconds} timerRunning={timerRunning} onToggle={onTimerToggle} onEnd={onTimerEnd} color={gameColor} />
+
+      {isSolo ? (
+        <View style={rfStyles.soloTally}>
+          <Text style={[rfStyles.tallyLabel, { color: colors.mutedForeground }]}>Answers given</Text>
+          <Text style={[rfStyles.tallyCount, { color: gameColor }]}>{s.playerAnswerCount[session.players[0]?.id] ?? 0}</Text>
+          <View style={styles.actionRow}>
+            <ActionBtn label="+ One more" icon="plus" onPress={() => onAddCount(session.players[0]?.id)} color={gameColor} size="lg" />
+          </View>
+        </View>
+      ) : (
+        <View>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Tap to count answers</Text>
+          <View style={styles.scoreTapGrid}>
+            {session.players.map((p: any) => (
+              <AnimatedPressable
+                key={p.id}
+                onPress={() => onAddCount(p.id)}
+                style={[styles.scoreTapCard, { backgroundColor: p.id === currentPlayer?.id ? gameColor : colors.muted, borderRadius: 14, flex: 1 }]}
+                scaleDown={0.93}
+              >
+                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 26, color: p.id === currentPlayer?.id ? '#FFF' : colors.foreground }}>
+                  {s.playerAnswerCount[p.id] ?? 0}
+                </Text>
+                <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: p.id === currentPlayer?.id ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
+                  {p.name}
+                </Text>
+              </AnimatedPressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      <ActionBtn label="Next Prompt" icon="arrow-right" onPress={onNextRound} color={gameColor} size="lg" />
+    </View>
+  );
+}
+
+const rfStyles = StyleSheet.create({
+  promptCard: { padding: 28, alignItems: 'center', gap: 10 },
+  promptHint: { fontFamily: 'Inter_500Medium', fontSize: 12, color: '#FFFFFFAA' },
+  promptText: { fontFamily: 'Inter_700Bold', fontSize: 28, color: '#FFF', textAlign: 'center', lineHeight: 34 },
+  promptSub: { fontFamily: 'Inter_400Regular', fontSize: 13, color: '#FFFFFFCC' },
+  soloTally: { alignItems: 'center', gap: 8 },
+  tallyLabel: { fontFamily: 'Inter_500Medium', fontSize: 14 },
+  tallyCount: { fontFamily: 'Inter_700Bold', fontSize: 72, lineHeight: 80 },
+});
+
+/* ─── Guess the Sound ─── */
+function GuessSoundGame({ session, gameColor, onCorrect, onSkip, currentPlayer }: any) {
+  const colors = useColors();
+  const s = session.guessSoundState!;
+  const isSolo = session.isSoloMode;
+  const [answer, setAnswer] = useState('');
+  const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    setAnswer('');
+    setResult(null);
+    setRevealed(false);
+  }, [s.currentItemId]);
+
+  const handleCheck = () => {
+    Keyboard.dismiss();
+    if (!answer.trim()) return;
+    const ok = checkSoundAnswer(answer, { acceptedAnswers: s.acceptedAnswers, answer: s.currentAnswer } as any);
+    setResult(ok ? 'correct' : 'wrong');
+    if (ok) setTimeout(() => onCorrect(), 800);
+  };
+
+  return (
+    <View style={styles.gameBlock}>
+      {!isSolo && currentPlayer && <PlayerTurnCard player={currentPlayer} color={gameColor} />}
+
+      <PromptFade triggerKey={s.currentItemId}>
+        <View style={[gsStyles.soundCard, { backgroundColor: gameColor, borderRadius: 22 }]}>
+          <Text style={gsStyles.soundHint}>What makes this sound?</Text>
+          <Text style={gsStyles.soundText}>{s.currentSoundText}</Text>
+        </View>
+      </PromptFade>
+
+      {!revealed && (
+        <View style={[styles.guessPanel, { backgroundColor: colors.card, borderRadius: 18, borderColor: gameColor + '40', borderWidth: 1.5 }]}>
+          <Text style={[styles.guessPanelTitle, { color: colors.foreground }]}>Your answer</Text>
+          <TextInput
+            style={[styles.guessInput, {
+              backgroundColor: colors.muted,
+              color: colors.foreground,
+              borderColor: result === 'wrong' ? colors.destructive : result === 'correct' ? colors.success : colors.border,
+            }]}
+            placeholder="Type what makes this sound…"
+            placeholderTextColor={colors.mutedForeground}
+            value={answer}
+            onChangeText={t => { setAnswer(t); setResult(null); }}
+            returnKeyType="done"
+            onSubmitEditing={handleCheck}
+          />
+          {result === 'wrong' && (
+            <Text style={[styles.guessResultText, { color: colors.destructive }]}>Not quite — try again!</Text>
+          )}
+          {result === 'correct' && (
+            <Text style={[styles.guessResultText, { color: colors.success }]}>Correct! Well done.</Text>
+          )}
+          <View style={styles.guessBtnRow}>
+            <Pressable onPress={() => { setRevealed(true); }} style={[styles.guessBtn, { backgroundColor: colors.muted, flex: 1 }]}>
+              <Text style={[styles.guessBtnText, { color: colors.mutedForeground }]}>Reveal</Text>
+            </Pressable>
+            <Pressable onPress={handleCheck} style={[styles.guessBtn, { backgroundColor: gameColor, flex: 2 }]}>
+              <Text style={[styles.guessBtnText, { color: '#FFF' }]}>Check Answer</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {revealed && (
+        <View style={[styles.answerRevealCard, { backgroundColor: colors.success + '18', borderRadius: 14, borderLeftColor: colors.success }]}>
+          <Text style={[styles.answerRevealLabel, { color: colors.success }]}>The answer was</Text>
+          <Text style={[styles.answerRevealText, { color: colors.success }]}>{s.currentAnswer}</Text>
+        </View>
+      )}
+
+      {!isSolo && (
+        <ScoreTapGrid session={session} currentPlayer={currentPlayer} color={gameColor} />
+      )}
+
+      <View style={styles.actionRow}>
+        <ActionBtn label="Next Sound" icon="arrow-right" onPress={onSkip} color={gameColor} size="lg" />
+      </View>
+    </View>
+  );
+}
+
+const gsStyles = StyleSheet.create({
+  soundCard: { padding: 28, alignItems: 'center', gap: 14 },
+  soundHint: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#FFFFFFAA' },
+  soundText: { fontFamily: 'Inter_700Bold', fontSize: 44, color: '#FFF', textAlign: 'center', lineHeight: 52 },
+});
+
+/* ─── This or That ─── */
+function ThisOrThatGame({ session, gameColor, onSelectOption, onNext, currentPlayer }: any) {
+  const colors = useColors();
+  const s = session.thisOrThatState!;
+  const isSolo = session.isSoloMode;
+  const [chosen, setChosen] = useState<'A' | 'B' | null>(null);
+  const pulseA = useRef(new Animated.Value(1)).current;
+  const pulseB = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => { setChosen(null); }, [s.currentCardId]);
+
+  const handlePick = (opt: 'A' | 'B') => {
+    setChosen(opt);
+    const anim = opt === 'A' ? pulseA : pulseB;
+    Animated.sequence([
+      Animated.timing(anim, { toValue: 1.04, duration: 80, useNativeDriver: true }),
+      Animated.timing(anim, { toValue: 1, duration: 120, useNativeDriver: true }),
+    ]).start();
+    onSelectOption(opt);
+    setTimeout(() => onNext(), 600);
+  };
+
+  return (
+    <View style={styles.gameBlock}>
+      {!isSolo && currentPlayer && <PlayerTurnCard player={currentPlayer} color={gameColor} />}
+
+      {(s.streak > 0 || s.bestStreak > 0) && (
+        <SoloStreakBadge streak={s.streak} best={s.bestStreak} color={gameColor} />
+      )}
+
+      <PromptFade triggerKey={s.currentCardId}>
+        <View style={totStyles.promptRow}>
+          <Text style={[totStyles.promptLabel, { color: colors.mutedForeground }]}>This or That?</Text>
+        </View>
+        <View style={totStyles.optionsRow}>
+          <Animated.View style={{ flex: 1, transform: [{ scale: pulseA }] }}>
+            <AnimatedPressable
+              onPress={() => handlePick('A')}
+              style={[totStyles.totBtn, {
+                backgroundColor: chosen === 'A' ? gameColor : colors.muted,
+                borderRadius: 20,
+              }]}
+              scaleDown={0.96}
+            >
+              <Text style={[totStyles.totText, { color: chosen === 'A' ? '#FFF' : colors.foreground }]} numberOfLines={3}>{s.optionA}</Text>
+            </AnimatedPressable>
+          </Animated.View>
+
+          <View style={totStyles.vsDivider}>
+            <Text style={[totStyles.vsText, { color: gameColor }]}>VS</Text>
+          </View>
+
+          <Animated.View style={{ flex: 1, transform: [{ scale: pulseB }] }}>
+            <AnimatedPressable
+              onPress={() => handlePick('B')}
+              style={[totStyles.totBtn, {
+                backgroundColor: chosen === 'B' ? gameColor : colors.muted,
+                borderRadius: 20,
+              }]}
+              scaleDown={0.96}
+            >
+              <Text style={[totStyles.totText, { color: chosen === 'B' ? '#FFF' : colors.foreground }]} numberOfLines={3}>{s.optionB}</Text>
+            </AnimatedPressable>
+          </Animated.View>
+        </View>
+      </PromptFade>
+
+      <Pressable onPress={onNext} style={{ alignSelf: 'center' }}>
+        <Text style={[totStyles.skipText, { color: colors.mutedForeground }]}>Skip →</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const totStyles = StyleSheet.create({
+  promptRow: { alignItems: 'center', marginBottom: 8 },
+  promptLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  optionsRow: { flexDirection: 'row', alignItems: 'stretch', gap: 10, minHeight: 140 },
+  totBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 18, height: '100%' },
+  totText: { fontFamily: 'Inter_700Bold', fontSize: 18, textAlign: 'center', lineHeight: 24 },
+  vsDivider: { alignItems: 'center', justifyContent: 'center', width: 36 },
+  vsText: { fontFamily: 'Inter_700Bold', fontSize: 14 },
+  skipText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, paddingVertical: 8 },
+});
+
+/* ─── Riddles ─── */
+function RiddlesGame({ session, gameColor, onCorrect, onSkip, currentPlayer }: any) {
+  const colors = useColors();
+  const s = session.riddleState!;
+  const isSolo = session.isSoloMode;
+  const [answer, setAnswer] = useState('');
+  const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    setAnswer('');
+    setResult(null);
+    setRevealed(false);
+  }, [s.currentRiddleId]);
+
+  const handleCheck = () => {
+    Keyboard.dismiss();
+    if (!answer.trim()) return;
+    const ok = checkRiddleAnswer(answer, { acceptedAnswers: s.acceptedAnswers, answer: s.currentAnswer } as any);
+    setResult(ok ? 'correct' : 'wrong');
+    if (ok) setTimeout(() => onCorrect(), 800);
+  };
+
+  return (
+    <View style={styles.gameBlock}>
+      {!isSolo && currentPlayer && <PlayerTurnCard player={currentPlayer} color={gameColor} />}
+
+      <PromptFade triggerKey={s.currentRiddleId}>
+        <View style={[rdStyles.riddleCard, { backgroundColor: gameColor + '14', borderRadius: 22, borderColor: gameColor + '30', borderWidth: 1.5 }]}>
+          <Text style={[rdStyles.riddleLabel, { color: gameColor }]}>Riddle</Text>
+          <Text style={[rdStyles.riddleText, { color: colors.foreground }]}>{s.currentQuestion}</Text>
+        </View>
+      </PromptFade>
+
+      {!revealed && (
+        <View style={[styles.guessPanel, { backgroundColor: colors.card, borderRadius: 18, borderColor: gameColor + '40', borderWidth: 1.5 }]}>
+          <Text style={[styles.guessPanelTitle, { color: colors.foreground }]}>Your answer</Text>
+          <TextInput
+            style={[styles.guessInput, {
+              backgroundColor: colors.muted,
+              color: colors.foreground,
+              borderColor: result === 'wrong' ? colors.destructive : result === 'correct' ? colors.success : colors.border,
+            }]}
+            placeholder="What's the answer?"
+            placeholderTextColor={colors.mutedForeground}
+            value={answer}
+            onChangeText={t => { setAnswer(t); setResult(null); }}
+            returnKeyType="done"
+            onSubmitEditing={handleCheck}
+          />
+          {result === 'wrong' && (
+            <Text style={[styles.guessResultText, { color: colors.destructive }]}>Not quite — think harder!</Text>
+          )}
+          {result === 'correct' && (
+            <Text style={[styles.guessResultText, { color: colors.success }]}>Correct! Well solved.</Text>
+          )}
+          <View style={styles.guessBtnRow}>
+            <Pressable onPress={() => setRevealed(true)} style={[styles.guessBtn, { backgroundColor: colors.muted, flex: 1 }]}>
+              <Text style={[styles.guessBtnText, { color: colors.mutedForeground }]}>Reveal</Text>
+            </Pressable>
+            <Pressable onPress={handleCheck} style={[styles.guessBtn, { backgroundColor: gameColor, flex: 2 }]}>
+              <Text style={[styles.guessBtnText, { color: '#FFF' }]}>Check Answer</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {revealed && (
+        <View style={[styles.answerRevealCard, { backgroundColor: colors.success + '18', borderRadius: 14, borderLeftColor: colors.success }]}>
+          <Text style={[styles.answerRevealLabel, { color: colors.success }]}>The answer is</Text>
+          <Text style={[styles.answerRevealText, { color: colors.success }]}>{s.currentAnswer}</Text>
+        </View>
+      )}
+
+      {!isSolo && (
+        <ScoreTapGrid session={session} currentPlayer={currentPlayer} color={gameColor} />
+      )}
+
+      <View style={styles.actionRow}>
+        {revealed || result === 'correct' ? (
+          <ActionBtn label="Next Riddle →" icon="arrow-right" onPress={onSkip} color={gameColor} size="lg" />
+        ) : (
+          <ActionBtn label="Give Up" icon="skip-forward" onPress={onSkip} color={colors.muted} textColor={colors.mutedForeground} size="lg" />
+        )}
+      </View>
+    </View>
+  );
+}
+
+const rdStyles = StyleSheet.create({
+  riddleCard: { padding: 24, gap: 12 },
+  riddleLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.2 },
+  riddleText: { fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 28 },
+});
 
 const styles = StyleSheet.create({
   root: { flex: 1 },

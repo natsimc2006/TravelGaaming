@@ -17,13 +17,19 @@ export type VoiceEvent =
   | 'streak'
   | 'freshPrompt'
   | 'resurface'
-  | 'repeat';
+  | 'repeat'
+  | 'reveal';
 
 export type GameKey =
   | 'alphabetShowdown'
   | 'whatAmI'
   | 'categoryDash'
   | 'forbiddenWord'
+  | 'wouldYouRather'
+  | 'rapidFire'
+  | 'guessTheSound'
+  | 'thisOrThat'
+  | 'riddles'
   | 'global';
 
 type VoiceContext = {
@@ -262,6 +268,211 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
       "That's the round. Words were used. Mostly legal ones.",
     ],
   },
+
+  wouldYouRather: {
+    gameStart: [
+      "Would You Rather. Two options. No escape. Defend your choice if challenged.",
+      "Welcome to Would You Rather. There are no wrong answers. Only questionable ones. Let's begin.",
+    ],
+    soloStart: [
+      "Would You Rather, solo edition. Pick one. Then tell yourself why.",
+      "Just you and two impossible choices. Good luck.",
+    ],
+    roundStart: [
+      "Here's one that might cause disagreements.",
+      "This one could divide the room.",
+      "No wrong answers. Probably.",
+      "Think carefully. Or don't. Either works.",
+    ],
+    correct: [
+      "Interesting choice. Defend it if necessary.",
+      "Bold. We respect that.",
+      "That's a choice. Moving on.",
+    ],
+    skip: [
+      "Can't decide? Fair enough.",
+      "A non-answer. Still valid.",
+      "Moving to the next dilemma.",
+    ],
+    roundEnd: [
+      "Opinions noted. Relationships tested.",
+      "Round done. Nobody has to agree.",
+      "That revealed a lot about everyone here.",
+    ],
+    gameEnd: [
+      "And that's Would You Rather. Character revealed.",
+      "Game over. You now know too much about each other.",
+      "Finished. Family dynamics may never be the same.",
+    ],
+  },
+
+  rapidFire: {
+    gameStart: [
+      "Rapid Fire. Name as many as you can before the timer ends. Go fast. Don't think. Just say things.",
+      "Let's see how fast you are. Rapid Fire starts now.",
+    ],
+    soloStart: [
+      "Rapid Fire solo. How many can you get? Count them up.",
+      "Just you and the clock. Name them fast.",
+    ],
+    roundStart: [
+      "Ready? Three. Two. One. Go.",
+      "Here we go. Fast as you can.",
+      "Timer starts now. No hesitations.",
+    ],
+    pressure: [
+      "Keep going.",
+      "Don't stop.",
+      "More. Faster.",
+      "Come on, keep them coming.",
+    ],
+    roundEnd: [
+      "And stop. Count them up.",
+      "Time. How many did you get?",
+      "That's the round. Impressive, probably.",
+    ],
+    correct: [
+      "Nice one.",
+      "That counts.",
+      "Keep going.",
+    ],
+    gameEnd: [
+      "Rapid Fire complete. Brains officially warmed up.",
+      "That's the game. Words were said. Many of them.",
+    ],
+  },
+
+  guessTheSound: {
+    gameStart: [
+      "Guess the Sound. I will describe a sound. First one to guess what makes it wins the round.",
+      "Listen carefully. What makes this sound?",
+    ],
+    soloStart: [
+      "Guess the Sound, solo mode. Think it through.",
+      "Solo sound guessing. How many can you get?",
+    ],
+    roundStart: [
+      "Listen carefully.",
+      "What makes this sound?",
+      "Here's a sound. What is it?",
+      "Identify the source of this sound.",
+    ],
+    correct: [
+      "That's it. Well heard.",
+      "Correct. Good ears.",
+      "Yes. Exactly right.",
+    ],
+    incorrect: [
+      "Not quite. Think again.",
+      "Close, but no. Try once more.",
+      "Nope. Listen again.",
+    ],
+    answerReveal: [
+      "The answer was {answer}.",
+      "It was {answer}.",
+    ],
+    skip: [
+      "Moving on. The sound remains a mystery.",
+      "Next sound coming up.",
+    ],
+    roundEnd: [
+      "Round complete. Moving to the next sound.",
+      "Sound identified. Or not. Moving on.",
+    ],
+    gameEnd: [
+      "And that's Guess the Sound. Ears have been tested.",
+      "Game complete. Your ears did their best.",
+    ],
+  },
+
+  thisOrThat: {
+    gameStart: [
+      "This or That. Two options. No thinking. Just choose. Ready? Go.",
+      "This or That. Fast decisions only. Let's see who agrees.",
+    ],
+    soloStart: [
+      "This or That, solo. Tap your choice. Build a streak.",
+      "Just you and two options. Quick.",
+    ],
+    roundStart: [
+      "No thinking. Just choose.",
+      "Quick.",
+      "This or that. Go.",
+      "Instant answer only.",
+      "No deliberating.",
+    ],
+    correct: [
+      "Chosen.",
+      "Noted.",
+      "Moving on.",
+      "Bold call.",
+    ],
+    streak: [
+      "{streak} fast choices. Keep it up.",
+      "On a roll. {streak} in a row.",
+    ],
+    skip: [
+      "Skip accepted. Barely.",
+      "Moving on.",
+    ],
+    roundEnd: [
+      "Next one.",
+      "Keep going.",
+    ],
+    gameEnd: [
+      "That's This or That. Decisions were made.",
+      "Game over. You now have opinions about everything.",
+    ],
+  },
+
+  riddles: {
+    gameStart: [
+      "Riddles. I'll read one out. First to answer correctly gets the point. Think before you speak.",
+      "Welcome to Riddles. Here's a tricky one to start with.",
+    ],
+    soloStart: [
+      "Solo Riddles. Think it through. Take your time.",
+      "Riddles, solo mode. Guess it, skip it, or reveal it.",
+    ],
+    roundStart: [
+      "Here's a tricky one.",
+      "Think carefully.",
+      "This one requires some thought.",
+      "Ready for a riddle?",
+      "Here it comes.",
+    ],
+    correct: [
+      "Correct. Nicely done.",
+      "That's it. Well reasoned.",
+      "Right. Sharp thinking.",
+    ],
+    incorrect: [
+      "Not quite. Think again.",
+      "Close, but no. Another guess?",
+      "Nope. The answer might surprise you.",
+    ],
+    answerReveal: [
+      "The answer is {answer}.",
+      "It was {answer}. Of course.",
+    ],
+    reveal: [
+      "Revealing the answer now.",
+      "Here it is.",
+    ],
+    skip: [
+      "Skipped. The riddle wins this round.",
+      "Moving on. The mystery lives on.",
+    ],
+    roundEnd: [
+      "Next riddle loading.",
+      "Moving to the next one.",
+      "Round done. Brain still intact, hopefully.",
+    ],
+    gameEnd: [
+      "Riddles complete. Brain sufficiently exercised.",
+      "That's the game. Riddles: 1, Family: also probably 1.",
+    ],
+  },
 };
 
 export function getVoiceLine(gameKey: GameKey, event: VoiceEvent, ctx: VoiceContext = {}): string {
@@ -308,6 +519,11 @@ export function getVoiceGameKey(gameId: string): GameKey {
     case 'what-am-i': return 'whatAmI';
     case 'category-dash': return 'categoryDash';
     case 'forbidden-word': return 'forbiddenWord';
+    case 'would-you-rather': return 'wouldYouRather';
+    case 'rapid-fire': return 'rapidFire';
+    case 'guess-the-sound': return 'guessTheSound';
+    case 'this-or-that': return 'thisOrThat';
+    case 'riddles': return 'riddles';
     default: return 'global';
   }
 }

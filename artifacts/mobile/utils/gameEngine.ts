@@ -2,6 +2,11 @@ import { ALPHABET_CATEGORIES, getRandomCategory, getRandomLetter } from '@/data/
 import { getRandomDashLetter, getRandomDashRound } from '@/data/categoryDash';
 import { getRandomForbiddenCard } from '@/data/forbiddenWord';
 import { getRandomWhatAmIItem } from '@/data/whatAmI';
+import { getRandomWYRCard } from '@/data/wouldYouRather';
+import { getRandomRapidFirePrompt } from '@/data/rapidFire';
+import { getRandomSoundItem } from '@/data/guessTheSound';
+import { getRandomThisOrThat } from '@/data/thisOrThat';
+import { getRandomRiddle } from '@/data/riddles';
 import type { SeenMap } from '@/utils/contentMemory';
 
 export interface Player {
@@ -61,6 +66,50 @@ export interface ForbiddenWordState {
   timerSeconds: number;
 }
 
+export interface WouldYouRatherState {
+  currentCardId: string;
+  optionA: string;
+  optionB: string;
+  mode: 'silly' | 'thoughtful' | 'chaos';
+  usedCardIds: string[];
+  selectedOption: 'A' | 'B' | null;
+}
+
+export interface RapidFireState {
+  currentPromptId: string;
+  currentPrompt: string;
+  usedPromptIds: string[];
+  playerAnswerCount: Record<string, number>;
+  timerSeconds: number;
+}
+
+export interface GuessSoundState {
+  currentItemId: string;
+  currentSoundText: string;
+  currentAnswer: string;
+  acceptedAnswers: string[];
+  usedItemIds: string[];
+}
+
+export interface ThisOrThatState {
+  currentCardId: string;
+  optionA: string;
+  optionB: string;
+  usedCardIds: string[];
+  streak: number;
+  bestStreak: number;
+}
+
+export interface RiddleState {
+  currentRiddleId: string;
+  currentQuestion: string;
+  currentAnswer: string;
+  acceptedAnswers: string[];
+  usedRiddleIds: string[];
+  hintsUsed: number;
+  revealed: boolean;
+}
+
 export interface GameSession {
   gameId: string;
   gameName: string;
@@ -78,6 +127,11 @@ export interface GameSession {
   whatAmIState?: WhatAmIState;
   categoryDashState?: CategoryDashState;
   forbiddenWordState?: ForbiddenWordState;
+  wouldYouRatherState?: WouldYouRatherState;
+  rapidFireState?: RapidFireState;
+  guessSoundState?: GuessSoundState;
+  thisOrThatState?: ThisOrThatState;
+  riddleState?: RiddleState;
 }
 
 export function getRoundCount(roundLength: RoundLength): number {
@@ -169,6 +223,57 @@ export function createSession(
       forbiddenWords: card.forbiddenWords,
       usedCardIds: [card.id],
       timerSeconds: timerSecs,
+    };
+  } else if (gameId === 'would-you-rather') {
+    const card = getRandomWYRCard([], undefined, seenMap);
+    session.wouldYouRatherState = {
+      currentCardId: card.id,
+      optionA: card.optionA,
+      optionB: card.optionB,
+      mode: card.mode,
+      usedCardIds: [card.id],
+      selectedOption: null,
+    };
+  } else if (gameId === 'rapid-fire') {
+    const prompt = getRandomRapidFirePrompt([], diff, seenMap);
+    const playerAnswerCount: Record<string, number> = {};
+    settings.players.forEach(p => { playerAnswerCount[p.id] = 0; });
+    session.rapidFireState = {
+      currentPromptId: prompt.id,
+      currentPrompt: prompt.prompt,
+      usedPromptIds: [prompt.id],
+      playerAnswerCount,
+      timerSeconds: timerSecs,
+    };
+  } else if (gameId === 'guess-the-sound') {
+    const item = getRandomSoundItem([], diff, seenMap);
+    session.guessSoundState = {
+      currentItemId: item.id,
+      currentSoundText: item.soundText,
+      currentAnswer: item.answer,
+      acceptedAnswers: item.acceptedAnswers,
+      usedItemIds: [item.id],
+    };
+  } else if (gameId === 'this-or-that') {
+    const card = getRandomThisOrThat([], seenMap);
+    session.thisOrThatState = {
+      currentCardId: card.id,
+      optionA: card.optionA,
+      optionB: card.optionB,
+      usedCardIds: [card.id],
+      streak: 0,
+      bestStreak: 0,
+    };
+  } else if (gameId === 'riddles') {
+    const riddle = getRandomRiddle([], diff, seenMap);
+    session.riddleState = {
+      currentRiddleId: riddle.id,
+      currentQuestion: riddle.question,
+      currentAnswer: riddle.answer,
+      acceptedAnswers: riddle.acceptedAnswers,
+      usedRiddleIds: [riddle.id],
+      hintsUsed: 0,
+      revealed: false,
     };
   }
 
@@ -270,6 +375,66 @@ export function nextRound(session: GameSession): GameSession {
       forbiddenWords: card.forbiddenWords,
       usedCardIds: [...s.usedCardIds, card.id],
       timerSeconds: timerSecs,
+    };
+    updated = nextPlayer(updated);
+  } else if (session.gameId === 'would-you-rather' && session.wouldYouRatherState) {
+    const s = session.wouldYouRatherState;
+    const card = getRandomWYRCard(s.usedCardIds, s.mode, sm);
+    updated.wouldYouRatherState = {
+      currentCardId: card.id,
+      optionA: card.optionA,
+      optionB: card.optionB,
+      mode: card.mode,
+      usedCardIds: [...s.usedCardIds, card.id],
+      selectedOption: null,
+    };
+    updated = nextPlayer(updated);
+  } else if (session.gameId === 'rapid-fire' && session.rapidFireState) {
+    const s = session.rapidFireState;
+    const prompt = getRandomRapidFirePrompt(s.usedPromptIds, diff, sm);
+    const playerAnswerCount: Record<string, number> = {};
+    session.players.forEach(p => { playerAnswerCount[p.id] = 0; });
+    updated.rapidFireState = {
+      currentPromptId: prompt.id,
+      currentPrompt: prompt.prompt,
+      usedPromptIds: [...s.usedPromptIds, prompt.id],
+      playerAnswerCount,
+      timerSeconds: timerSecs,
+    };
+    updated = nextPlayer(updated);
+  } else if (session.gameId === 'guess-the-sound' && session.guessSoundState) {
+    const s = session.guessSoundState;
+    const item = getRandomSoundItem(s.usedItemIds, diff, sm);
+    updated.guessSoundState = {
+      currentItemId: item.id,
+      currentSoundText: item.soundText,
+      currentAnswer: item.answer,
+      acceptedAnswers: item.acceptedAnswers,
+      usedItemIds: [...s.usedItemIds, item.id],
+    };
+    updated = nextPlayer(updated);
+  } else if (session.gameId === 'this-or-that' && session.thisOrThatState) {
+    const s = session.thisOrThatState;
+    const card = getRandomThisOrThat(s.usedCardIds, sm);
+    updated.thisOrThatState = {
+      currentCardId: card.id,
+      optionA: card.optionA,
+      optionB: card.optionB,
+      usedCardIds: [...s.usedCardIds, card.id],
+      streak: s.streak,
+      bestStreak: s.bestStreak,
+    };
+  } else if (session.gameId === 'riddles' && session.riddleState) {
+    const s = session.riddleState;
+    const riddle = getRandomRiddle(s.usedRiddleIds, diff, sm);
+    updated.riddleState = {
+      currentRiddleId: riddle.id,
+      currentQuestion: riddle.question,
+      currentAnswer: riddle.answer,
+      acceptedAnswers: riddle.acceptedAnswers,
+      usedRiddleIds: [...s.usedRiddleIds, riddle.id],
+      hintsUsed: 0,
+      revealed: false,
     };
     updated = nextPlayer(updated);
   }

@@ -28,6 +28,9 @@ interface GameContextValue {
   resetGame: () => void;
   bumpStreak: () => void;
   breakStreak: () => void;
+  selectWYROption: (opt: 'A' | 'B') => void;
+  bumpTotStreak: () => void;
+  addRapidFireCount: (playerId: string) => void;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -80,6 +83,37 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setSession(prev => prev ? resetSoloStreak(prev) : prev);
   }, []);
 
+  const selectWYROption = useCallback((opt: 'A' | 'B') => {
+    setSession(prev => {
+      if (!prev?.wouldYouRatherState) return prev;
+      return { ...prev, wouldYouRatherState: { ...prev.wouldYouRatherState, selectedOption: opt } };
+    });
+  }, []);
+
+  const bumpTotStreak = useCallback(() => {
+    setSession(prev => {
+      if (!prev?.thisOrThatState) return prev;
+      const s = prev.thisOrThatState;
+      const newStreak = s.streak + 1;
+      return { ...prev, thisOrThatState: { ...s, streak: newStreak, bestStreak: Math.max(s.bestStreak, newStreak) } };
+    });
+  }, []);
+
+  const addRapidFireCount = useCallback((playerId: string) => {
+    setSession(prev => {
+      if (!prev?.rapidFireState) return prev;
+      const cur = prev.rapidFireState.playerAnswerCount[playerId] ?? 0;
+      return {
+        ...prev,
+        rapidFireState: {
+          ...prev.rapidFireState,
+          playerAnswerCount: { ...prev.rapidFireState.playerAnswerCount, [playerId]: cur + 1 },
+        },
+        scores: { ...prev.scores, [playerId]: (prev.scores[playerId] ?? 0) + 1 },
+      };
+    });
+  }, []);
+
   return (
     <GameContext.Provider value={{
       session,
@@ -94,6 +128,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       resetGame,
       bumpStreak,
       breakStreak,
+      selectWYROption,
+      bumpTotStreak,
+      addRapidFireCount,
     }}>
       {children}
     </GameContext.Provider>
