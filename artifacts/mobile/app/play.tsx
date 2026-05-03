@@ -2,7 +2,6 @@ import { Feather } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Keyboard,
   Modal,
@@ -97,6 +96,7 @@ export default function PlayScreen() {
   const [showScores, setShowScores] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [freshnessTag, setFreshnessTag] = useState<FreshnessTag>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const msgTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameStartedRef = useRef(false);
 
@@ -196,24 +196,16 @@ export default function PlayScreen() {
     }
   }, [session?.status]);
 
-  // X button — go back to games menu (not end screen)
+  // X button — show in-app confirm overlay
   const handleExitGame = useCallback(() => {
-    Alert.alert(
-      'Leave Game?',
-      'Your progress will be lost.',
-      [
-        { text: 'Keep Playing', style: 'cancel' },
-        {
-          text: 'Leave',
-          style: 'destructive',
-          onPress: () => {
-            stopHostVoice();
-            resetGame();
-            router.replace('/games');
-          },
-        },
-      ],
-    );
+    setShowExitConfirm(true);
+  }, []);
+
+  const confirmExit = useCallback(() => {
+    setShowExitConfirm(false);
+    stopHostVoice();
+    resetGame();
+    router.replace('/games');
   }, [resetGame]);
 
   if (!session) return null;
@@ -389,9 +381,59 @@ export default function PlayScreen() {
           )}
         </ScrollView>
       </View>
+
+      {/* Exit confirm overlay */}
+      <Modal visible={showExitConfirm} transparent animationType="fade" onRequestClose={() => setShowExitConfirm(false)}>
+        <Pressable style={exitStyles.backdrop} onPress={() => setShowExitConfirm(false)}>
+          <Pressable style={[exitStyles.card, { backgroundColor: colors.card }]} onPress={e => e.stopPropagation()}>
+            <Text style={[exitStyles.title, { color: colors.foreground }]}>Leave game?</Text>
+            <Text style={[exitStyles.sub, { color: colors.mutedForeground }]}>Your progress will be lost.</Text>
+            <View style={exitStyles.btnRow}>
+              <Pressable
+                onPress={() => setShowExitConfirm(false)}
+                style={[exitStyles.btn, { backgroundColor: colors.muted, flex: 1 }]}
+              >
+                <Text style={[exitStyles.btnText, { color: colors.foreground }]}>Keep playing</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmExit}
+                style={[exitStyles.btn, { backgroundColor: colors.destructive, flex: 1 }]}
+              >
+                <Text style={[exitStyles.btnText, { color: '#FFF' }]}>Leave</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </>
   );
 }
+
+const exitStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: '#00000066',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  card: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 24,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  title: { fontFamily: 'Inter_700Bold', fontSize: 20, textAlign: 'center' },
+  sub: { fontFamily: 'Inter_400Regular', fontSize: 14, textAlign: 'center' },
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  btn: { paddingVertical: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  btnText: { fontFamily: 'Inter_700Bold', fontSize: 15 },
+});
 
 /* ─── Sub-components ─── */
 

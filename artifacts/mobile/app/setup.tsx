@@ -219,11 +219,17 @@ export default function SetupScreen() {
 
   if (isQuick && !ready) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 16, textAlign: 'center' }]}>
-          Give me a second{'\n'}picking something good…
-        </Text>
-      </View>
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={[styles.centered, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { position: 'absolute', top: insets.top + 10, left: 16 }]}>
+            <Feather name="arrow-left" size={22} color={colors.foreground} />
+          </Pressable>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 16, textAlign: 'center' }]}>
+            Give me a second{'\n'}picking something good…
+          </Text>
+        </View>
+      </>
     );
   }
 

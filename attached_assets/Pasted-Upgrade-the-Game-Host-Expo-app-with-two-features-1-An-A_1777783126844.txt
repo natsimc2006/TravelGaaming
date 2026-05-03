@@ -1,0 +1,362 @@
+Upgrade the Game Host Expo app with two features:
+
+1. An “All Games” view
+2. A future-ready AI Prompt Generation Layer
+
+Do not rebuild the app. Extend current code cleanly.
+
+-----------------------------------
+PART 1: ALL GAMES VIEW
+-----------------------------------
+
+Add an “All Games” screen.
+
+Purpose:
+Users should be able to browse every available game in one place, not only by home screen sections.
+
+Add route:
+AllGamesScreen
+
+Entry points:
+- Home screen “See all” links
+- Start a Game button
+- Bottom of home: “View all games”
+
+All Games screen layout:
+Title:
+“All Games”
+
+Subtitle:
+“Pick a game. We’ll do the hosting.”
+
+Include filters:
+- Situation: Car, Dinner, Waiting, Bedtime
+- Energy: Calm, Fun, Competitive, Chaos
+- Players: Solo, 2 players, Group
+- Host type: App hosts, Reader needed
+
+Include sort options:
+- Best match
+- Newest
+- Quickest
+- Most played
+
+Each game card should show:
+- game title
+- short description
+- age range
+- estimated time
+- solo supported badge
+- host type badge
+- energy badge
+- “Play now” button
+
+If no result:
+Show:
+“No perfect match. Family life remains unreasonable.”
+Button:
+“Show all games”
+
+Important:
+“All Games” should show every playable game, including:
+- Alphabet Showdown
+- What Am I?
+- Category Dash
+- Forbidden Word
+
+Future games should appear automatically if added to games.ts.
+
+-----------------------------------
+PART 2: AI PROMPT GENERATION LAYER
+-----------------------------------
+
+Build the architecture now, but do not require a live AI API yet.
+
+Goal:
+The app should be ready to generate fresh prompts later, while still working offline with local prompts now.
+
+Create:
+src/utils/aiPromptEngine.ts
+
+This should support:
+- local fallback prompts
+- AI-generated prompts in the future
+- duplicate checking
+- family-safe filtering
+- prompt freshness tracking
+
+Create prompt source types:
+
+type PromptSource = "local" | "ai" | "user_created";
+
+type GeneratedPrompt = {
+  id: string;
+  gameId: string;
+  promptText: string;
+  answer?: string;
+  acceptedAnswers?: string[];
+  clues?: string[];
+  category?: string;
+  difficulty: "easy" | "mixed" | "hard";
+  ageRange: "4-7" | "8-10" | "10+";
+  tags: string[];
+  source: PromptSource;
+  createdAt: string;
+  safetyStatus: "approved" | "needs_review" | "rejected";
+};
+
+-----------------------------------
+PART 3: AI GENERATION REQUEST STRUCTURE
+-----------------------------------
+
+Create function:
+
+generatePromptRequest(options)
+
+Options should include:
+- gameId
+- ageRange
+- difficulty
+- situation
+- energy
+- avoidPromptIds
+- previousPromptThemes
+- familySafeOnly
+
+For now, this function should return a mock generated prompt using local templates.
+
+Later it can be connected to OpenAI or another AI service.
+
+Example function:
+
+generateFreshPrompt({
+  gameId: "what-am-i",
+  ageRange: "4-7",
+  difficulty: "easy",
+  situation: "car",
+  avoidPromptIds: [...]
+})
+
+For now:
+- use local generation templates
+- create unique id
+- return prompt in GeneratedPrompt format
+
+-----------------------------------
+PART 4: GAME-SPECIFIC AI PROMPT LOGIC
+-----------------------------------
+
+WHAT AM I?
+AI prompt format must include:
+- answer
+- acceptedAnswers
+- 5 clues
+- difficulty
+- ageRange
+- tags
+
+Rules:
+- Clue 1 should be broad
+- Clue 2 should narrow it
+- Clue 3 should include a useful trait
+- Clue 4 should be easier
+- Clue 5 should almost give it away
+- Answer must be family-safe and common enough for the age group
+
+Example:
+Answer: “Umbrella”
+Clues:
+1. I am useful when the weather changes.
+2. People usually carry me outside.
+3. I open up above your head.
+4. I help keep rain off you.
+5. I have a handle and a canopy.
+
+ALPHABET SHOWDOWN
+AI prompt format:
+- category
+- optional theme
+- suitable letters
+- tags
+
+Examples:
+- “Things you might find in a messy car”
+- “Animals that would make terrible passengers”
+- “Foods that are hard to eat in the back seat”
+
+CATEGORY DASH
+AI prompt format:
+- letter
+- 5 categories
+- tags
+
+Categories should be broad enough to answer but specific enough to be fun.
+
+FORBIDDEN WORD
+AI prompt format:
+- targetWord
+- forbiddenWords
+- difficulty
+- ageRange
+- tags
+
+Rules:
+- forbidden words must make the card challenging but possible
+- avoid brand names
+- avoid adult themes
+- keep language simple
+
+-----------------------------------
+PART 5: SAFETY FILTER LAYER
+-----------------------------------
+
+Create:
+src/utils/promptSafety.ts
+
+Add function:
+
+validatePromptSafety(prompt)
+
+For now use rule-based checks:
+Reject if prompt includes:
+- violence
+- sexual content
+- drugs
+- alcohol
+- gambling
+- hate terms
+- swearing
+- adult topics
+- scary content for young kids
+
+Return:
+{
+  status: "approved" | "needs_review" | "rejected",
+  reasons: string[]
+}
+
+All AI-generated prompts must pass this before being used.
+
+If rejected:
+- fall back to local prompt
+
+-----------------------------------
+PART 6: DUPLICATE AND SIMILARITY CHECKING
+-----------------------------------
+
+Create:
+src/utils/promptDeduper.ts
+
+Add:
+- normalisePromptText()
+- isDuplicatePrompt()
+- isTooSimilarPrompt()
+
+For now:
+- exact text match
+- same answer match for What Am I
+- same targetWord match for Forbidden Word
+- simple keyword overlap check
+
+Before using an AI prompt:
+- compare against local prompts
+- compare against recently seen prompts
+- compare against current session prompts
+
+If too similar:
+- regenerate once
+- if still too similar, use local fallback
+
+-----------------------------------
+PART 7: “FRESH PROMPT” MODE
+-----------------------------------
+
+On Active Game screen, add subtle option:
+“✨ Fresh prompt”
+
+When tapped:
+- generate a fresh prompt for current game
+- avoid prompts already seen
+- show loading state:
+  “Thinking of something new…”
+- then replace current prompt
+
+For now, use mock generation.
+Do not require API keys.
+
+If generation fails:
+Show:
+“Fresh idea machine stalled. Using a classic.”
+Then load local fallback.
+
+-----------------------------------
+PART 8: HOME SCREEN FRESHNESS SIGNAL
+-----------------------------------
+
+On Home screen add small freshness card:
+
+Title:
+“Fresh prompts”
+
+Copy:
+“New ideas are mixed in so games don’t feel recycled.”
+
+Show stat:
+“23 fresh prompts ready”
+
+For now this can be calculated from mock generated/local unseen prompts.
+
+-----------------------------------
+PART 9: SETTINGS PLACEHOLDER
+-----------------------------------
+
+Add future setting:
+“AI fresh prompts”
+
+Options:
+- Off
+- On, family-safe only
+
+For now:
+- default to Off or Mock mode
+- show note:
+“Coming soon: fresh AI-generated rounds.”
+
+Do not require login.
+Do not require backend.
+Do not require API key.
+
+-----------------------------------
+PART 10: FUTURE API READY COMMENT
+-----------------------------------
+
+Inside aiPromptEngine.ts, add clear comments showing where a future OpenAI call would go.
+
+Example:
+
+// Future live AI call goes here.
+// Send the structured request.
+// Validate safety.
+// Check duplicates.
+// Return approved prompt.
+
+Do not expose any API key in frontend code.
+
+-----------------------------------
+EXPECTED RESULT
+-----------------------------------
+
+The app should now have:
+- a proper All Games screen
+- filters for games
+- scalable game browsing
+- AI prompt architecture
+- local mock prompt generation
+- safety validation
+- duplicate checks
+- “Fresh prompt” button
+- no dependency on live AI yet
+
+Keep the app fully working offline.
+Keep UI polished and playful.
+Keep all prompts family-safe.
