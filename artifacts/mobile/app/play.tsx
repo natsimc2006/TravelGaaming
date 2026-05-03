@@ -4,10 +4,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  Keyboard,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -271,10 +274,8 @@ export default function PlayScreen() {
             <WhatAmIGame
               session={session}
               gameColor={gameColor}
-              voiceKey={voiceKey}
               voiceEnabled={voiceEnabled}
-              timerKey={timerKey}
-              onReveal={() => {
+              onRevealClue={() => {
                 const clueIdx = session.whatAmIState!.cluesRevealed;
                 if (voiceEnabled) {
                   speakHost('whatAmI', 'clueReveal', { clueNumber: clueIdx + 1, totalClues: 5, points: session.whatAmIState!.pointsForCorrect });
@@ -283,13 +284,13 @@ export default function PlayScreen() {
                 }
                 revealClue();
               }}
-              onCorrect={(id: string) => {
-                addPlayerScore(id, session.whatAmIState!.pointsForCorrect);
+              onAwardAndAdvance={(pts: number) => {
+                addPlayerScore(currentPlayer.id, pts);
                 showHostMsg('correct');
-                voice('correct', { playerName: currentPlayer?.name, points: session.whatAmIState!.pointsForCorrect });
+                voice('correct', { playerName: currentPlayer?.name, points: pts });
                 advanceRound();
               }}
-              onSkip={() => {
+              onGiveUp={() => {
                 showHostMsg('skip');
                 voice('skip');
                 advanceRound();
@@ -455,17 +456,101 @@ function AlphabetGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning
   );
 }
 
-function WhatAmIGame({ session, gameColor, voiceKey, voiceEnabled, timerKey, onReveal, onCorrect, onSkip, currentPlayer }: any) {
+type GuessResult = 'correct' | 'wrong' | null;
+type PeekPhase = 'closed' | 'confirm' | 'revealed';
+
+function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAndAdvance, onGiveUp, currentPlayer }: any) {
   const colors = useColors();
   const s = session.whatAmIState!;
   const allRevealed = s.cluesRevealed >= 5;
+
+  // Guess flow
+  const [guessOpen, setGuessOpen] = useState(false);
+  const [guessText, setGuessText] = useState('');
+  const [guessResult, setGuessResult] = useState<GuessResult>(null);
+
+  // Peek flow
+  const [peekPhase, setPeekPhase] = useState<PeekPhase>('closed');
+
+  // Revealed answer (give up / success)
+  const [revealedAnswer, setRevealedAnswer] = useState<string | null>(null);
+  const [roundDone, setRoundDone] = useState(false);
+
+  // Reset local state when the mystery changes
+  useEffect(() => {
+    setGuessOpen(false);
+    setGuessText('');
+    setGuessResult(null);
+    setPeekPhase('closed');
+    setRevealedAnswer(null);
+    setRoundDone(false);
+  }, [s.currentItemId]);
+
+  const normalise = (str: string) =>
+    str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+
+  const handleCheckGuess = () => {
+    Keyboard.dismiss();
+    const norm = normalise(guessText);
+    const answer = normalise(s.currentAnswer);
+    if (!norm) return;
+    if (norm === answer || answer.includes(norm) || norm.includes(answer)) {
+      setGuessResult('correct');
+      setRevealedAnswer(s.currentAnswer);
+      setRoundDone(true);
+    } else {
+      setGuessResult('wrong');
+    }
+  };
+
+  const handleConfirmCorrect = () => {
+    onAwardAndAdvance(s.pointsForCorrect);
+  };
+
+  const handleGiveUp = () => {
+    Alert.alert(
+      'Reveal the answer?',
+      'This ends the round with no points awarded.',
+      [
+        { text: 'Keep playing', style: 'cancel' },
+        {
+          text: 'Give up',
+          style: 'destructive',
+          onPress: () => {
+            setRevealedAnswer(s.currentAnswer);
+            setRoundDone(true);
+            onGiveUp();
+          },
+        },
+      ],
+    );
+  };
+
+  const handlePeekTheyGotIt = () => {
+    setPeekPhase('closed');
+    onAwardAndAdvance(s.pointsForCorrect);
+  };
+
+  const handlePeekEndRound = () => {
+    setPeekPhase('closed');
+    setRevealedAnswer(s.currentAnswer);
+    setRoundDone(true);
+    onGiveUp();
+  };
+
   return (
     <View style={styles.gameBlock}>
       <PlayerTurnCard player={currentPlayer} color={gameColor} />
+
+      {/* Points banner */}
       <View style={[styles.pointsBanner, { backgroundColor: gameColor, borderRadius: 14 }]}>
-        <Text style={styles.pointsBannerText}>Worth {s.pointsForCorrect} {s.pointsForCorrect === 1 ? 'point' : 'points'} right now</Text>
+        <Text style={styles.pointsBannerText}>
+          Worth {s.pointsForCorrect} {s.pointsForCorrect === 1 ? 'point' : 'points'} right now
+        </Text>
         <Text style={styles.pointsBannerSub}>Clue {s.cluesRevealed} of 5</Text>
       </View>
+
+      {/* Clues list */}
       <View style={styles.cluesList}>
         {Array.from({ length: s.cluesRevealed }, (_, i) => {
           const isLatest = i === s.cluesRevealed - 1;
@@ -487,13 +572,141 @@ function WhatAmIGame({ session, gameColor, voiceKey, voiceEnabled, timerKey, onR
           );
         })}
       </View>
-      <View style={styles.actionRow}>
-        {!allRevealed && (
-          <ActionBtn label="Next Clue" icon="eye" onPress={onReveal} color={colors.muted} textColor={colors.foreground} />
-        )}
-        <ActionBtn label="We Got It!" icon="check-circle" onPress={() => onCorrect(currentPlayer?.id)} color={gameColor} size="lg" />
-        <ActionBtn label="Skip" onPress={onSkip} color={colors.muted} textColor={colors.mutedForeground} />
-      </View>
+
+      {/* Revealed answer banner */}
+      {revealedAnswer && (
+        <View style={[styles.answerRevealCard, { backgroundColor: colors.success + '18', borderRadius: 14, borderLeftColor: colors.success }]}>
+          <Text style={[styles.answerRevealLabel, { color: colors.success }]}>The answer was</Text>
+          <Text style={[styles.answerRevealText, { color: colors.success }]}>{revealedAnswer}</Text>
+        </View>
+      )}
+
+      {/* ── Guess panel (inline) ── */}
+      {guessOpen && !roundDone && (
+        <View style={[styles.guessPanel, { backgroundColor: colors.card, borderRadius: 18, borderColor: gameColor + '40', borderWidth: 1.5 }]}>
+          <Text style={[styles.guessPanelTitle, { color: colors.foreground }]}>Make a Guess</Text>
+          <TextInput
+            style={[styles.guessInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: guessResult === 'wrong' ? colors.destructive : guessResult === 'correct' ? colors.success : colors.border }]}
+            placeholder="Type your guess…"
+            placeholderTextColor={colors.mutedForeground}
+            value={guessText}
+            onChangeText={t => { setGuessText(t); setGuessResult(null); }}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={handleCheckGuess}
+          />
+          {guessResult === 'wrong' && (
+            <Text style={[styles.guessResultText, { color: colors.destructive }]}>Not quite. Try again!</Text>
+          )}
+          {guessResult === 'correct' && (
+            <Text style={[styles.guessResultText, { color: colors.success }]}>Correct! The answer was {revealedAnswer}.</Text>
+          )}
+          <View style={styles.guessBtnRow}>
+            <Pressable
+              onPress={() => { setGuessOpen(false); setGuessText(''); setGuessResult(null); }}
+              style={[styles.guessBtn, { backgroundColor: colors.muted, flex: 1 }]}
+            >
+              <Text style={[styles.guessBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
+            </Pressable>
+            {guessResult === 'correct' ? (
+              <Pressable onPress={handleConfirmCorrect} style={[styles.guessBtn, { backgroundColor: colors.success, flex: 2 }]}>
+                <Text style={[styles.guessBtnText, { color: '#FFF' }]}>Next Mystery →</Text>
+              </Pressable>
+            ) : (
+              <Pressable onPress={handleCheckGuess} style={[styles.guessBtn, { backgroundColor: gameColor, flex: 2 }]}>
+                <Text style={[styles.guessBtnText, { color: '#FFF' }]}>Check Guess</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* ── Peek modal ── */}
+      <Modal visible={peekPhase !== 'closed'} transparent animationType="fade" onRequestClose={() => setPeekPhase('closed')}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setPeekPhase('closed')}>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.card, borderRadius: 24 }]} onPress={e => e.stopPropagation()}>
+            {peekPhase === 'confirm' ? (
+              <>
+                <Text style={{ fontSize: 36, textAlign: 'center' }}>🔍</Text>
+                <Text style={[styles.modalTitle, { color: colors.foreground }]}>Peek at the answer?</Text>
+                <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
+                  This won't end the round. Don't let the others see.
+                </Text>
+                <View style={styles.modalBtnRow}>
+                  <Pressable onPress={() => setPeekPhase('closed')} style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]}>
+                    <Text style={[styles.modalBtnText, { color: colors.foreground }]}>Cancel</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setPeekPhase('revealed')} style={[styles.modalBtn, { backgroundColor: gameColor, flex: 1 }]}>
+                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>Peek</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.modalHint, { color: colors.mutedForeground }]}>Answer (judge only)</Text>
+                <Text style={[styles.modalAnswer, { color: gameColor }]}>{s.currentAnswer}</Text>
+                <View style={styles.modalBtnCol}>
+                  <Pressable onPress={() => setPeekPhase('closed')} style={[styles.modalBtn, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.modalBtnText, { color: colors.foreground }]}>Hide Answer — keep playing</Text>
+                  </Pressable>
+                  <Pressable onPress={handlePeekTheyGotIt} style={[styles.modalBtn, { backgroundColor: colors.success }]}>
+                    <Text style={[styles.modalBtnText, { color: '#FFF' }]}>They Got It! (+{s.pointsForCorrect} pts)</Text>
+                  </Pressable>
+                  <Pressable onPress={handlePeekEndRound} style={[styles.modalBtn, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.modalBtnText, { color: colors.destructive }]}>End Round (0 pts)</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Action buttons ── */}
+      {!roundDone && !guessOpen && (
+        <>
+          <View style={styles.actionRow}>
+            <ActionBtn
+              label="Make a Guess"
+              icon="edit-3"
+              onPress={() => { setGuessOpen(true); setGuessResult(null); setGuessText(''); }}
+              color={gameColor}
+              size="lg"
+            />
+            {!allRevealed ? (
+              <ActionBtn label="Next Clue" icon="eye" onPress={onRevealClue} color={colors.muted} textColor={colors.foreground} size="lg" />
+            ) : (
+              <ActionBtn
+                label="Reveal Answer"
+                icon="unlock"
+                onPress={() => { setRevealedAnswer(s.currentAnswer); setRoundDone(true); onGiveUp(); }}
+                color={colors.muted}
+                textColor={colors.foreground}
+                size="lg"
+              />
+            )}
+          </View>
+          <View style={styles.secondaryRow}>
+            <Pressable onPress={handleGiveUp} style={[styles.secondaryBtn, { borderColor: colors.border }]}>
+              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>I Give Up</Text>
+            </Pressable>
+            <Pressable onPress={() => setPeekPhase('confirm')} style={[styles.secondaryBtn, { borderColor: colors.border }]}>
+              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>🔍 Peek Answer</Text>
+            </Pressable>
+          </View>
+        </>
+      )}
+
+      {/* ── Next Mystery button (after round done) ── */}
+      {roundDone && !guessOpen && (
+        <ActionBtn
+          label="Next Mystery →"
+          icon="arrow-right"
+          onPress={() => onAwardAndAdvance(0)}
+          color={gameColor}
+          size="lg"
+        />
+      )}
     </View>
   );
 }
@@ -674,4 +887,131 @@ const styles = StyleSheet.create({
   },
   forbiddenDot: { width: 24, height: 24, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   forbiddenWord: { fontFamily: 'Inter_600SemiBold', fontSize: 18 },
+
+  // What Am I – guess panel
+  guessPanel: {
+    padding: 16,
+    gap: 12,
+  },
+  guessPanelTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 17,
+  },
+  guessInput: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  guessResultText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+  },
+  guessBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  guessBtn: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guessBtnText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 15,
+  },
+
+  // What Am I – answer reveal
+  answerRevealCard: {
+    padding: 16,
+    gap: 4,
+    borderLeftWidth: 3,
+  },
+  answerRevealLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+  },
+  answerRevealText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 26,
+  },
+
+  // What Am I – secondary buttons row
+  secondaryRow: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+  },
+  secondaryBtn: {
+    borderWidth: 1.5,
+    borderRadius: 100,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  secondaryBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
+  },
+
+  // Peek / modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: '#00000055',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    padding: 24,
+    gap: 16,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    textAlign: 'center',
+  },
+  modalSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalHint: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  modalAnswer: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 36,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalBtnCol: {
+    gap: 10,
+  },
+  modalBtn: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 15,
+  },
 });

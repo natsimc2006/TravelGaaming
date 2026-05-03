@@ -1,0 +1,141 @@
+For What Am I, change the gameplay logic so the app privately holds the answer and players must guess or reveal it.
+
+Do not use “We Got It” as an immediate correct action for What Am I.
+
+WHAT AM I ACTIVE GAME FLOW
+
+Default buttons:
+- Make a Guess
+- Next Clue
+- I Give Up
+
+Also include a small secondary option:
+- Peek Answer
+
+The app should hold the answer privately and not show it during normal clue play.
+
+MAKE A GUESS FLOW
+
+When user taps “Make a Guess”:
+- open a modal or inline panel
+- show text input:
+  placeholder: “Type your guess…”
+- buttons:
+  - Check Guess
+  - Cancel
+
+When Check Guess is tapped:
+- normalise the guess
+- compare against acceptedAnswers
+- if correct:
+  - show success state:
+    “Correct! The answer was [answer].”
+  - award points based on current clue number
+  - end the round
+  - show “Next Mystery”
+  - voice host says correct line
+- if incorrect:
+  - show:
+    “Not quite.”
+  - do not reveal the answer
+  - do not end the round
+  - allow:
+    - Try Again
+    - Reveal Next Clue
+    - Keep Playing
+
+NEXT CLUE FLOW
+
+When user taps “Next Clue”:
+- reveal the next clue
+- reduce available points
+- keep answer hidden
+- voice host reads the next clue if voice is enabled
+
+If all clues have been revealed:
+- change button from “Next Clue” to “Reveal Answer”
+
+I GIVE UP FLOW
+
+When user taps “I Give Up”:
+- show confirmation:
+  “Reveal the answer and end this round?”
+- if confirmed:
+  - reveal answer
+  - award no points
+  - end round
+  - show “Next Mystery”
+  - voice host says answerReveal line
+
+PEEK ANSWER FLOW
+
+Add a small “Peek Answer” option.
+
+When tapped:
+- show confirmation modal:
+  “Peek at the answer?”
+  “This won’t end the round, but don’t let the others see.”
+- buttons:
+  - Peek
+  - Cancel
+
+If Peek is tapped:
+- show private answer modal:
+  “Answer: [answer]”
+- buttons:
+  - Hide Answer
+  - They Got It
+  - End Round
+
+If Hide Answer:
+- close modal
+- continue round with answer still hidden
+
+If They Got It:
+- award current points
+- end round
+- show success state
+- show “Next Mystery”
+
+If End Round:
+- reveal answer
+- award no points
+- show “Next Mystery”
+
+POINTS LOGIC
+
+For What Am I:
+- Clue 1 = 5 points
+- Clue 2 = 4 points
+- Clue 3 = 3 points
+- Clue 4 = 2 points
+- Clue 5 = 1 point
+- Reveal answer / Give up = 0 points
+
+SOLO MODE
+
+In solo mode:
+- use “Make a Guess”
+- app checks typed answer
+- “Peek Answer” should be hidden by default or placed under “More options”
+- “I Give Up” reveals the answer and ends the round
+
+GROUP MODE
+
+In group mode:
+- use “Make a Guess” by default
+- allow each team/player to type a guess
+- if wrong, continue playing
+- “Peek Answer” is for parent/helper/judge use only
+
+IMPORTANT UX
+
+The answer should never be visible by accident.
+The answer should only appear after:
+- correct typed guess
+- Give Up confirmation
+- Peek Answer confirmation
+- final Reveal Answer
+
+Rename “We Got It” to “Make a Guess” for What Am I only.
+Keep “We Got It” or “Correct” for other games where manual judging makes sense.
