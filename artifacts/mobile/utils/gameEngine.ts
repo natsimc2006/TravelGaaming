@@ -2,6 +2,7 @@ import { ALPHABET_CATEGORIES, getRandomCategory, getRandomLetter } from '@/data/
 import { getRandomDashLetter, getRandomDashRound } from '@/data/categoryDash';
 import { getRandomForbiddenCard } from '@/data/forbiddenWord';
 import { getRandomWhatAmIItem } from '@/data/whatAmI';
+import type { SeenMap } from '@/utils/contentMemory';
 
 export interface Player {
   id: string;
@@ -72,6 +73,7 @@ export interface GameSession {
   status: 'idle' | 'playing' | 'ended';
   isSoloMode: boolean;
   gameState: GameState;
+  seenMap?: SeenMap;
   alphabetState?: AlphabetState;
   whatAmIState?: WhatAmIState;
   categoryDashState?: CategoryDashState;
@@ -100,7 +102,8 @@ export function getDifficultyKey(difficulty: GameDifficulty): 'easy' | 'medium' 
 export function createSession(
   gameId: string,
   gameName: string,
-  settings: GameSettings
+  settings: GameSettings,
+  seenMap?: SeenMap,
 ): GameSession {
   const scores: Record<string, number> = {};
   settings.players.forEach(p => { scores[p.id] = 0; });
@@ -122,10 +125,11 @@ export function createSession(
     status: 'playing',
     isSoloMode,
     gameState: 'playing',
+    seenMap,
   };
 
   if (gameId === 'alphabet-showdown') {
-    const cat = getRandomCategory([], diff);
+    const cat = getRandomCategory([], diff, seenMap);
     const letter = getRandomLetter([]);
     session.alphabetState = {
       currentCategory: { id: cat.id, name: cat.name },
@@ -137,7 +141,7 @@ export function createSession(
       bestStreak: 0,
     };
   } else if (gameId === 'what-am-i') {
-    const item = getRandomWhatAmIItem([], diff);
+    const item = getRandomWhatAmIItem([], diff, seenMap);
     session.whatAmIState = {
       currentItemId: item.id,
       currentAnswer: item.answer,
@@ -148,7 +152,7 @@ export function createSession(
       guessAttempts: 0,
     };
   } else if (gameId === 'category-dash') {
-    const round = getRandomDashRound([], diff);
+    const round = getRandomDashRound([], diff, seenMap);
     const letter = getRandomDashLetter();
     session.categoryDashState = {
       currentRoundId: round.id,
@@ -158,7 +162,7 @@ export function createSession(
       timerSeconds: timerSecs,
     };
   } else if (gameId === 'forbidden-word') {
-    const card = getRandomForbiddenCard([], diff);
+    const card = getRandomForbiddenCard([], diff, seenMap);
     session.forbiddenWordState = {
       currentCardId: card.id,
       targetWord: card.targetWord,
@@ -218,11 +222,15 @@ export function nextRound(session: GameSession): GameSession {
   const timerSecs = getTimerSeconds(session.settings.roundLength);
   let updated = { ...session, round: newRound, gameState: 'playing' as GameState };
 
+  const sm = session.seenMap;
   if (session.gameId === 'alphabet-showdown' && session.alphabetState) {
     const s = session.alphabetState;
     const letter = getRandomLetter(s.usedLetters);
+    const cat = getRandomCategory(s.usedCategoryIds, diff, sm);
     updated.alphabetState = {
       ...s,
+      currentCategory: { id: cat.id, name: cat.name },
+      usedCategoryIds: [...s.usedCategoryIds, cat.id],
       currentLetter: letter,
       usedLetters: [...s.usedLetters, letter],
       timerSeconds: timerSecs,
@@ -231,7 +239,7 @@ export function nextRound(session: GameSession): GameSession {
     };
   } else if (session.gameId === 'what-am-i' && session.whatAmIState) {
     const s = session.whatAmIState;
-    const item = getRandomWhatAmIItem(s.usedItemIds, diff);
+    const item = getRandomWhatAmIItem(s.usedItemIds, diff, sm);
     updated.whatAmIState = {
       currentItemId: item.id,
       currentAnswer: item.answer,
@@ -244,7 +252,7 @@ export function nextRound(session: GameSession): GameSession {
     updated = nextPlayer(updated);
   } else if (session.gameId === 'category-dash' && session.categoryDashState) {
     const s = session.categoryDashState;
-    const round = getRandomDashRound(s.usedRoundIds, diff);
+    const round = getRandomDashRound(s.usedRoundIds, diff, sm);
     const letter = getRandomDashLetter();
     updated.categoryDashState = {
       currentRoundId: round.id,
@@ -255,7 +263,7 @@ export function nextRound(session: GameSession): GameSession {
     };
   } else if (session.gameId === 'forbidden-word' && session.forbiddenWordState) {
     const s = session.forbiddenWordState;
-    const card = getRandomForbiddenCard(s.usedCardIds, diff);
+    const card = getRandomForbiddenCard(s.usedCardIds, diff, sm);
     updated.forbiddenWordState = {
       currentCardId: card.id,
       targetWord: card.targetWord,

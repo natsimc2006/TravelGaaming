@@ -14,7 +14,10 @@ export type VoiceEvent =
   | 'gameEnd'
   | 'soloStart'
   | 'answerReveal'
-  | 'streak';
+  | 'streak'
+  | 'freshPrompt'
+  | 'resurface'
+  | 'repeat';
 
 export type GameKey =
   | 'alphabetShowdown'
@@ -59,6 +62,21 @@ const fillTemplate = (line: string, ctx: VoiceContext = {}) =>
 
 const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
   global: {
+    freshPrompt: [
+      'Fresh one. Let us see how you go.',
+      'New one. Never been asked before.',
+      'This one is fresh. Go for it.',
+    ],
+    resurface: [
+      "You have not seen this one in a while.",
+      "It has been a while. Welcome back.",
+      "This one is making a return.",
+    ],
+    repeat: [
+      "Alright, this one is making a comeback.",
+      "A classic. Let's go again.",
+      "Back by popular demand.",
+    ],
     correct: [
       'Nice. Suspiciously fast.',
       'That was either skill or luck.',

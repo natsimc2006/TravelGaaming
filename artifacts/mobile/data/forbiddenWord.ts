@@ -48,7 +48,11 @@ export const FORBIDDEN_WORD_CARDS: ForbiddenWordCard[] = [
   { id: 'fw40', targetWord: 'Marshmallow', forbiddenWords: ['soft', 'white', 'sweet', 'roast', 'squishy'], difficulty: 'easy' },
 ];
 
-export function getRandomForbiddenCard(usedIds: string[], difficulty?: 'easy' | 'medium' | 'hard'): ForbiddenWordCard {
+export function getRandomForbiddenCard(
+  usedIds: string[],
+  difficulty?: 'easy' | 'medium' | 'hard',
+  seenMap?: import('@/utils/contentMemory').SeenMap,
+): ForbiddenWordCard {
   let pool = FORBIDDEN_WORD_CARDS.filter(c => !usedIds.includes(c.id));
   if (difficulty === 'easy') {
     const easy = pool.filter(c => c.difficulty === 'easy');
@@ -58,5 +62,9 @@ export function getRandomForbiddenCard(usedIds: string[], difficulty?: 'easy' | 
     if (hard.length > 0) pool = hard;
   }
   if (pool.length === 0) pool = FORBIDDEN_WORD_CARDS;
+  if (seenMap) {
+    const { selectFreshPrompt } = require('@/utils/freshPrompt');
+    return selectFreshPrompt(pool, usedIds, seenMap);
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }

@@ -13,10 +13,11 @@ import {
   resetSoloStreak,
   revealNextClue,
 } from '@/utils/gameEngine';
+import { getSeenMap } from '@/utils/contentMemory';
 
 interface GameContextValue {
   session: GameSession | null;
-  startGame: (gameId: string, gameName: string, settings: GameSettings) => void;
+  startGame: (gameId: string, gameName: string, settings: GameSettings) => Promise<void>;
   addPlayerScore: (playerId: string, points: number) => void;
   advanceRound: () => void;
   advancePlayer: () => void;
@@ -34,8 +35,9 @@ const GameContext = createContext<GameContextValue | null>(null);
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<GameSession | null>(null);
 
-  const startGame = useCallback((gameId: string, gameName: string, settings: GameSettings) => {
-    setSession(createSession(gameId, gameName, settings));
+  const startGame = useCallback(async (gameId: string, gameName: string, settings: GameSettings) => {
+    const seenMap = await getSeenMap();
+    setSession(createSession(gameId, gameName, settings, seenMap));
   }, []);
 
   const addPlayerScore = useCallback((playerId: string, points: number) => {

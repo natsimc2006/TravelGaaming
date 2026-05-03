@@ -66,12 +66,20 @@ export function getRandomLetter(usedLetters: string[]): string {
   return available[Math.floor(Math.random() * available.length)];
 }
 
-export function getRandomCategory(usedIds: string[], difficulty?: 'easy' | 'medium' | 'hard'): AlphabetCategory {
+export function getRandomCategory(
+  usedIds: string[],
+  difficulty?: 'easy' | 'medium' | 'hard',
+  seenMap?: import('@/utils/contentMemory').SeenMap,
+): AlphabetCategory {
   let pool = ALPHABET_CATEGORIES.filter(c => !usedIds.includes(c.id));
   if (difficulty && difficulty !== 'hard') {
     const filtered = pool.filter(c => c.difficulty === difficulty || c.difficulty === 'easy');
     if (filtered.length > 0) pool = filtered;
   }
   if (pool.length === 0) pool = ALPHABET_CATEGORIES;
+  if (seenMap) {
+    const { selectFreshPrompt } = require('@/utils/freshPrompt');
+    return selectFreshPrompt(pool, usedIds, seenMap);
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }

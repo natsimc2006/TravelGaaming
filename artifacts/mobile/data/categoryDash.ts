@@ -53,12 +53,20 @@ export function getRandomDashLetter(): string {
   return LETTERS_FOR_DASH[Math.floor(Math.random() * LETTERS_FOR_DASH.length)];
 }
 
-export function getRandomDashRound(usedIds: string[], difficulty?: 'easy' | 'medium' | 'hard'): CategoryDashRound {
+export function getRandomDashRound(
+  usedIds: string[],
+  difficulty?: 'easy' | 'medium' | 'hard',
+  seenMap?: import('@/utils/contentMemory').SeenMap,
+): CategoryDashRound {
   let pool = CATEGORY_DASH_ROUNDS.filter(r => !usedIds.includes(r.id));
   if (difficulty === 'easy') {
     const easy = pool.filter(r => r.difficulty === 'easy');
     if (easy.length > 0) pool = easy;
   }
   if (pool.length === 0) pool = CATEGORY_DASH_ROUNDS;
+  if (seenMap) {
+    const { selectFreshPrompt } = require('@/utils/freshPrompt');
+    return selectFreshPrompt(pool, usedIds, seenMap);
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }

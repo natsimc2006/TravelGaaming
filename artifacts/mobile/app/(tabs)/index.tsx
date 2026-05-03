@@ -15,6 +15,7 @@ import { GAMES, type GameMeta, type GameSetting, type EnergyLevel } from '@/data
 import { useColors } from '@/hooks/useColors';
 import { loadRecentGames } from '@/utils/storage';
 import { loadFamilyStats, type FamilyStats } from '@/utils/progression';
+import { getNewThisWeekCount } from '@/data/contentRelease';
 
 const SUBTITLES = [
   "Ready to rescue the next 'I'm bored' moment?",
@@ -63,6 +64,31 @@ const MOODS = [
   { label: '⚡ Focused', value: 'Medium', color: '#F59E0B', line: 'The thinking caps are on.' },
   { label: '🤪 Chaos', value: 'Chaotic', color: '#8B5CF6', line: "Good choice. We'll keep the chaos at a manageable level." },
 ];
+
+function NewPromptsTag() {
+  const colors = useColors();
+  const count = getNewThisWeekCount();
+  if (count === 0) {
+    return (
+      <Text style={[newPromptStyles.line, { color: colors.mutedForeground }]}>
+        New prompts added regularly
+      </Text>
+    );
+  }
+  return (
+    <View style={[newPromptStyles.pill, { backgroundColor: colors.primary + '18' }]}>
+      <Text style={[newPromptStyles.pillText, { color: colors.primary }]}>
+        ✨ {count} new prompts this week
+      </Text>
+    </View>
+  );
+}
+
+const newPromptStyles = StyleSheet.create({
+  line: { fontFamily: 'Inter_400Regular', fontSize: 12, textAlign: 'center' },
+  pill: { borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6 },
+  pillText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
+});
 
 function RotatingSubtitle() {
   const colors = useColors();
@@ -259,6 +285,7 @@ export default function HomeScreen() {
           <Text style={[styles.appName, { color: colors.foreground }]}>Game Host</Text>
         </View>
         <RotatingSubtitle />
+        <NewPromptsTag />
       </View>
 
       {/* CTAs */}

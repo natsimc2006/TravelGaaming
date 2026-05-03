@@ -188,7 +188,7 @@ export default function SetupScreen() {
     setPlayerNames(updated);
   };
 
-  const doStart = (rl: GameSettings['roundLength'], diff: GameSettings['difficulty']) => {
+  const doStart = async (rl: GameSettings['roundLength'], diff: GameSettings['difficulty']) => {
     const activePlayers: Player[] = isSolo
       ? [{ id: genId(), name: playerNames[0]?.trim() || 'Solo Player' }]
       : Array.from({ length: playerCount }, (_, i) => ({
@@ -205,7 +205,7 @@ export default function SetupScreen() {
       teams: false,
       playStyle: isSolo ? 'turns' : playStyle,
     };
-    startGame(gameId ?? '', game?.name ?? 'Game', settings);
+    await startGame(gameId ?? '', game?.name ?? 'Game', settings);
     router.replace('/play');
   };
 

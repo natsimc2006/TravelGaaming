@@ -23,6 +23,8 @@ import { useGame } from '@/context/GameContext';
 import { useColors } from '@/hooks/useColors';
 import { getHostLine } from '@/utils/gameEngine';
 import { saveRecentGame } from '@/utils/storage';
+import { recordPromptSeen } from '@/utils/contentMemory';
+import { getFreshnessTag, type FreshnessTag } from '@/utils/freshPrompt';
 import {
   getVoiceGameKey,
   speakHost,
@@ -94,6 +96,7 @@ export default function PlayScreen() {
   const [timerKey, setTimerKey] = useState(0);
   const [showScores, setShowScores] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [freshnessTag, setFreshnessTag] = useState<FreshnessTag>(null);
   const msgTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameStartedRef = useRef(false);
 
@@ -126,6 +129,34 @@ export default function PlayScreen() {
     // Stop voice on unmount
     return () => { stopHostVoice(); };
   }, []);
+
+  // Track freshness tag whenever the current prompt changes
+  useEffect(() => {
+    if (!session) return;
+    const promptId =
+      session.alphabetState?.currentCategory.id ??
+      session.whatAmIState?.currentItemId ??
+      session.categoryDashState?.currentRoundId ??
+      session.forbiddenWordState?.currentCardId;
+    if (!promptId || !session.seenMap) { setFreshnessTag(null); return; }
+    const tag = getFreshnessTag(promptId, session.seenMap);
+    setFreshnessTag(tag);
+    recordPromptSeen(promptId, session.gameId);
+
+    if (voiceEnabled && gameStartedRef.current) {
+      const voiceEvt = tag === 'new' ? 'freshPrompt' : tag === 'returning' ? 'resurface' : tag === 'favourite' ? 'repeat' : null;
+      if (voiceEvt) {
+        setTimeout(() => {
+          speakHost(getVoiceGameKey(session.gameId), voiceEvt);
+        }, 1800);
+      }
+    }
+  }, [
+    session?.alphabetState?.currentCategory.id,
+    session?.whatAmIState?.currentItemId,
+    session?.categoryDashState?.currentRoundId,
+    session?.forbiddenWordState?.currentCardId,
+  ]);
 
   // Round changes
   useEffect(() => {
@@ -249,6 +280,9 @@ export default function PlayScreen() {
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
         >
+          {/* Freshness badge */}
+          {freshnessTag && <FreshnessBadge tag={freshnessTag} />}
+
           {session.gameId === 'alphabet-showdown' && session.alphabetState && (
             <AlphabetGame
               session={session}
@@ -408,8 +442,11 @@ function ScoreTapGrid({ session, currentPlayer, color, onScore }: any) {
   const { addPlayerScore } = useGame();
 
   const handleTap = (playerId: string) => {
-    addPlayerScore(playerId, 1);
-    onScore?.(playerId);
+    if (onScore) {
+      onScore(playerId);
+    } else {
+      addPlayerScore(playerId, 1);
+    }
   };
 
   return (
@@ -466,6 +503,39 @@ const soloStyles = StyleSheet.create({
   streakText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: '#FFF' },
   bestBadge: { borderRadius: 100, paddingHorizontal: 12, paddingVertical: 8 },
   bestText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+});
+
+const FRESHNESS_CONFIG: Record<NonNullable<FreshnessTag>, { emoji: string; label: string; bg: string; text: string }> = {
+  new:       { emoji: '🆕', label: 'New for you',        bg: '#10B981', text: '#FFF' },
+  returning: { emoji: '🔁', label: 'Back again',         bg: '#6366F1', text: '#FFF' },
+  favourite: { emoji: '🔥', label: 'Family favourite',   bg: '#F59E0B', text: '#FFF' },
+};
+
+function FreshnessBadge({ tag }: { tag: NonNullable<FreshnessTag> }) {
+  const cfg = FRESHNESS_CONFIG[tag];
+  const scale = useRef(new Animated.Value(0.7)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 22, bounciness: 10 }),
+      Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+    ]).start();
+  }, [tag]);
+  return (
+    <Animated.View style={[freshStyles.badge, { backgroundColor: cfg.bg, transform: [{ scale }], opacity }]}>
+      <Text style={freshStyles.badgeText}>{cfg.emoji} {cfg.label}</Text>
+    </Animated.View>
+  );
+}
+
+const freshStyles = StyleSheet.create({
+  badge: {
+    alignSelf: 'center',
+    borderRadius: 100,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
+  badgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#FFF' },
 });
 
 function AlphabetGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning, timerKey, onTimerToggle, onTimerEnd, onScore, onNextLetter, onNewCategory, onNextRound, currentPlayer }: any) {

@@ -490,7 +490,8 @@ export const WHAT_AM_I_ITEMS: WhatAmIItem[] = [
 
 export function getRandomWhatAmIItem(
   usedIds: string[],
-  difficulty?: 'easy' | 'medium' | 'hard'
+  difficulty?: 'easy' | 'medium' | 'hard',
+  seenMap?: import('@/utils/contentMemory').SeenMap,
 ): WhatAmIItem {
   let pool = WHAT_AM_I_ITEMS.filter(item => !usedIds.includes(item.id));
   if (difficulty === 'easy') {
@@ -501,5 +502,9 @@ export function getRandomWhatAmIItem(
     if (hard.length > 0) pool = hard;
   }
   if (pool.length === 0) pool = WHAT_AM_I_ITEMS;
+  if (seenMap) {
+    const { selectFreshPrompt } = require('@/utils/freshPrompt');
+    return selectFreshPrompt(pool, usedIds, seenMap);
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }
