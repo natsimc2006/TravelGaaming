@@ -24,6 +24,7 @@ import { getHostLine } from '@/utils/gameEngine';
 import { saveRecentGame } from '@/utils/storage';
 import { recordPromptSeen } from '@/utils/contentMemory';
 import { getFreshnessTag, type FreshnessTag } from '@/utils/freshPrompt';
+import { generateFreshPrompt } from '@/utils/aiPromptEngine';
 import {
   getVoiceGameKey,
   speakHost,
@@ -97,6 +98,8 @@ export default function PlayScreen() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [freshnessTag, setFreshnessTag] = useState<FreshnessTag>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [freshPromptLoading, setFreshPromptLoading] = useState(false);
+  const [freshPromptError, setFreshPromptError] = useState(false);
   const msgTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameStartedRef = useRef(false);
 
@@ -208,6 +211,36 @@ export default function PlayScreen() {
     router.replace('/games');
   }, [resetGame]);
 
+  const handleFreshPrompt = useCallback(async () => {
+    if (!session || freshPromptLoading) return;
+    setFreshPromptLoading(true);
+    setFreshPromptError(false);
+    try {
+      await generateFreshPrompt({
+        gameId: session.gameId,
+        ageRange: session.settings.ageRange === 'easy' ? '4-7' : session.settings.ageRange === 'all' ? '10+' : '8-10',
+        difficulty: session.settings.difficulty === 'easy' ? 'easy' : session.settings.difficulty === 'spicy' ? 'hard' : 'mixed',
+        familySafeOnly: true,
+      });
+      // Advance the game to the next prompt using the existing seenMap-aware engine
+      if (session.gameId === 'alphabet-showdown') {
+        newCategory();
+      } else if (session.gameId === 'forbidden-word') {
+        advanceRound();
+        advancePlayer();
+      } else {
+        advanceRound();
+      }
+    } catch {
+      setFreshPromptError(true);
+      setTimeout(() => setFreshPromptError(false), 2800);
+      // Fall back to local prompt — advance anyway
+      advanceRound();
+    } finally {
+      setFreshPromptLoading(false);
+    }
+  }, [session, freshPromptLoading, newCategory, advanceRound, advancePlayer]);
+
   if (!session) return null;
 
   const gameColor = getGameColor(session.gameId);
@@ -274,6 +307,13 @@ export default function PlayScreen() {
         >
           {/* Freshness badge */}
           {freshnessTag && <FreshnessBadge tag={freshnessTag} />}
+
+          {/* Fresh prompt button */}
+          <FreshPromptButton
+            loading={freshPromptLoading}
+            error={freshPromptError}
+            onPress={handleFreshPrompt}
+          />
 
           {session.gameId === 'alphabet-showdown' && session.alphabetState && (
             <AlphabetGame
@@ -515,6 +555,43 @@ function ScoreTapGrid({ session, currentPlayer, color, onScore }: any) {
         })}
       </View>
     </View>
+  );
+}
+
+function FreshPromptButton({ loading, error, onPress }: { loading: boolean; error: boolean; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={loading}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        alignSelf: 'center',
+        paddingHorizontal: 18,
+        paddingVertical: 9,
+        borderRadius: 100,
+        backgroundColor: error ? colors.destructive + '18' : colors.softTeal,
+        borderWidth: 1.5,
+        borderColor: error ? colors.destructive + '40' : colors.secondary + '50',
+        opacity: pressed || loading ? 0.7 : 1,
+        marginBottom: 6,
+        transform: [{ scale: pressed ? 0.96 : 1 }],
+      })}
+    >
+      <Text style={{ fontSize: 15 }}>
+        {loading ? '⏳' : error ? '😓' : '✨'}
+      </Text>
+      <Text style={{
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 13,
+        color: error ? colors.destructive : colors.secondary,
+      }}>
+        {loading ? 'Finding a fresh one…' : error ? 'Used a classic instead' : 'Fresh prompt'}
+      </Text>
+    </Pressable>
   );
 }
 

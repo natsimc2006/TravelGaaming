@@ -16,6 +16,7 @@ import { useColors } from '@/hooks/useColors';
 import { loadRecentGames } from '@/utils/storage';
 import { loadFamilyStats, type FamilyStats } from '@/utils/progression';
 import { getNewThisWeekCount } from '@/data/contentRelease';
+import { getLocalPromptStats } from '@/utils/aiPromptEngine';
 
 const SUBTITLES = [
   "Ready to rescue the next 'I'm bored' moment?",
@@ -163,6 +164,76 @@ function MoodStrip() {
   );
 }
 
+function FreshnessCard() {
+  const colors = useColors();
+  const stats = getLocalPromptStats();
+  return (
+    <Pressable
+      onPress={() => router.push('/games')}
+      style={({ pressed }) => [
+        freshnessCardStyles.card,
+        { backgroundColor: colors.softTeal, borderRadius: 20, opacity: pressed ? 0.88 : 1 },
+      ]}
+    >
+      <View style={freshnessCardStyles.row}>
+        <Text style={{ fontSize: 24 }}>✨</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[freshnessCardStyles.title, { color: colors.foreground }]}>Fresh prompts</Text>
+          <Text style={[freshnessCardStyles.sub, { color: colors.mutedForeground }]}>
+            New ideas are mixed in so games never feel recycled.
+          </Text>
+        </View>
+        <View style={[freshnessCardStyles.pill, { backgroundColor: colors.secondary }]}>
+          <Text style={freshnessCardStyles.pillText}>{stats.total}</Text>
+          <Text style={freshnessCardStyles.pillLabel}>ready</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const freshnessCardStyles = StyleSheet.create({
+  card: { padding: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { fontFamily: 'Inter_700Bold', fontSize: 15 },
+  sub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17 },
+  pill: { alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, minWidth: 52 },
+  pillText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF' },
+  pillLabel: { fontFamily: 'Inter_500Medium', fontSize: 10, color: '#FFF', opacity: 0.85 },
+});
+
+function AISettingsHint() {
+  const colors = useColors();
+  return (
+    <View style={[aiStyles.card, { backgroundColor: colors.muted, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
+      <View style={aiStyles.row}>
+        <View style={[aiStyles.icon, { backgroundColor: colors.gameCategoryDash + '18' }]}>
+          <Text style={{ fontSize: 18 }}>🤖</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[aiStyles.title, { color: colors.foreground }]}>AI fresh prompts</Text>
+          <Text style={[aiStyles.sub, { color: colors.mutedForeground }]}>
+            Coming soon: fresh AI-generated rounds, family-safe only.
+          </Text>
+        </View>
+        <View style={[aiStyles.badge, { backgroundColor: colors.gameCategoryDash + '18' }]}>
+          <Text style={[aiStyles.badgeText, { color: colors.gameCategoryDash }]}>Soon</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const aiStyles = StyleSheet.create({
+  card: { padding: 14 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  icon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  title: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  sub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 16 },
+  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
+  badgeText: { fontFamily: 'Inter_700Bold', fontSize: 11 },
+});
+
 function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
   const colors = useColors();
   if (stats.totalGamesPlayed === 0) return null;
@@ -306,6 +377,9 @@ export default function HomeScreen() {
         <QuickPlayButton />
       </View>
 
+      {/* Freshness signal */}
+      <FreshnessCard />
+
       {/* Family Stats */}
       {familyStats && <FamilyStatsCard stats={familyStats} />}
 
@@ -354,6 +428,17 @@ export default function HomeScreen() {
           </Text>
         </View>
         <Feather name="chevron-right" size={18} color={colors.secondaryDark} />
+      </Pressable>
+
+      {/* AI settings hint */}
+      <AISettingsHint />
+
+      {/* View all games */}
+      <Pressable
+        onPress={() => router.push('/games')}
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, alignItems: 'center', paddingVertical: 8 })}
+      >
+        <Text style={[styles.viewAllText, { color: colors.primary }]}>View all games →</Text>
       </Pressable>
     </ScrollView>
   );
@@ -448,4 +533,5 @@ const styles = StyleSheet.create({
   packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
   packTitle: { fontFamily: 'Inter_700Bold', fontSize: 15 },
   packSub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2 },
+  viewAllText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
 });

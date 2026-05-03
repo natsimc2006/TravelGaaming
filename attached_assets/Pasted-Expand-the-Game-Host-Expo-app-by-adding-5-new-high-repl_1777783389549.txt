@@ -1,0 +1,267 @@
+Expand the Game Host Expo app by adding 5 new high-replay games.
+
+Do not rebuild the app. Follow existing game architecture, voice host system, freshness engine, and session engine.
+
+GOAL
+
+Increase replayability and reduce “we’ve played this before” by adding fast, flexible, low-friction games that work in:
+- car trips
+- dinner tables
+- solo mode
+- group mode
+
+-----------------------------------
+ADD GAME 1: WOULD YOU RATHER (ENHANCED)
+-----------------------------------
+
+Game type:
+conversation + decision
+
+Flow:
+- show 2 options
+- players choose
+- optional “defend your answer”
+
+Examples:
+- “Would you rather have spaghetti hair or pancake hands?”
+- “Would you rather live in a zoo or a theme park?”
+
+Modes:
+- Silly
+- Thoughtful
+- Chaos
+
+Solo mode:
+- user picks one
+- optional “Why?” prompt
+
+Voice host:
+- “This one could divide the room…”
+- “No wrong answers. Only questionable ones.”
+
+No scoring required.
+
+-----------------------------------
+ADD GAME 2: RAPID FIRE
+-----------------------------------
+
+Game type:
+timed challenge
+
+Flow:
+- prompt: “Name 5 animals”
+- timer: 10–20 seconds
+- player answers quickly
+
+Examples:
+- animals
+- foods
+- things at school
+- things in a car
+
+Solo mode:
+- count answers
+- score = number of valid answers
+
+Group mode:
+- take turns
+- each player gets a round
+
+Voice:
+- countdown:
+  “3… 2… 1… go”
+- pressure:
+  “Keep going”
+
+-----------------------------------
+ADD GAME 3: GUESS THE SOUND
+-----------------------------------
+
+Game type:
+audio/voice guessing
+
+Phase 1 (no audio files):
+- show or speak sound clue:
+  “Moo”
+  “Tick… tock…”
+  “Vroom”
+
+Player guesses:
+- manual or typed
+
+Answer checking:
+- use acceptedAnswers array
+
+Example:
+{
+  sound: "Moo",
+  answer: "Cow",
+  acceptedAnswers: ["cow"]
+}
+
+Solo mode:
+- type answer or tap “I got it”
+
+Group mode:
+- first to answer wins
+
+Voice host:
+- “What makes this sound?”
+- “Listen carefully…”
+
+-----------------------------------
+ADD GAME 4: THIS OR THAT (SPEED ROUND)
+-----------------------------------
+
+Game type:
+fast decision
+
+Flow:
+- rapid questions:
+  “Cats or dogs?”
+  “Pizza or burgers?”
+  “Beach or pool?”
+
+Players must answer instantly.
+
+Modes:
+- Solo (tap choice)
+- Group (shout or take turns)
+
+Add:
+- streak counter
+- fast pacing
+
+Voice:
+- “No thinking. Just choose.”
+- “Quick!”
+
+-----------------------------------
+ADD GAME 5: RIDDLES
+-----------------------------------
+
+Game type:
+logic + thinking
+
+Flow:
+- show riddle
+- player guesses
+- can:
+  - type answer
+  - reveal answer
+  - skip
+
+Examples:
+- “I have keys but no locks. What am I?”
+- “The more you take, the more you leave behind. What am I?”
+
+Structure:
+{
+  question: string,
+  answer: string,
+  acceptedAnswers: string[],
+  difficulty: "easy" | "medium" | "hard"
+}
+
+Answer checking:
+- use existing normaliseAnswer logic
+
+Solo mode:
+- type answer
+- score based on:
+  - correct
+  - skipped
+  - hints used
+
+Group mode:
+- first correct wins
+
+Voice:
+- “Here’s a tricky one…”
+- “Think carefully…”
+
+-----------------------------------
+INTEGRATION REQUIREMENTS
+-----------------------------------
+
+All games must:
+
+- support solo mode
+- support group mode
+- integrate with sessionEngine
+- integrate with voiceHost
+- integrate with freshness engine
+- include prompt IDs
+- avoid repetition
+- include variation support
+
+-----------------------------------
+DATA STRUCTURE
+-----------------------------------
+
+Update:
+src/data/games.ts
+
+Add new game entries with:
+- id
+- name
+- description
+- minPlayers
+- supportsSolo
+- energyLevel
+- tags
+- hostType
+
+-----------------------------------
+UI UPDATES
+-----------------------------------
+
+Update:
+- Home screen sections
+- All Games screen
+
+Add new games to:
+- “Perfect for the car”
+- “Quick games”
+- “Calm games”
+
+Ensure:
+- cards render correctly
+- no clipping
+- consistent spacing
+
+-----------------------------------
+VOICE HOST
+-----------------------------------
+
+Add new voice lines:
+
+Would You Rather:
+- “This one might cause disagreements…”
+
+Rapid Fire:
+- “Let’s see how fast you are…”
+
+Guess the Sound:
+- “Listen carefully…”
+
+This or That:
+- “No thinking. Just choose.”
+
+Riddles:
+- “Here’s a tricky one…”
+
+-----------------------------------
+EXPECTED RESULT
+-----------------------------------
+
+The app should now:
+- feel more varied
+- reduce repetition
+- support different energy levels
+- work for solo and groups
+- feel more like a full product, not just a few games
+
+Keep code modular.
+Keep UX simple.
+Keep tone playful.

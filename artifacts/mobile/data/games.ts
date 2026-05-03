@@ -14,8 +14,11 @@ export interface GameMeta {
   energyLevel: EnergyLevel;
   hostType: HostType;
   estimatedRoundLength: string;
+  estimatedMinutes: number;
   minPlayers: number;
   maxPlayers: number;
+  soloSupported: boolean;
+  addedAt: string;
   colorKey: GameColorKey;
   iconName: string;
 }
@@ -31,8 +34,11 @@ export const GAMES: GameMeta[] = [
     energyLevel: 'Medium',
     hostType: 'App hosts',
     estimatedRoundLength: '5–10 min',
+    estimatedMinutes: 5,
     minPlayers: 2,
     maxPlayers: 8,
+    soloSupported: true,
+    addedAt: '2024-03-01',
     colorKey: 'alphabet',
     iconName: 'star',
   },
@@ -46,8 +52,11 @@ export const GAMES: GameMeta[] = [
     energyLevel: 'Calm',
     hostType: 'App hosts',
     estimatedRoundLength: '10–15 min',
+    estimatedMinutes: 10,
     minPlayers: 2,
     maxPlayers: 10,
+    soloSupported: true,
+    addedAt: '2024-01-01',
     colorKey: 'whatAmI',
     iconName: 'help-circle',
   },
@@ -61,8 +70,11 @@ export const GAMES: GameMeta[] = [
     energyLevel: 'Chaotic',
     hostType: 'App hosts',
     estimatedRoundLength: '10–20 min',
+    estimatedMinutes: 10,
     minPlayers: 2,
     maxPlayers: 8,
+    soloSupported: true,
+    addedAt: '2024-06-01',
     colorKey: 'categoryDash',
     iconName: 'zap',
   },
@@ -76,8 +88,11 @@ export const GAMES: GameMeta[] = [
     energyLevel: 'Chaotic',
     hostType: 'Reader needed',
     estimatedRoundLength: '15–25 min',
+    estimatedMinutes: 15,
     minPlayers: 3,
     maxPlayers: 10,
+    soloSupported: false,
+    addedAt: '2024-09-01',
     colorKey: 'forbiddenWord',
     iconName: 'slash',
   },
