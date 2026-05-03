@@ -1,50 +1,65 @@
 const colors = {
   light: {
-    text: "#1A1A2E",
-    tint: "#FF6B35",
+    text: '#17172F',
+    tint: '#FF6B3D',
 
-    background: "#FFF8F0",
-    foreground: "#1A1A2E",
+    background: '#FFF7ED',
+    foreground: '#17172F',
 
-    card: "#FFFFFF",
-    cardForeground: "#1A1A2E",
+    card: '#FFFCF7',
+    cardForeground: '#17172F',
 
-    primary: "#FF6B35",
-    primaryForeground: "#FFFFFF",
+    primary: '#FF6B3D',
+    primaryForeground: '#FFFFFF',
+    primaryDark: '#F2542D',
 
-    secondary: "#4ECDC4",
-    secondaryForeground: "#FFFFFF",
+    secondary: '#4ECDC4',
+    secondaryForeground: '#FFFFFF',
+    secondaryDark: '#2BB3A8',
 
-    accent: "#FFE66D",
-    accentForeground: "#1A1A2E",
+    accent: '#FFF0C7',
+    accentForeground: '#17172F',
 
-    muted: "#F0EDE8",
-    mutedForeground: "#7A7A8A",
+    muted: '#F2EBE0',
+    mutedForeground: '#74748A',
 
-    destructive: "#FF4757",
-    destructiveForeground: "#FFFFFF",
+    destructive: '#FF4757',
+    destructiveForeground: '#FFFFFF',
 
-    border: "#EAE6E0",
-    input: "#EAE6E0",
+    border: '#EFE4D8',
+    input: '#EFE4D8',
 
-    gameAlphabet: "#FF6B35",
-    gameWhatAmI: "#4ECDC4",
-    gameCategoryDash: "#A78BFA",
-    gameForbiddenWord: "#F97316",
+    softOrange: '#FFE3D6',
+    softTeal: '#DDF7F4',
+    softLavender: '#ECE5FF',
+    softYellow: '#FFF3C4',
+    softGreen: '#E7F6E7',
+    softPeach: '#FFE8D6',
+    creamCard: '#FFFCF7',
 
-    car: "#3B82F6",
-    dinner: "#10B981",
-    waiting: "#F59E0B",
-    bedtime: "#8B5CF6",
+    gameAlphabet: '#FF6B3D',
+    gameWhatAmI: '#4ECDC4',
+    gameCategoryDash: '#8B5CF6',
+    gameForbiddenWord: '#F59E0B',
 
-    success: "#10B981",
-    warning: "#F59E0B",
+    gameSoftAlphabet: '#FFE3D6',
+    gameSoftWhatAmI: '#DDF7F4',
+    gameSoftCategoryDash: '#ECE5FF',
+    gameSoftForbiddenWord: '#FFF3C4',
 
-    timerNormal: "#4ECDC4",
-    timerWarning: "#FFE66D",
-    timerDanger: "#FF4757",
+    car: '#3B82F6',
+    dinner: '#10B981',
+    waiting: '#F59E0B',
+    bedtime: '#8B5CF6',
+
+    success: '#10B981',
+    warning: '#F59E0B',
+
+    timerNormal: '#4ECDC4',
+    timerWarning: '#F59E0B',
+    timerDanger: '#FF4757',
   },
-  radius: 16,
+  radius: 18,
 };
 
 export default colors;

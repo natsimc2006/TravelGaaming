@@ -1,0 +1,340 @@
+Improve the Game Host Expo app UI so it feels more playful, polished and like a family game host, not a plain utility app.
+
+Do not rebuild the app from scratch. Keep all current routes, screens, game logic and data. Refactor only where needed.
+
+VISUAL DIRECTION
+Make the app feel:
+- playful but not childish
+- warm and family-friendly
+- clear enough for car use
+- polished enough for the App Store
+- like the app is actively hosting the game
+
+Use:
+- cream/off-white background
+- coral/orange as primary action colour
+- teal as active game/host colour
+- soft pastel cards
+- rounded corners
+- gentle shadows
+- large buttons
+- bold readable typography
+- subtle animations
+
+HOME SCREEN UPGRADES
+
+1. Header
+Replace the current static header area with a more characterful hero panel.
+
+Include:
+- app icon/logo
+- “Game Host”
+- rotating subtitle text that changes every few seconds, using lines such as:
+  - “Ready to rescue the next ‘I’m bored’ moment?”
+  - “Press play. We’ll run the brain.”
+  - “Car trip about to get competitive.”
+  - “Family games, hosted for you.”
+  - “Rules handled. Fun unlocked.”
+
+Add a soft rounded background blob or card behind the header.
+
+2. Primary buttons
+Make “Start a Game” a large coral/orange gradient button with a slight press animation.
+Make “Quick Play” a secondary cream/white button with border and soft shadow.
+
+Button text:
+- Start a Game
+- Save the Moment
+
+Change “Quick Play” to “Save the Moment” because this better captures the product value.
+
+3. Mood picker strip
+Add a horizontal “What’s the mood?” selector below the hero buttons.
+
+Options:
+- 😴 Calm
+- 😄 Fun
+- ⚡ Competitive
+- 🤪 Chaos
+
+When tapped, filter or recommend matching games if easy. If filtering is not yet wired, visually select the mood and show a small line:
+“Good choice. We’ll keep the chaos at a manageable level.”
+
+4. Game sections
+Update section titles to be warmer:
+- “🚗 Perfect for the car”
+- “🍽 Dinner table lifesavers”
+- “⏳ Waiting room winners”
+- “😴 Calm wind-down games”
+
+Under each section title add small host-style microcopy:
+- Car: “Minimal props. Maximum distraction.”
+- Dinner: “For when everyone is technically still at the table.”
+- Waiting: “Because queues build character. Apparently.”
+- Calm: “Still fun, just less feral.”
+
+5. Game cards
+Redesign game cards so each game type has its own visual identity.
+
+Each card should include:
+- game title
+- 1 sentence description
+- icon
+- age badge
+- energy badge
+- host type badge
+- primary mini CTA: “Play now”
+
+Card colours:
+- Alphabet Showdown: soft orange/coral
+- What Am I?: soft teal
+- Category Dash: soft lavender
+- Forbidden Word: soft yellow/peach
+
+Badges:
+- “App hosts”
+- “Reader needed”
+- “Ages 4+”
+- “Fast”
+- “Thinky”
+- “Silly”
+- “Calm”
+
+Add a small press animation to cards.
+
+GAME PICKER SCREEN UPGRADES
+
+1. Add a top intro panel:
+Title: “Pick your rescue mission”
+Subtitle: “Choose the game. We’ll handle the rules, turns and prompts.”
+
+2. Make filters more visual:
+Use pill buttons for:
+- Car
+- Dinner
+- Waiting
+- Bedtime
+- Calm
+- Competitive
+- Silly
+
+Selected pills should visibly change colour.
+
+3. Improve empty state:
+If no games match, show:
+“No perfect match. Family life remains unreasonable.”
+Button: “Show all games”
+
+SETUP SCREEN UPGRADES
+
+1. Replace plain setup with a friendlier “Before we begin” card.
+
+Include:
+Title: “Before we unleash the fun…”
+Subtitle: “A few tiny details so the app can host properly.”
+
+2. Player setup:
+Make player name inputs look like playful player chips/cards.
+Default names:
+- Player 1
+- Player 2
+- Player 3
+- Player 4
+
+3. Round length options:
+Use large cards:
+- Quick: “2–3 minutes”
+- Normal: “5–8 minutes”
+- Long: “For brave families”
+
+4. Difficulty options:
+Use:
+- Easy: “Little legends”
+- Mixed: “Everyone in”
+- Spicy: “Still family-safe”
+
+5. Start button:
+Change button text to:
+“Start Hosting”
+
+ACTIVE GAME SCREEN UPGRADES
+
+This is the most important screen.
+
+1. Header
+Make the active game header feel like a live hosted session.
+
+Include:
+- game name
+- round count
+- small scoreboard icon
+- end button
+- current host line
+
+Host line examples:
+- “Round 1 coming in hot. Stay sharp.”
+- “No pressure. Except there absolutely is.”
+- “This could get weird.”
+- “Family peace is currently pending.”
+
+2. Player turn card
+Make current player/team display larger and more central.
+Use:
+“Player 1, you’re up”
+or
+“Team Orange, your turn”
+
+Add a small animated bounce/pulse when the turn changes.
+
+3. Prompt card
+Make the main prompt/clue card larger and more dramatic.
+
+For What Am I:
+- show “Clue 2”
+- show “Still worth 4 points”
+- previous clues should appear faded
+- newest clue should be highlighted
+
+For Alphabet Showdown:
+- show the current letter very large
+- show category as a bold card
+- include “Think fast…”
+
+For Category Dash:
+- show letter large
+- show category list in stacked cards
+
+For Forbidden Word:
+- show secret word card
+- show forbidden words as red/pink chips
+- include a timer card
+
+4. Button hierarchy
+Improve action buttons:
+Primary:
+- “We Got It!”
+- bold teal button
+
+Secondary:
+- “Reveal Next Clue”
+- cream/neutral button
+
+Tertiary:
+- “Skip”
+- subtle muted button
+
+For other games:
+- “Correct”
+- “Next”
+- “Skip”
+- “New Round”
+
+Make all action buttons large enough for car/table use.
+
+5. Host reaction messages
+After user actions, show a short host reaction message in a small animated banner.
+
+Examples:
+After correct:
+- “Nice. Suspiciously fast.”
+- “That was either skill or luck.”
+- “Point awarded. Glory temporary.”
+
+After skip:
+- “A strategic retreat.”
+- “We’ll pretend that never happened.”
+- “Skipped. Probably for the best.”
+
+After next clue:
+- “This clue might actually help.”
+- “The plot thickens.”
+- “Still anyone’s game.”
+
+6. Add subtle animation
+Use React Native Animated or Reanimated if already available.
+Add:
+- card fade-in on new prompt
+- button press scale
+- host message slide/fade
+- clue reveal fade
+
+Do not overdo animations.
+
+END GAME SCREEN UPGRADES
+
+1. Make end game celebratory:
+Title examples:
+- “Game over. Honour mostly intact.”
+- “Victory has entered the chat.”
+- “Family peace restored. Mostly.”
+
+2. Scoreboard
+Show scores in ranked cards.
+Winner card should feel special.
+
+3. Add recap line:
+Examples:
+- “A strong performance. Some answers remain under investigation.”
+- “Nobody flipped the table, so technically a success.”
+- “The app hosted. The family survived.”
+
+4. Buttons:
+- “Play Again”
+- “Try Another Game”
+- “Back Home”
+
+GLOBAL COMPONENTS TO CREATE OR IMPROVE
+
+Create or refine these reusable components:
+- HostHero
+- MoodPill
+- GameCard
+- SectionHeader
+- PrimaryButton
+- SecondaryButton
+- HostMessageBanner
+- PlayerTurnCard
+- PromptCard
+- ScoreBoard
+- AnimatedPressable
+
+THEME
+
+Create or update theme constants:
+
+Colours:
+- background: #FFF7ED
+- creamCard: #FFFCF7
+- coral: #FF6B3D
+- coralDark: #F2542D
+- teal: #4ECDC4
+- tealDark: #2BB3A8
+- navy: #17172F
+- mutedText: #74748A
+- softOrange: #FFE3D6
+- softTeal: #DDF7F4
+- softLavender: #ECE5FF
+- softYellow: #FFF0C7
+- softGreen: #E7F6E7
+- border: #EFE4D8
+
+Typography:
+- large bold headings
+- readable body text
+- avoid tiny captions
+- buttons should be bold and clear
+
+IMPORTANT BUG/UX FIXES FROM CURRENT SCREENSHOTS
+
+1. Home screen cards appear cut off horizontally. Fix horizontal scrolling/card sizing so cards do not clip awkwardly.
+2. Ensure all cards have enough width and padding on iPhone screens.
+3. Ensure active game screen has better vertical balance. Current game content sits too high with too much empty bottom space. Centre the main game area more naturally.
+4. Avoid the Dynamic Island overlapping important text. Respect safe area insets.
+5. Make top header height consistent across screens.
+6. Ensure all text wraps cleanly and does not truncate too aggressively.
+7. Buttons should not be cramped side-by-side. If needed, stack buttons on smaller screens.
+
+Do not add payment or login.
+Do not add backend.
+Keep the app fully working.
+Return the updated code.

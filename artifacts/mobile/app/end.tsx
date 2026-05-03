@@ -3,60 +3,79 @@ import { router, Stack } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import PrimaryButton from '@/components/PrimaryButton';
-import ScoreBoard from '@/components/ScoreBoard';
+import AnimatedPressable from '@/components/AnimatedPressable';
 import { GAME_COLORS } from '@/data/gameColors';
 import { useGame } from '@/context/GameContext';
 import { useColors } from '@/hooks/useColors';
-import { getHostLine, getWinners } from '@/utils/gameEngine';
+import { getWinners } from '@/utils/gameEngine';
 
-const WRAP_UP_LINES = [
-  'Family peace has been restored. Mostly.',
-  "That's a wrap! Well played, everyone.",
-  "And that's the game! Not bad at all.",
-  'Done! Someone call a trophy company.',
-  "Great game. No hard feelings. Probably.",
-  "The votes are in. The family has spoken.",
+const END_TITLES = [
+  'Game over. Honour mostly intact.',
+  'Victory has entered the chat.',
+  'Family peace restored. Mostly.',
+  'Well played. Suspiciously well played.',
+  'That\'s a wrap. Well done, everyone.',
 ];
 
-function getWrapUp() {
-  return WRAP_UP_LINES[Math.floor(Math.random() * WRAP_UP_LINES.length)];
+const RECAP_LINES = [
+  'A strong performance. Some answers remain under investigation.',
+  'Nobody flipped the table, so technically a success.',
+  'The app hosted. The family survived.',
+  'Dignity: mostly intact. Score: final.',
+  'Results are in. The family remains functional.',
+];
+
+function pick<T>(arr: T[]) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getGameColor(gameId: string) {
+  const map: Record<string, keyof typeof GAME_COLORS> = {
+    'alphabet-showdown': 'alphabet',
+    'what-am-i': 'whatAmI',
+    'category-dash': 'categoryDash',
+    'forbidden-word': 'forbiddenWord',
+  };
+  return GAME_COLORS[map[gameId] ?? 'alphabet'];
 }
 
 export default function EndScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { session, startGame, resetGame } = useGame();
-  const scaleAnim = useRef(new Animated.Value(0.6)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  const trophyScale = useRef(new Animated.Value(0.4)).current;
+  const trophyOpacity = useRef(new Animated.Value(0)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+
+  const endTitle = useRef(pick(END_TITLES)).current;
+  const recapLine = useRef(pick(RECAP_LINES)).current;
 
   useEffect(() => {
-    if (!session) {
-      router.replace('/');
-      return;
-    }
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 7 }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+    if (!session) { router.replace('/'); return; }
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(trophyScale, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 14 }),
+        Animated.timing(trophyOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+      ]),
+      Animated.timing(contentOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
   }, []);
 
   if (!session) return null;
 
-  const gameColor = GAME_COLORS[session.gameId === 'alphabet-showdown' ? 'alphabet' :
-    session.gameId === 'what-am-i' ? 'whatAmI' :
-    session.gameId === 'category-dash' ? 'categoryDash' : 'forbiddenWord'];
-
+  const gameColor = getGameColor(session.gameId);
   const winners = getWinners(session);
   const isTie = winners.length > 1;
   const maxScore = Math.max(...Object.values(session.scores));
-  const wrapUp = getWrapUp();
+  const sorted = [...session.players].sort((a, b) => (session.scores[b.id] ?? 0) - (session.scores[a.id] ?? 0));
 
   const handlePlayAgain = () => {
     startGame(session.gameId, session.gameName, session.settings);
@@ -78,48 +97,90 @@ export default function EndScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         style={{ backgroundColor: colors.background }}
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Trophy */}
-        <Animated.View style={[styles.trophySection, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          <View style={[styles.trophyCircle, { backgroundColor: gameColor }]}>
-            <Feather name="award" size={52} color="#FFF" />
-          </View>
-          <Text style={[styles.finishedLabel, { color: colors.mutedForeground }]}>Game Over!</Text>
-          <Text style={[styles.winnerText, { color: colors.foreground }]}>
+        {/* Trophy animation */}
+        <Animated.View style={[styles.trophySection, { opacity: trophyOpacity }]}>
+          <Animated.View style={[styles.trophyCircle, { backgroundColor: gameColor, transform: [{ scale: trophyScale }] }]}>
+            <Text style={{ fontSize: 52 }}>🏆</Text>
+          </Animated.View>
+          <Text style={[styles.endTitle, { color: colors.foreground }]}>{endTitle}</Text>
+          <Text style={[styles.winnerName, { color: gameColor }]}>
             {isTie
-              ? `It's a tie! ${winners.map(w => w.name).join(' & ')}`
+              ? `${winners.map(w => w.name).join(' & ')} tie!`
               : `${winners[0].name} wins!`}
           </Text>
           {maxScore > 0 && (
-            <Text style={[styles.scoreLabel, { color: gameColor }]}>
+            <Text style={[styles.winnerScore, { color: colors.mutedForeground }]}>
               {isTie ? `${maxScore} pts each` : `${maxScore} points`}
             </Text>
           )}
-          <View style={[styles.wrapUpBox, { backgroundColor: gameColor + '14', borderRadius: 14 }]}>
-            <Text style={[styles.wrapUpText, { color: gameColor }]}>{wrapUp}</Text>
+        </Animated.View>
+
+        {/* Recap line */}
+        <Animated.View style={[styles.recapBox, { backgroundColor: gameColor + '14', borderRadius: 18, opacity: contentOpacity }]}>
+          <Text style={[styles.recapText, { color: gameColor }]}>{recapLine}</Text>
+        </Animated.View>
+
+        {/* Final scoreboard */}
+        <Animated.View style={[styles.scoreSection, { backgroundColor: colors.card, borderRadius: 20, opacity: contentOpacity }]}>
+          <Text style={[styles.scoreSectionTitle, { color: colors.foreground }]}>Final Scores</Text>
+          <View style={styles.scoreRows}>
+            {sorted.map((p, i) => {
+              const isWinner = i === 0;
+              const score = session.scores[p.id] ?? 0;
+              return (
+                <View
+                  key={p.id}
+                  style={[
+                    styles.scoreRow,
+                    {
+                      backgroundColor: isWinner ? gameColor + '12' : 'transparent',
+                      borderRadius: 14,
+                    },
+                  ]}
+                >
+                  <View style={[styles.rankBubble, { backgroundColor: isWinner ? gameColor : colors.muted }]}>
+                    <Text style={[styles.rankText, { color: isWinner ? '#FFF' : colors.mutedForeground }]}>
+                      {isWinner ? '🏆' : `${i + 1}`}
+                    </Text>
+                  </View>
+                  <Text style={[styles.scoreRowName, { color: colors.foreground, fontFamily: isWinner ? 'Inter_700Bold' : 'Inter_500Medium' }]} numberOfLines={1}>
+                    {p.name}
+                  </Text>
+                  <Text style={[styles.scoreRowPoints, { color: isWinner ? gameColor : colors.foreground }]}>
+                    {score}
+                    <Text style={[styles.ptsLabel, { color: colors.mutedForeground }]}> pts</Text>
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         </Animated.View>
 
-        {/* Scores */}
-        {session.players.length > 1 && (
-          <View style={[styles.scoreBoardSection, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Final Scores</Text>
-            <ScoreBoard
-              players={session.players}
-              scores={session.scores}
-              gameColor={gameColor}
-            />
-          </View>
-        )}
+        {/* Action buttons */}
+        <Animated.View style={[styles.actions, { opacity: contentOpacity }]}>
+          <AnimatedPressable
+            onPress={handlePlayAgain}
+            style={[styles.btn, styles.btnPrimary, { backgroundColor: gameColor }]}
+          >
+            <Feather name="rotate-ccw" size={18} color="#FFF" />
+            <Text style={styles.btnPrimaryText}>Play Again</Text>
+          </AnimatedPressable>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <PrimaryButton label="Play Again" onPress={handlePlayAgain} variant="primary" size="lg" fullWidth />
-          <PrimaryButton label="Try Another Game" onPress={handleTryAnother} variant="secondary" size="lg" fullWidth />
-          <PrimaryButton label="Home" onPress={handleHome} variant="ghost" size="md" fullWidth />
-        </View>
+          <AnimatedPressable
+            onPress={handleTryAnother}
+            style={[styles.btn, styles.btnSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <Feather name="grid" size={18} color={colors.foreground} />
+            <Text style={[styles.btnSecondaryText, { color: colors.foreground }]}>Try Another Game</Text>
+          </AnimatedPressable>
+
+          <Pressable onPress={handleHome} style={styles.backHome}>
+            <Text style={[styles.backHomeText, { color: colors.mutedForeground }]}>Back Home</Text>
+          </Pressable>
+        </Animated.View>
       </ScrollView>
     </>
   );
@@ -127,61 +188,131 @@ export default function EndScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    gap: 24,
+    paddingHorizontal: 20,
+    gap: 20,
+    alignItems: 'stretch',
   },
   trophySection: {
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   trophyCircle: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 8,
+    marginBottom: 4,
   },
-  finishedLabel: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  winnerText: {
+  endTitle: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 28,
+    fontSize: 22,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  winnerName: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 30,
     textAlign: 'center',
   },
-  scoreLabel: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 20,
+  winnerScore: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
   },
-  wrapUpBox: {
+  recapBox: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginTop: 4,
-    maxWidth: 320,
+    paddingVertical: 16,
   },
-  wrapUpText: {
+  recapText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 15,
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 22,
   },
-  scoreBoardSection: {
-    padding: 16,
-    gap: 12,
+  scoreSection: {
+    padding: 18,
+    gap: 14,
   },
-  sectionTitle: {
+  scoreSectionTitle: {
     fontFamily: 'Inter_700Bold',
+    fontSize: 18,
+  },
+  scoreRows: {
+    gap: 4,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  rankBubble: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 13,
+  },
+  scoreRowName: {
+    flex: 1,
     fontSize: 17,
+  },
+  scoreRowPoints: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 22,
+  },
+  ptsLabel: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
   },
   actions: {
     gap: 12,
+    paddingTop: 4,
+  },
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 18,
+    paddingVertical: 18,
+  },
+  btnPrimary: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  btnPrimaryText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 18,
+    color: '#FFF',
+  },
+  btnSecondary: {
+    borderWidth: 1.5,
+  },
+  btnSecondaryText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 17,
+  },
+  backHome: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  backHomeText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
   },
 });

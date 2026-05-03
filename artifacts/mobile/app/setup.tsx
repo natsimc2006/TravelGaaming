@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import PrimaryButton from '@/components/PrimaryButton';
+import AnimatedPressable from '@/components/AnimatedPressable';
 import { GAME_COLORS } from '@/data/gameColors';
 import { GAMES } from '@/data/games';
 import { useGame } from '@/context/GameContext';
@@ -22,43 +22,82 @@ function genId() {
   return Date.now().toString() + Math.random().toString(36).substring(2, 7);
 }
 
-function OptionRow<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
+const ROUND_OPTIONS = [
+  { value: 'quick' as const, label: 'Quick', sub: '2–3 minutes', emoji: '⚡' },
+  { value: 'normal' as const, label: 'Normal', sub: '5–8 minutes', emoji: '🎯' },
+  { value: 'long' as const, label: 'Long', sub: 'For brave families', emoji: '🏔' },
+];
+
+const DIFF_OPTIONS = [
+  { value: 'easy' as const, label: 'Easy', sub: 'Little legends', emoji: '🌟' },
+  { value: 'mixed' as const, label: 'Mixed', sub: 'Everyone in', emoji: '🎉' },
+  { value: 'spicy' as const, label: 'Spicy', sub: 'Still family-safe', emoji: '🌶' },
+];
+
+const AGE_OPTIONS = [
+  { value: 'easy' as const, label: 'Ages 4–7', sub: 'Young ones', emoji: '🐣' },
+  { value: 'mixed' as const, label: 'Mixed ages', sub: 'All welcome', emoji: '👨‍👩‍👧‍👦' },
+  { value: 'all' as const, label: 'Ages 10+', sub: 'No hints given', emoji: '🧠' },
+];
+
+function LargeOptionCard<T extends string>({
+  opt,
+  selected,
+  onPress,
   color,
 }: {
-  label: string;
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
+  opt: { value: T; label: string; sub: string; emoji: string };
+  selected: boolean;
+  onPress: () => void;
   color: string;
 }) {
   const colors = useColors();
   return (
-    <View style={styles.optionRow}>
-      <Text style={[styles.optionLabel, { color: colors.mutedForeground }]}>{label}</Text>
-      <View style={styles.optionButtons}>
-        {options.map(o => (
-          <Pressable
-            key={o.value}
-            onPress={() => onChange(o.value)}
-            style={[
-              styles.optionBtn,
-              {
-                backgroundColor: value === o.value ? color : colors.muted,
-                borderRadius: 10,
-              },
-            ]}
-          >
-            <Text style={[styles.optionBtnText, { color: value === o.value ? '#FFF' : colors.mutedForeground }]}>
-              {o.label}
-            </Text>
-          </Pressable>
-        ))}
+    <AnimatedPressable
+      onPress={onPress}
+      style={[
+        styles.optCard,
+        {
+          backgroundColor: selected ? color + '18' : colors.muted,
+          borderRadius: 14,
+          borderWidth: 2,
+          borderColor: selected ? color : 'transparent',
+        },
+      ]}
+      scaleDown={0.96}
+    >
+      <Text style={{ fontSize: 22 }}>{opt.emoji}</Text>
+      <Text style={[styles.optLabel, { color: selected ? color : colors.foreground }]}>{opt.label}</Text>
+      <Text style={[styles.optSub, { color: colors.mutedForeground }]}>{opt.sub}</Text>
+    </AnimatedPressable>
+  );
+}
+
+function HowToPlay({ game, color }: { game: (typeof GAMES)[0]; color: string }) {
+  const colors = useColors();
+  const [open, setOpen] = useState(false);
+  const instructions: Record<string, string> = {
+    'alphabet-showdown': 'The app picks a category and a starting letter. Players take turns naming something from the category that starts with that letter. Score a point for every valid answer. Try New Letter or New Category to keep things fresh.',
+    'what-am-i': 'The app picks a mystery answer and reveals clues one at a time. The fewer clues you need, the more points you score. Hold back if you think you know it!',
+    'category-dash': 'One letter, five categories. Race to think of a word for each category starting with that letter. Award points and hit New Round for a fresh set.',
+    'forbidden-word': 'One player reads the target word and must get others to guess it — without saying any of the forbidden words. Use the timer, and tap Got It or Skip.',
+  };
+  return (
+    <Pressable
+      onPress={() => setOpen(o => !o)}
+      style={[styles.howToCard, { backgroundColor: colors.card, borderRadius: 16 }]}
+    >
+      <View style={styles.howToRow}>
+        <Feather name="info" size={16} color={color} />
+        <Text style={[styles.howToTitle, { color: colors.foreground }]}>How to play</Text>
+        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </View>
-    </View>
+      {open && (
+        <Text style={[styles.howToText, { color: colors.mutedForeground }]}>
+          {instructions[game.id] ?? 'Follow the on-screen prompts to play.'}
+        </Text>
+      )}
+    </Pressable>
   );
 }
 
@@ -82,8 +121,9 @@ export default function SetupScreen() {
   useEffect(() => {
     loadSettings().then(s => {
       if (s.playerNames.length > 0) {
-        setPlayerNames(s.playerNames.slice(0, Math.max(3, s.playerNames.length)));
-        setPlayerCount(Math.max(2, s.playerNames.filter(Boolean).length));
+        const names = s.playerNames.slice(0, Math.max(3, s.playerNames.length));
+        setPlayerNames(names);
+        setPlayerCount(Math.max(2, names.filter(Boolean).length));
       }
       setAgeRange(s.ageRange as GameSettings['ageRange']);
       setReady(true);
@@ -108,10 +148,7 @@ export default function SetupScreen() {
       id: genId(),
       name: playerNames[i]?.trim() || `Player ${i + 1}`,
     }));
-
-    const names = activePlayers.map(p => p.name);
-    savePlayerNames(names);
-
+    savePlayerNames(activePlayers.map(p => p.name));
     const settings: GameSettings = {
       playerCount,
       players: activePlayers,
@@ -120,12 +157,9 @@ export default function SetupScreen() {
       difficulty: diff,
       teams: false,
     };
-
     startGame(gameId ?? '', game?.name ?? 'Game', settings);
     router.replace('/play');
   };
-
-  const handleStart = () => doStart(roundLength, difficulty);
 
   if (!game) {
     return (
@@ -138,177 +172,202 @@ export default function SetupScreen() {
   if (isQuick && !ready) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading…</Text>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 16 }]}>Loading…</Text>
       </View>
     );
   }
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: `Set Up ${game.name}`,
-          headerShown: true,
-          headerStyle: { backgroundColor: colors.background },
-          headerTitleStyle: { fontFamily: 'Inter_700Bold', color: colors.foreground },
-          headerTintColor: gameColor,
-          headerShadowVisible: false,
-        }}
-      />
-      <ScrollView
-        style={{ backgroundColor: colors.background }}
-        contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Game banner */}
-        <View style={[styles.banner, { backgroundColor: gameColor + '18', borderRadius: colors.radius }]}>
-          <View style={[styles.bannerIcon, { backgroundColor: gameColor }]}>
-            <Feather name={game.iconName as any} size={24} color="#FFF" />
-          </View>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={colors.foreground} />
+          </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.bannerName, { color: gameColor }]}>{game.name}</Text>
-            <Text style={[styles.bannerMeta, { color: colors.mutedForeground }]}>
-              {game.estimatedRoundLength} · {game.hostType}
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Before we unleash the fun…</Text>
+            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
+              A few tiny details so the app can host properly.
             </Text>
           </View>
         </View>
 
-        {/* Players */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Players</Text>
-          <View style={styles.countRow}>
-            <Pressable
-              onPress={() => setPlayerCount(c => Math.max(2, c - 1))}
-              style={[styles.countBtn, { backgroundColor: colors.muted }]}
-            >
-              <Feather name="minus" size={20} color={colors.foreground} />
-            </Pressable>
-            <Text style={[styles.countNum, { color: gameColor }]}>{playerCount}</Text>
-            <Pressable
-              onPress={() => setPlayerCount(c => Math.min(10, c + 1))}
-              style={[styles.countBtn, { backgroundColor: colors.muted }]}
-            >
-              <Feather name="plus" size={20} color={colors.foreground} />
-            </Pressable>
+        <ScrollView
+          contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Game banner */}
+          <View style={[styles.gameBanner, { backgroundColor: gameColor + '14', borderRadius: 18 }]}>
+            <View style={[styles.bannerIcon, { backgroundColor: gameColor }]}>
+              <Feather name={game.iconName as any} size={22} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bannerName, { color: gameColor }]}>{game.name}</Text>
+              <Text style={[styles.bannerMeta, { color: colors.mutedForeground }]}>
+                {game.estimatedRoundLength} · {game.hostType}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.names}>
-            {Array.from({ length: playerCount }, (_, i) => (
-              <View key={i} style={[styles.nameInput, { backgroundColor: colors.muted, borderRadius: 10 }]}>
-                <Text style={[styles.nameIndex, { color: gameColor }]}>{i + 1}</Text>
-                <TextInput
-                  style={[styles.nameField, { color: colors.foreground }]}
-                  placeholder={`Player ${i + 1}`}
-                  placeholderTextColor={colors.mutedForeground}
-                  value={playerNames[i] ?? ''}
-                  onChangeText={v => setName(i, v)}
-                  returnKeyType="next"
-                  maxLength={20}
+          {/* Players */}
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Who's playing?</Text>
+            <View style={styles.countRow}>
+              <Pressable
+                onPress={() => setPlayerCount(c => Math.max(2, c - 1))}
+                style={[styles.countBtn, { backgroundColor: colors.muted }]}
+              >
+                <Feather name="minus" size={20} color={colors.foreground} />
+              </Pressable>
+              <Text style={[styles.countNum, { color: gameColor }]}>{playerCount}</Text>
+              <Pressable
+                onPress={() => setPlayerCount(c => Math.min(10, c + 1))}
+                style={[styles.countBtn, { backgroundColor: colors.muted }]}
+              >
+                <Feather name="plus" size={20} color={colors.foreground} />
+              </Pressable>
+            </View>
+            <View style={styles.playerChips}>
+              {Array.from({ length: playerCount }, (_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.playerChip,
+                    {
+                      backgroundColor: colors.muted,
+                      borderRadius: 14,
+                      borderLeftWidth: 3,
+                      borderLeftColor: gameColor,
+                    },
+                  ]}
+                >
+                  <View style={[styles.playerNum, { backgroundColor: gameColor }]}>
+                    <Text style={styles.playerNumText}>{i + 1}</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.playerInput, { color: colors.foreground }]}
+                    placeholder={`Player ${i + 1}`}
+                    placeholderTextColor={colors.mutedForeground}
+                    value={playerNames[i] ?? ''}
+                    onChangeText={v => setName(i, v)}
+                    returnKeyType="next"
+                    maxLength={18}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Round length */}
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>How long?</Text>
+            <View style={styles.optRow}>
+              {ROUND_OPTIONS.map(opt => (
+                <LargeOptionCard
+                  key={opt.value}
+                  opt={opt}
+                  selected={roundLength === opt.value}
+                  onPress={() => setRoundLength(opt.value)}
+                  color={gameColor}
                 />
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Options */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Options</Text>
+          {/* Age */}
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Who's in the mix?</Text>
+            <View style={styles.optRow}>
+              {AGE_OPTIONS.map(opt => (
+                <LargeOptionCard
+                  key={opt.value}
+                  opt={opt}
+                  selected={ageRange === opt.value}
+                  onPress={() => setAgeRange(opt.value)}
+                  color={gameColor}
+                />
+              ))}
+            </View>
+          </View>
 
-          <OptionRow
-            label="Age range"
-            options={[
-              { value: 'easy' as GameSettings['ageRange'], label: '4–7' },
-              { value: 'mixed' as GameSettings['ageRange'], label: 'Mixed' },
-              { value: 'all' as GameSettings['ageRange'], label: '10+' },
+          {/* Difficulty */}
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Difficulty?</Text>
+            <View style={styles.optRow}>
+              {DIFF_OPTIONS.map(opt => (
+                <LargeOptionCard
+                  key={opt.value}
+                  opt={opt}
+                  selected={difficulty === opt.value}
+                  onPress={() => setDifficulty(opt.value)}
+                  color={gameColor}
+                />
+              ))}
+            </View>
+          </View>
+
+          <HowToPlay game={game} color={gameColor} />
+
+          {/* Start button */}
+          <AnimatedPressable
+            onPress={() => doStart(roundLength, difficulty)}
+            style={[
+              styles.startBtn,
+              { backgroundColor: gameColor },
             ]}
-            value={ageRange}
-            onChange={setAgeRange}
-            color={gameColor}
-          />
-
-          <OptionRow
-            label="Round length"
-            options={[
-              { value: 'quick' as GameSettings['roundLength'], label: 'Quick' },
-              { value: 'normal' as GameSettings['roundLength'], label: 'Normal' },
-              { value: 'long' as GameSettings['roundLength'], label: 'Long' },
-            ]}
-            value={roundLength}
-            onChange={setRoundLength}
-            color={gameColor}
-          />
-
-          <OptionRow
-            label="Difficulty"
-            options={[
-              { value: 'easy' as GameSettings['difficulty'], label: 'Easy' },
-              { value: 'mixed' as GameSettings['difficulty'], label: 'Mixed' },
-              { value: 'spicy' as GameSettings['difficulty'], label: 'Spicy' },
-            ]}
-            value={difficulty}
-            onChange={setDifficulty}
-            color={gameColor}
-          />
-        </View>
-
-        {/* How to play */}
-        <HowToPlay game={game} color={gameColor} />
-
-        <PrimaryButton
-          label="Let's Play!"
-          onPress={handleStart}
-          variant="primary"
-          size="xl"
-          fullWidth
-        />
-      </ScrollView>
-    </>
-  );
-}
-
-function HowToPlay({ game, color }: { game: (typeof GAMES)[0]; color: string }) {
-  const colors = useColors();
-  const [open, setOpen] = useState(false);
-
-  const instructions: Record<string, string> = {
-    'alphabet-showdown': 'The app picks a category and a starting letter. Players take turns naming something from the category that starts with that letter. Score a point for every valid answer. Try "Next Letter" or "New Category" to keep things fresh. A timer is optional.',
-    'what-am-i': 'The app picks a mystery answer and reveals clues one at a time. Everyone tries to guess what it is. The fewer clues you need, the more points you score — so hold back if you think you know it!',
-    'category-dash': 'The app gives you one letter and five categories. Race to think of a word for each category that starts with that letter. Use the score buttons to award points. Hit "New Round" for a fresh set.',
-    'forbidden-word': 'One player is the reader. They see a target word and must get others to guess it — without saying any of the forbidden words listed. Use the timer, and tap Got It or Skip.',
-  };
-
-  return (
-    <Pressable
-      onPress={() => setOpen(o => !o)}
-      style={[styles.howToPlay, { backgroundColor: colors.card, borderRadius: colors.radius }]}
-    >
-      <View style={styles.howToHeader}>
-        <Feather name="info" size={16} color={color} />
-        <Text style={[styles.howToTitle, { color: colors.foreground }]}>How to play</Text>
-        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          >
+            <Feather name="play-circle" size={22} color="#FFF" />
+            <Text style={styles.startBtnText}>Start Hosting</Text>
+          </AnimatedPressable>
+        </ScrollView>
       </View>
-      {open && (
-        <Text style={[styles.howToText, { color: colors.mutedForeground }]}>
-          {instructions[game.id] ?? 'Follow the prompts on screen to play.'}
-        </Text>
-      )}
-    </Pressable>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { fontFamily: 'Inter_400Regular', fontSize: 16 },
-  container: { padding: 20, gap: 16 },
-  banner: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  headerTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    letterSpacing: -0.3,
+  },
+  headerSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    marginTop: 3,
+    lineHeight: 18,
+  },
+  container: {
+    padding: 16,
+    gap: 14,
+  },
+  gameBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     gap: 14,
   },
   bannerIcon: {
-    width: 48,
-    height: 48,
+    width: 46,
+    height: 46,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -337,62 +396,71 @@ const styles = StyleSheet.create({
     gap: 28,
   },
   countBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
   },
   countNum: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 40,
-    minWidth: 48,
+    fontSize: 44,
+    minWidth: 52,
     textAlign: 'center',
   },
-  names: { gap: 8 },
-  nameInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  nameIndex: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 15,
-    width: 22,
-    textAlign: 'center',
-  },
-  nameField: {
-    flex: 1,
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    paddingVertical: 0,
-  },
-  optionRow: { gap: 8 },
-  optionLabel: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 13,
-  },
-  optionButtons: {
-    flexDirection: 'row',
+  playerChips: {
     gap: 8,
   },
-  optionBtn: {
-    flex: 1,
-    paddingVertical: 10,
+  playerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  playerNum: {
+    width: 40,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionBtnText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
+  playerNumText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 15,
+    color: '#FFF',
   },
-  howToPlay: {
+  playerInput: {
+    flex: 1,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  optRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  optCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    gap: 6,
+  },
+  optLabel: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  optSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  howToCard: {
     padding: 16,
     gap: 10,
   },
-  howToHeader: {
+  howToRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -406,5 +474,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     lineHeight: 21,
+  },
+  startBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 18,
+    paddingVertical: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+    marginTop: 4,
+  },
+  startBtnText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    color: '#FFF',
   },
 });

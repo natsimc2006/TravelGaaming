@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import AnimatedPressable from '@/components/AnimatedPressable';
 import { GAME_COLORS } from '@/data/gameColors';
 import type { GameMeta } from '@/data/games';
 import { useColors } from '@/hooks/useColors';
@@ -18,16 +19,24 @@ const SETTING_ICONS: Record<string, string> = {
   Bedtime: 'moon',
 };
 
-const ENERGY_BADGE: Record<string, { label: string; color: string }> = {
-  Calm: { label: 'Calm', color: '#10B981' },
-  Medium: { label: 'Medium', color: '#F59E0B' },
-  Chaotic: { label: 'Chaotic', color: '#EF4444' },
+const ENERGY_META: Record<string, { label: string; emoji: string }> = {
+  Calm: { label: 'Calm', emoji: '😴' },
+  Medium: { label: 'Thinky', emoji: '🤔' },
+  Chaotic: { label: 'Silly', emoji: '🤪' },
+};
+
+const SOFT_COLORS: Record<string, string> = {
+  alphabet: '#FFE3D6',
+  whatAmI: '#DDF7F4',
+  categoryDash: '#ECE5FF',
+  forbiddenWord: '#FFF3C4',
 };
 
 export default function GameCard({ game, compact = false }: GameCardProps) {
   const colors = useColors();
   const gameColor = GAME_COLORS[game.colorKey as keyof typeof GAME_COLORS] ?? colors.primary;
-  const energy = ENERGY_BADGE[game.energyLevel];
+  const softColor = SOFT_COLORS[game.colorKey] ?? colors.muted;
+  const energy = ENERGY_META[game.energyLevel];
 
   const handlePress = () => {
     router.push({ pathname: '/setup', params: { gameId: game.id } });
@@ -35,16 +44,15 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
 
   if (compact) {
     return (
-      <Pressable
+      <AnimatedPressable
         onPress={handlePress}
-        style={({ pressed }) => [
+        style={[
           styles.compactCard,
           {
             backgroundColor: colors.card,
-            borderRadius: colors.radius,
+            borderRadius: 14,
             borderLeftWidth: 4,
             borderLeftColor: gameColor,
-            opacity: pressed ? 0.8 : 1,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
@@ -53,176 +61,171 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
           },
         ]}
       >
-        <View style={[styles.compactIcon, { backgroundColor: gameColor + '18' }]}>
+        <View style={[styles.compactIcon, { backgroundColor: softColor }]}>
           <Feather name={game.iconName as any} size={20} color={gameColor} />
         </View>
         <View style={styles.compactInfo}>
           <Text style={[styles.compactName, { color: colors.foreground }]}>{game.name}</Text>
           <Text style={[styles.compactMeta, { color: colors.mutedForeground }]}>
-            {game.settings[0]} · {game.ageRange}
+            {game.settings[0]} · Ages {game.ageRange}
           </Text>
         </View>
         <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-      </Pressable>
+      </AnimatedPressable>
     );
   }
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={handlePress}
-      style={({ pressed }) => [
+      style={[
         styles.card,
         {
-          backgroundColor: colors.card,
-          borderRadius: colors.radius + 4,
-          opacity: pressed ? 0.82 : 1,
+          backgroundColor: softColor,
+          borderRadius: 20,
           shadowColor: gameColor,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.12,
-          shadowRadius: 12,
-          elevation: 3,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.15,
+          shadowRadius: 16,
+          elevation: 4,
         },
       ]}
+      scaleDown={0.97}
     >
-      <View style={[styles.header, { backgroundColor: gameColor + '14' }]}>
+      {/* Card header row */}
+      <View style={styles.headerRow}>
         <View style={[styles.iconCircle, { backgroundColor: gameColor }]}>
-          <Feather name={game.iconName as any} size={24} color="#FFF" />
+          <Feather name={game.iconName as any} size={22} color="#FFF" />
         </View>
-        <View style={styles.headerRight}>
-          <View style={[styles.energyBadge, { backgroundColor: energy.color + '22' }]}>
-            <Text style={[styles.energyLabel, { color: energy.color }]}>{energy.label}</Text>
+        <View style={styles.badges}>
+          <View style={[styles.badge, { backgroundColor: '#FFF' + 'CC' }]}>
+            <Text style={[styles.badgeText, { color: gameColor }]}>Ages {game.ageRange}</Text>
           </View>
-          {game.hostType === 'App hosts' && (
-            <View style={[styles.hostBadge, { backgroundColor: colors.primary + '18' }]}>
-              <Feather name="smartphone" size={10} color={colors.primary} />
-              <Text style={[styles.hostLabel, { color: colors.primary }]}>App hosts</Text>
+          <View style={[styles.badge, { backgroundColor: '#FFF' + 'CC' }]}>
+            <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>
+              {energy.emoji} {energy.label}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Name + description */}
+      <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
+      <Text style={[styles.description, { color: colors.mutedForeground }]}>{game.description}</Text>
+
+      {/* Footer row */}
+      <View style={styles.footer}>
+        <View style={styles.settingChips}>
+          {game.settings.slice(0, 2).map(s => (
+            <View key={s} style={[styles.settingChip, { backgroundColor: gameColor + '20' }]}>
+              <Feather name={SETTING_ICONS[s] as any} size={10} color={gameColor} />
+              <Text style={[styles.settingText, { color: gameColor }]}>{s}</Text>
+            </View>
+          ))}
+          {game.hostType === 'App hosts' ? (
+            <View style={[styles.settingChip, { backgroundColor: '#FFF' + 'CC' }]}>
+              <Feather name="smartphone" size={10} color={colors.mutedForeground} />
+              <Text style={[styles.settingText, { color: colors.mutedForeground }]}>App hosts</Text>
+            </View>
+          ) : (
+            <View style={[styles.settingChip, { backgroundColor: '#FFF' + 'CC' }]}>
+              <Feather name="mic" size={10} color={colors.mutedForeground} />
+              <Text style={[styles.settingText, { color: colors.mutedForeground }]}>Reader needed</Text>
             </View>
           )}
         </View>
-      </View>
-
-      <View style={styles.body}>
-        <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
-        <Text style={[styles.description, { color: colors.mutedForeground }]}>{game.description}</Text>
-
-        <View style={styles.chips}>
-          {game.settings.map(s => (
-            <View key={s} style={[styles.chip, { backgroundColor: colors.muted }]}>
-              <Feather name={SETTING_ICONS[s] as any} size={10} color={colors.mutedForeground} />
-              <Text style={[styles.chipText, { color: colors.mutedForeground }]}>{s}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.footer}>
-          <View style={styles.metaItem}>
-            <Feather name="users" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-              {game.minPlayers === game.maxPlayers ? `${game.minPlayers}` : `${game.minPlayers}–${game.maxPlayers}`} players
-            </Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Feather name="clock" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{game.estimatedRoundLength}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Feather name="user" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>Ages {game.ageRange}</Text>
-          </View>
+        <View style={[styles.playBtn, { backgroundColor: gameColor }]}>
+          <Text style={styles.playBtnText}>Play now</Text>
+          <Feather name="arrow-right" size={14} color="#FFF" />
         </View>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    overflow: 'hidden',
+    padding: 18,
     marginBottom: 16,
+    gap: 10,
   },
-  header: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerRight: {
+  badges: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    flex: 1,
+    marginLeft: 10,
   },
-  energyBadge: {
+  badge: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 100,
   },
-  energyLabel: {
+  badgeText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 11,
-  },
-  hostBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 100,
-    gap: 4,
-  },
-  hostLabel: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 11,
-  },
-  body: {
-    padding: 16,
-    paddingTop: 0,
-    gap: 10,
   },
   gameName: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 20,
+    fontSize: 22,
+    letterSpacing: -0.3,
   },
   description: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     lineHeight: 20,
   },
-  chips: {
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    gap: 10,
+  },
+  settingChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+    flex: 1,
   },
-  chip: {
+  settingChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 100,
   },
-  chipText: {
+  settingText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
   },
-  footer: {
-    flexDirection: 'row',
-    gap: 16,
-    paddingTop: 4,
-  },
-  metaItem: {
+  playBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 100,
   },
-  metaText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
+  playBtnText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 13,
+    color: '#FFF',
   },
   compactCard: {
     flexDirection: 'row',
@@ -232,9 +235,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   compactIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -242,7 +245,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   compactName: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
     fontSize: 15,
   },
   compactMeta: {
