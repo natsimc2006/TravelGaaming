@@ -87,7 +87,7 @@ function PromptFade({ children, triggerKey }: { children: React.ReactNode; trigg
 export default function PlayScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { session, addPlayerScore, advanceRound, advancePlayer, newLetter, newCategory, revealClue, finishGame, resetGame } = useGame();
+  const { session, addPlayerScore, advanceRound, advancePlayer, newLetter, newCategory, revealClue, finishGame, resetGame, bumpStreak, breakStreak } = useGame();
   const [hostMsg, setHostMsg] = useState('');
   const [hostMsgVisible, setHostMsgVisible] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -258,7 +258,7 @@ export default function PlayScreen() {
               timerRunning={timerRunning}
               timerKey={timerKey}
               onTimerToggle={() => setTimerRunning(r => !r)}
-              onTimerEnd={() => { setTimerRunning(false); showHostMsg('skip'); }}
+              onTimerEnd={() => { setTimerRunning(false); showHostMsg('skip'); if (session.isSoloMode) breakStreak(); }}
               onScore={(id: string) => {
                 addPlayerScore(id, 1);
                 showHostMsg('correct');
@@ -266,7 +266,13 @@ export default function PlayScreen() {
               }}
               onNextLetter={() => { newLetter(); }}
               onNewCategory={() => { newCategory(); }}
-              onNextRound={() => { voice('roundEnd'); advanceRound(); }}
+              onNextRound={(scored: boolean) => {
+                if (session.isSoloMode) {
+                  if (scored) bumpStreak(); else breakStreak();
+                }
+                voice('roundEnd');
+                advanceRound();
+              }}
               currentPlayer={currentPlayer}
             />
           )}
@@ -397,9 +403,15 @@ function BigLetterCard({ letter, color }: { letter: string; color: string }) {
   );
 }
 
-function ScoreTapGrid({ session, currentPlayer, color }: any) {
+function ScoreTapGrid({ session, currentPlayer, color, onScore }: any) {
   const colors = useColors();
   const { addPlayerScore } = useGame();
+
+  const handleTap = (playerId: string) => {
+    addPlayerScore(playerId, 1);
+    onScore?.(playerId);
+  };
+
   return (
     <View>
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Tap to award a point</Text>
@@ -409,7 +421,7 @@ function ScoreTapGrid({ session, currentPlayer, color }: any) {
           return (
             <AnimatedPressable
               key={p.id}
-              onPress={() => addPlayerScore(p.id, 1)}
+              onPress={() => handleTap(p.id)}
               style={[styles.scoreTapCard, { backgroundColor: isCurrent ? color : colors.muted, borderRadius: 14, flex: 1 }]}
               scaleDown={0.93}
             >
@@ -427,16 +439,67 @@ function ScoreTapGrid({ session, currentPlayer, color }: any) {
   );
 }
 
+function SoloStreakBadge({ streak, best, color }: { streak: number; best: number; color: string }) {
+  const colors = useColors();
+  if (streak === 0 && best === 0) return null;
+  return (
+    <View style={[soloStyles.streakRow]}>
+      {streak > 0 && (
+        <View style={[soloStyles.streakBadge, { backgroundColor: color }]}>
+          <Text style={soloStyles.streakText}>
+            {streak >= 3 ? '🔥' : '⚡'} {streak} in a row{streak >= 5 ? '!' : ''}
+          </Text>
+        </View>
+      )}
+      {best > 0 && (
+        <View style={[soloStyles.bestBadge, { backgroundColor: color + '18', borderColor: color + '40', borderWidth: 1 }]}>
+          <Text style={[soloStyles.bestText, { color }]}>Best: {best}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const soloStyles = StyleSheet.create({
+  streakRow: { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
+  streakBadge: { borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8 },
+  streakText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: '#FFF' },
+  bestBadge: { borderRadius: 100, paddingHorizontal: 12, paddingVertical: 8 },
+  bestText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+});
+
 function AlphabetGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning, timerKey, onTimerToggle, onTimerEnd, onScore, onNextLetter, onNewCategory, onNextRound, currentPlayer }: any) {
   const colors = useColors();
   const s = session.alphabetState!;
+  const isSolo = session.isSoloMode;
+  const [scoredThisRound, setScoredThisRound] = useState(false);
+
+  useEffect(() => {
+    setScoredThisRound(false);
+  }, [session.round]);
+
+  const handleScore = (id: string) => {
+    onScore(id);
+    setScoredThisRound(true);
+  };
+
   return (
     <View style={styles.gameBlock}>
+      {isSolo && s.soloStreak >= 0 && (
+        <SoloStreakBadge streak={s.soloStreak} best={s.bestStreak} color={gameColor} />
+      )}
+
+      {!isSolo && currentPlayer && (
+        <PlayerTurnCard player={currentPlayer} color={gameColor} />
+      )}
+
       <PromptFade triggerKey={s.currentCategory.id}>
         <View style={[styles.categoryCard, { backgroundColor: gameColor + '14', borderRadius: 18 }]}>
           <Text style={[styles.categoryHint, { color: colors.mutedForeground }]}>Category</Text>
           <Text style={[styles.categoryName, { color: colors.foreground }]}>{s.currentCategory.name}</Text>
-          <Text style={[styles.categoryHint, { color: colors.mutedForeground }]}>Think fast…</Text>
+          <Text style={[styles.categoryHint, { color: colors.mutedForeground }]}>
+            {isSolo ? 'How many can you name?' : 'Think fast…'}
+          </Text>
         </View>
       </PromptFade>
 
@@ -445,12 +508,12 @@ function AlphabetGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning
       </View>
 
       <TimerRow timerKey={timerKey} timerSeconds={s.timerSeconds} timerRunning={timerRunning} onToggle={onTimerToggle} onEnd={onTimerEnd} color={gameColor} />
-      <ScoreTapGrid session={session} currentPlayer={currentPlayer} color={gameColor} />
+      <ScoreTapGrid session={session} currentPlayer={currentPlayer} color={gameColor} onScore={handleScore} />
 
       <View style={styles.actionRow}>
         <ActionBtn label="New Letter" icon="refresh-cw" onPress={onNextLetter} color={colors.muted} textColor={colors.foreground} />
         <ActionBtn label="New Category" icon="shuffle" onPress={onNewCategory} color={colors.muted} textColor={colors.foreground} />
-        <ActionBtn label="Next Round" icon="arrow-right" onPress={onNextRound} color={gameColor} size="md" />
+        <ActionBtn label="Next Round" icon="arrow-right" onPress={() => onNextRound(scoredThisRound)} color={gameColor} size="md" />
       </View>
     </View>
   );

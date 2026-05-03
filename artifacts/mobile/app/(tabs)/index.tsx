@@ -14,10 +14,11 @@ import GameCard from '@/components/GameCard';
 import { GAMES, type GameMeta, type GameSetting, type EnergyLevel } from '@/data/games';
 import { useColors } from '@/hooks/useColors';
 import { loadRecentGames } from '@/utils/storage';
+import { loadFamilyStats, type FamilyStats } from '@/utils/progression';
 
 const SUBTITLES = [
   "Ready to rescue the next 'I'm bored' moment?",
-  'Press play. We\'ll run the brain.',
+  "Press play. We'll run the brain.",
   'Car trip about to get competitive.',
   'Family games, hosted for you.',
   'Rules handled. Fun unlocked.',
@@ -60,7 +61,7 @@ const MOODS = [
   { label: '😴 Calm', value: 'Calm', color: '#4ECDC4', line: 'Good choice. Peaceful chaos incoming.' },
   { label: '😄 Fun', value: 'Fun', color: '#FF6B3D', line: 'Fun mode: engaged. Hold on.' },
   { label: '⚡ Focused', value: 'Medium', color: '#F59E0B', line: 'The thinking caps are on.' },
-  { label: '🤪 Chaos', value: 'Chaotic', color: '#8B5CF6', line: 'Good choice. We\'ll keep the chaos at a manageable level.' },
+  { label: '🤪 Chaos', value: 'Chaotic', color: '#8B5CF6', line: "Good choice. We'll keep the chaos at a manageable level." },
 ];
 
 function RotatingSubtitle() {
@@ -88,13 +89,16 @@ function RotatingSubtitle() {
 function MoodStrip() {
   const colors = useColors();
   const [selected, setSelected] = useState<string | null>(null);
-
   const selectedMood = MOODS.find(m => m.value === selected);
 
   return (
     <View style={styles.moodSection}>
       <Text style={[styles.moodTitle, { color: colors.foreground }]}>What's the mood?</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.moodRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.moodRow}
+      >
         {MOODS.map(m => {
           const isSelected = selected === m.value;
           return (
@@ -133,12 +137,51 @@ function MoodStrip() {
   );
 }
 
-function HorizontalGameRow({ games }: { games: GameMeta[] }) {
+function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
   const colors = useColors();
+  if (stats.totalGamesPlayed === 0) return null;
+
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
+    <View style={[styles.statsCard, { backgroundColor: colors.softOrange, borderRadius: 20 }]}>
+      <View style={styles.statsHeader}>
+        <Text style={{ fontSize: 20 }}>📊</Text>
+        <Text style={[styles.statsTitle, { color: colors.foreground }]}>Family Stats</Text>
+      </View>
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: colors.primary }]}>{stats.totalGamesPlayed}</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Games played</Text>
+        </View>
+        {stats.favouriteGameName && (
+          <View style={[styles.statItem, { flex: 2 }]}>
+            <Text style={[styles.statValue, { color: colors.primary }]} numberOfLines={1}>
+              {stats.favouriteGameName}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Favourite game</Text>
+          </View>
+        )}
+        {stats.longestStreak > 0 && (
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.longestStreak}</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Best streak</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function HorizontalGameRow({ games }: { games: GameMeta[] }) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.hRow}
+      snapToInterval={316}
+      decelerationRate="fast"
+    >
       {games.map(g => (
-        <View key={g.id} style={{ width: 300, marginRight: 14 }}>
+        <View key={g.id} style={{ width: 300, marginRight: 16 }}>
           <GameCard game={g} />
         </View>
       ))}
@@ -146,13 +189,52 @@ function HorizontalGameRow({ games }: { games: GameMeta[] }) {
   );
 }
 
+function QuickPlayButton() {
+  const colors = useColors();
+  const [loading, setLoading] = useState(false);
+
+  const handleQuickPlay = async () => {
+    setLoading(true);
+    const recent = await loadRecentGames();
+    await new Promise(r => setTimeout(r, 900));
+    const avoidId = recent[0];
+    const candidates = GAMES.filter(g => g.id !== avoidId);
+    const pick = candidates[Math.floor(Math.random() * candidates.length)] ?? GAMES[0];
+    setLoading(false);
+    router.push({ pathname: '/setup', params: { gameId: pick.id, quick: '1' } });
+  };
+
+  return (
+    <Pressable
+      onPress={handleQuickPlay}
+      disabled={loading}
+      style={({ pressed }) => [
+        styles.saveBtn,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+          opacity: loading ? 0.8 : 1,
+        },
+      ]}
+    >
+      <Feather name="zap" size={18} color={colors.primary} />
+      <Text style={[styles.saveBtnText, { color: colors.foreground }]}>
+        {loading ? 'Picking something good…' : 'Save the Moment'}
+      </Text>
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [recentGameIds, setRecentGameIds] = useState<string[]>([]);
+  const [familyStats, setFamilyStats] = useState<FamilyStats | null>(null);
 
   useEffect(() => {
     loadRecentGames().then(setRecentGameIds);
+    loadFamilyStats().then(setFamilyStats);
   }, []);
 
   const recentGames = recentGameIds
@@ -194,24 +276,11 @@ export default function HomeScreen() {
           <Feather name="play-circle" size={20} color="#FFF" />
           <Text style={styles.startBtnText}>Start a Game</Text>
         </Pressable>
-        <Pressable
-          onPress={() => {
-            const random = GAMES[Math.floor(Math.random() * GAMES.length)];
-            router.push({ pathname: '/setup', params: { gameId: random.id, quick: '1' } });
-          }}
-          style={({ pressed }) => [
-            styles.saveBtn,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
-          ]}
-        >
-          <Feather name="zap" size={18} color={colors.primary} />
-          <Text style={[styles.saveBtnText, { color: colors.foreground }]}>Save the Moment</Text>
-        </Pressable>
+        <QuickPlayButton />
       </View>
+
+      {/* Family Stats */}
+      {familyStats && <FamilyStatsCard stats={familyStats} />}
 
       {/* Mood strip */}
       <MoodStrip />
@@ -247,11 +316,7 @@ export default function HomeScreen() {
         onPress={() => router.push('/packs')}
         style={({ pressed }) => [
           styles.packTeaser,
-          {
-            backgroundColor: colors.softTeal,
-            borderRadius: 20,
-            opacity: pressed ? 0.85 : 1,
-          },
+          { backgroundColor: colors.softTeal, borderRadius: 20, opacity: pressed ? 0.85 : 1 },
         ]}
       >
         <Text style={{ fontSize: 28 }}>🎁</Text>
@@ -291,32 +356,11 @@ function SectionHeader({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    gap: 24,
-  },
-  heroBg: {
-    padding: 24,
-    alignItems: 'center',
-    gap: 12,
-  },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logoIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  appName: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 34,
-    letterSpacing: -0.5,
-  },
+  container: { paddingHorizontal: 20, gap: 24 },
+  heroBg: { padding: 24, alignItems: 'center', gap: 12 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  logoIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  appName: { fontFamily: 'Inter_700Bold', fontSize: 34, letterSpacing: -0.5 },
   subtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
@@ -324,9 +368,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 10,
   },
-  ctas: {
-    gap: 12,
-  },
+  ctas: { gap: 12 },
   startBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,11 +382,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 6,
   },
-  startBtnText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 19,
-    color: '#FFF',
-  },
+  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 19, color: '#FFF' },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -359,76 +397,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  saveBtnText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 17,
-  },
-  moodSection: {
-    gap: 10,
-  },
-  moodTitle: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 17,
-  },
-  moodRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingBottom: 4,
-  },
-  moodPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderRadius: 100,
-  },
-  moodPillText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-  },
-  moodLine: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 13,
-    fontStyle: 'italic',
-  },
-  section: {
-    gap: 12,
-  },
-  sectionHeader: {
-    gap: 3,
-  },
-  sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 18,
-  },
-  seeAll: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
-  },
-  micro: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    fontStyle: 'italic',
-  },
-  hRow: {
-    paddingBottom: 4,
-  },
-  packTeaser: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 18,
-    gap: 14,
-  },
-  packTitle: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 15,
-  },
-  packSub: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    marginTop: 2,
-  },
+  saveBtnText: { fontFamily: 'Inter_700Bold', fontSize: 17 },
+  statsCard: { padding: 18, gap: 14 },
+  statsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  statsTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  statsRow: { flexDirection: 'row', gap: 16 },
+  statItem: { flex: 1, gap: 3 },
+  statValue: { fontFamily: 'Inter_700Bold', fontSize: 20 },
+  statLabel: { fontFamily: 'Inter_400Regular', fontSize: 12 },
+  moodSection: { gap: 10 },
+  moodTitle: { fontFamily: 'Inter_700Bold', fontSize: 17 },
+  moodRow: { flexDirection: 'row', gap: 10, paddingBottom: 4, paddingHorizontal: 2 },
+  moodPill: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 100 },
+  moodPillText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  moodLine: { fontFamily: 'Inter_500Medium', fontSize: 13, fontStyle: 'italic' },
+  section: { gap: 12 },
+  sectionHeader: { gap: 3 },
+  sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 18 },
+  seeAll: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  micro: { fontFamily: 'Inter_400Regular', fontSize: 13, fontStyle: 'italic' },
+  hRow: { paddingBottom: 4, paddingHorizontal: 2 },
+  packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
+  packTitle: { fontFamily: 'Inter_700Bold', fontSize: 15 },
+  packSub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2 },
 });

@@ -15,7 +15,7 @@ import { GAME_COLORS } from '@/data/gameColors';
 import { GAMES } from '@/data/games';
 import { useGame } from '@/context/GameContext';
 import { useColors } from '@/hooks/useColors';
-import type { GameSettings, Player } from '@/utils/gameEngine';
+import type { GameSettings, PlayStyle, Player } from '@/utils/gameEngine';
 import { loadSettings, savePlayerNames } from '@/utils/storage';
 
 function genId() {
@@ -101,6 +101,48 @@ function HowToPlay({ game, color }: { game: (typeof GAMES)[0]; color: string }) 
   );
 }
 
+function PlayStyleToggle({
+  value,
+  onChange,
+  color,
+}: {
+  value: PlayStyle;
+  onChange: (v: PlayStyle) => void;
+  color: string;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+      <Text style={[styles.cardTitle, { color: colors.foreground }]}>Play style</Text>
+      <View style={styles.toggleRow}>
+        {([
+          { value: 'turns' as PlayStyle, label: 'Take turns', sub: 'Rotate players each round', emoji: '🔄' },
+          { value: 'free' as PlayStyle, label: 'Free play', sub: 'Anyone can answer', emoji: '🌀' },
+        ] as const).map(opt => (
+          <AnimatedPressable
+            key={opt.value}
+            onPress={() => onChange(opt.value)}
+            style={[
+              styles.toggleCard,
+              {
+                backgroundColor: value === opt.value ? color + '18' : colors.muted,
+                borderRadius: 14,
+                borderWidth: 2,
+                borderColor: value === opt.value ? color : 'transparent',
+              },
+            ]}
+            scaleDown={0.96}
+          >
+            <Text style={{ fontSize: 22 }}>{opt.emoji}</Text>
+            <Text style={[styles.optLabel, { color: value === opt.value ? color : colors.foreground }]}>{opt.label}</Text>
+            <Text style={[styles.optSub, { color: colors.mutedForeground }]}>{opt.sub}</Text>
+          </AnimatedPressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export default function SetupScreen() {
   const { gameId, quick } = useLocalSearchParams<{ gameId: string; quick?: string }>();
   const colors = useColors();
@@ -116,7 +158,10 @@ export default function SetupScreen() {
   const [ageRange, setAgeRange] = useState<GameSettings['ageRange']>('mixed');
   const [roundLength, setRoundLength] = useState<GameSettings['roundLength']>('normal');
   const [difficulty, setDifficulty] = useState<GameSettings['difficulty']>('mixed');
+  const [playStyle, setPlayStyle] = useState<PlayStyle>('turns');
   const [ready, setReady] = useState(false);
+
+  const isSolo = playerCount === 1;
 
   useEffect(() => {
     loadSettings().then(s => {
@@ -144,10 +189,12 @@ export default function SetupScreen() {
   };
 
   const doStart = (rl: GameSettings['roundLength'], diff: GameSettings['difficulty']) => {
-    const activePlayers: Player[] = Array.from({ length: playerCount }, (_, i) => ({
-      id: genId(),
-      name: playerNames[i]?.trim() || `Player ${i + 1}`,
-    }));
+    const activePlayers: Player[] = isSolo
+      ? [{ id: genId(), name: playerNames[0]?.trim() || 'Solo Player' }]
+      : Array.from({ length: playerCount }, (_, i) => ({
+          id: genId(),
+          name: playerNames[i]?.trim() || `Player ${i + 1}`,
+        }));
     savePlayerNames(activePlayers.map(p => p.name));
     const settings: GameSettings = {
       playerCount,
@@ -156,6 +203,7 @@ export default function SetupScreen() {
       roundLength: rl,
       difficulty: diff,
       teams: false,
+      playStyle: isSolo ? 'turns' : playStyle,
     };
     startGame(gameId ?? '', game?.name ?? 'Game', settings);
     router.replace('/play');
@@ -172,7 +220,9 @@ export default function SetupScreen() {
   if (isQuick && !ready) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 16 }]}>Loading…</Text>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 16, textAlign: 'center' }]}>
+          Give me a second{'\n'}picking something good…
+        </Text>
       </View>
     );
   }
@@ -181,21 +231,24 @@ export default function SetupScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color={colors.foreground} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Before we unleash the fun…</Text>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+              {isSolo ? 'Solo Challenge' : 'Before we unleash the fun…'}
+            </Text>
             <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-              A few tiny details so the app can host properly.
+              {isSolo
+                ? 'Just you. The app will host your solo session.'
+                : 'A few tiny details so the app can host properly.'}
             </Text>
           </View>
         </View>
 
         <ScrollView
-          contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -212,12 +265,27 @@ export default function SetupScreen() {
             </View>
           </View>
 
+          {/* Solo banner */}
+          {isSolo && (
+            <View style={[styles.soloBanner, { backgroundColor: gameColor + '14', borderRadius: 16 }]}>
+              <Text style={{ fontSize: 28 }}>🎯</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.soloTitle, { color: gameColor }]}>Solo Challenge Mode</Text>
+                <Text style={[styles.soloSub, { color: colors.mutedForeground }]}>
+                  Score is based on speed and early guesses. You'll get a performance summary at the end.
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Players */}
           <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Who's playing?</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+              {isSolo ? "That's you." : "Who's playing?"}
+            </Text>
             <View style={styles.countRow}>
               <Pressable
-                onPress={() => setPlayerCount(c => Math.max(2, c - 1))}
+                onPress={() => setPlayerCount(c => Math.max(1, c - 1))}
                 style={[styles.countBtn, { backgroundColor: colors.muted }]}
               >
                 <Feather name="minus" size={20} color={colors.foreground} />
@@ -230,6 +298,11 @@ export default function SetupScreen() {
                 <Feather name="plus" size={20} color={colors.foreground} />
               </Pressable>
             </View>
+            {isSolo && (
+              <Text style={[styles.soloHint, { color: colors.mutedForeground }]}>
+                Playing solo. Add a second player to switch to group mode.
+              </Text>
+            )}
             <View style={styles.playerChips}>
               {Array.from({ length: playerCount }, (_, i) => (
                 <View
@@ -245,11 +318,11 @@ export default function SetupScreen() {
                   ]}
                 >
                   <View style={[styles.playerNum, { backgroundColor: gameColor }]}>
-                    <Text style={styles.playerNumText}>{i + 1}</Text>
+                    <Text style={styles.playerNumText}>{isSolo ? '★' : i + 1}</Text>
                   </View>
                   <TextInput
                     style={[styles.playerInput, { color: colors.foreground }]}
-                    placeholder={`Player ${i + 1}`}
+                    placeholder={isSolo ? 'Your name' : `Player ${i + 1}`}
                     placeholderTextColor={colors.mutedForeground}
                     value={playerNames[i] ?? ''}
                     onChangeText={v => setName(i, v)}
@@ -309,18 +382,21 @@ export default function SetupScreen() {
             </View>
           </View>
 
+          {/* Play style — group only */}
+          {!isSolo && (
+            <PlayStyleToggle value={playStyle} onChange={setPlayStyle} color={gameColor} />
+          )}
+
           <HowToPlay game={game} color={gameColor} />
 
-          {/* Start button */}
           <AnimatedPressable
             onPress={() => doStart(roundLength, difficulty)}
-            style={[
-              styles.startBtn,
-              { backgroundColor: gameColor },
-            ]}
+            style={[styles.startBtn, { backgroundColor: gameColor }]}
           >
             <Feather name="play-circle" size={22} color="#FFF" />
-            <Text style={styles.startBtnText}>Start Hosting</Text>
+            <Text style={styles.startBtnText}>
+              {isSolo ? 'Start Solo Challenge' : 'Start Hosting'}
+            </Text>
           </AnimatedPressable>
         </ScrollView>
       </View>
@@ -329,7 +405,7 @@ export default function SetupScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24 },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -337,96 +413,27 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 10,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  headerTitle: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 20,
-    letterSpacing: -0.3,
-  },
-  headerSub: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    marginTop: 3,
-    lineHeight: 18,
-  },
-  container: {
-    padding: 16,
-    gap: 14,
-  },
-  gameBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 14,
-  },
-  bannerIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerName: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 18,
-  },
-  bannerMeta: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  card: {
-    padding: 16,
-    gap: 14,
-  },
-  cardTitle: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 16,
-  },
-  countRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 28,
-  },
-  countBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countNum: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 44,
-    minWidth: 52,
-    textAlign: 'center',
-  },
-  playerChips: {
-    gap: 8,
-  },
-  playerChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  playerNum: {
-    width: 40,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playerNumText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 15,
-    color: '#FFF',
-  },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  headerTitle: { fontFamily: 'Inter_700Bold', fontSize: 20, letterSpacing: -0.3 },
+  headerSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
+  container: { padding: 16, gap: 14 },
+  gameBanner: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+  bannerIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  bannerName: { fontFamily: 'Inter_700Bold', fontSize: 18 },
+  bannerMeta: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 2 },
+  soloBanner: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 14 },
+  soloTitle: { fontFamily: 'Inter_700Bold', fontSize: 15 },
+  soloSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
+  card: { padding: 16, gap: 14 },
+  cardTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
+  countBtn: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  countNum: { fontFamily: 'Inter_700Bold', fontSize: 44, minWidth: 52, textAlign: 'center' },
+  soloHint: { fontFamily: 'Inter_400Regular', fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+  playerChips: { gap: 8 },
+  playerChip: { flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+  playerNum: { width: 40, height: 48, alignItems: 'center', justifyContent: 'center' },
+  playerNumText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: '#FFF' },
   playerInput: {
     flex: 1,
     fontFamily: 'Inter_400Regular',
@@ -434,10 +441,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  optRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  optRow: { flexDirection: 'row', gap: 10 },
   optCard: {
     flex: 1,
     alignItems: 'center',
@@ -445,36 +449,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     gap: 6,
   },
-  optLabel: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  optSub: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    textAlign: 'center',
-    lineHeight: 15,
-  },
-  howToCard: {
-    padding: 16,
-    gap: 10,
-  },
-  howToRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  howToTitle: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 15,
-    flex: 1,
-  },
-  howToText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    lineHeight: 21,
-  },
+  optLabel: { fontFamily: 'Inter_700Bold', fontSize: 14, textAlign: 'center' },
+  optSub: { fontFamily: 'Inter_400Regular', fontSize: 11, textAlign: 'center', lineHeight: 15 },
+  toggleRow: { flexDirection: 'row', gap: 10 },
+  toggleCard: { flex: 1, alignItems: 'center', paddingVertical: 14, paddingHorizontal: 6, gap: 6 },
+  howToCard: { padding: 16, gap: 10 },
+  howToRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  howToTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 15, flex: 1 },
+  howToText: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 21 },
   startBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -489,9 +471,5 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginTop: 4,
   },
-  startBtnText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 20,
-    color: '#FFF',
-  },
+  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 20, color: '#FFF' },
 });

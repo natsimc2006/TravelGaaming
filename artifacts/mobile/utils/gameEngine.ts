@@ -11,6 +11,8 @@ export interface Player {
 export type GameDifficulty = 'easy' | 'mixed' | 'spicy';
 export type RoundLength = 'quick' | 'normal' | 'long';
 export type AgeRange = 'easy' | 'mixed' | 'all';
+export type PlayStyle = 'turns' | 'free';
+export type GameState = 'setup' | 'playing' | 'guessing' | 'roundComplete' | 'gameComplete';
 
 export interface GameSettings {
   playerCount: number;
@@ -19,6 +21,7 @@ export interface GameSettings {
   roundLength: RoundLength;
   difficulty: GameDifficulty;
   teams: boolean;
+  playStyle?: PlayStyle;
 }
 
 export interface AlphabetState {
@@ -27,6 +30,8 @@ export interface AlphabetState {
   usedCategoryIds: string[];
   usedLetters: string[];
   timerSeconds: number;
+  soloStreak: number;
+  bestStreak: number;
 }
 
 export interface WhatAmIState {
@@ -65,6 +70,8 @@ export interface GameSession {
   round: number;
   totalRounds: number;
   status: 'idle' | 'playing' | 'ended';
+  isSoloMode: boolean;
+  gameState: GameState;
   alphabetState?: AlphabetState;
   whatAmIState?: WhatAmIState;
   categoryDashState?: CategoryDashState;
@@ -101,6 +108,7 @@ export function createSession(
   const totalRounds = getRoundCount(settings.roundLength);
   const diff = getDifficultyKey(settings.difficulty);
   const timerSecs = getTimerSeconds(settings.roundLength);
+  const isSoloMode = settings.players.length === 1;
 
   const session: GameSession = {
     gameId,
@@ -112,6 +120,8 @@ export function createSession(
     round: 1,
     totalRounds,
     status: 'playing',
+    isSoloMode,
+    gameState: 'playing',
   };
 
   if (gameId === 'alphabet-showdown') {
@@ -123,6 +133,8 @@ export function createSession(
       usedCategoryIds: [cat.id],
       usedLetters: [letter],
       timerSeconds: timerSecs,
+      soloStreak: 0,
+      bestStreak: 0,
     };
   } else if (gameId === 'what-am-i') {
     const item = getRandomWhatAmIItem([], diff);
@@ -160,6 +172,7 @@ export function createSession(
 }
 
 export function nextPlayer(session: GameSession): GameSession {
+  if (session.isSoloMode || session.settings.playStyle === 'free') return session;
   const nextIndex = (session.currentPlayerIndex + 1) % session.players.length;
   return { ...session, currentPlayerIndex: nextIndex };
 }
@@ -174,15 +187,36 @@ export function addScore(session: GameSession, playerId: string, points: number)
   };
 }
 
+export function incrementSoloStreak(session: GameSession): GameSession {
+  if (!session.alphabetState) return session;
+  const newStreak = session.alphabetState.soloStreak + 1;
+  return {
+    ...session,
+    alphabetState: {
+      ...session.alphabetState,
+      soloStreak: newStreak,
+      bestStreak: Math.max(session.alphabetState.bestStreak, newStreak),
+    },
+  };
+}
+
+export function resetSoloStreak(session: GameSession): GameSession {
+  if (!session.alphabetState) return session;
+  return {
+    ...session,
+    alphabetState: { ...session.alphabetState, soloStreak: 0 },
+  };
+}
+
 export function nextRound(session: GameSession): GameSession {
   const newRound = session.round + 1;
   if (newRound > session.totalRounds) {
-    return { ...session, status: 'ended' };
+    return { ...session, status: 'ended', gameState: 'gameComplete' };
   }
 
   const diff = getDifficultyKey(session.settings.difficulty);
   const timerSecs = getTimerSeconds(session.settings.roundLength);
-  let updated = { ...session, round: newRound };
+  let updated = { ...session, round: newRound, gameState: 'playing' as GameState };
 
   if (session.gameId === 'alphabet-showdown' && session.alphabetState) {
     const s = session.alphabetState;
@@ -192,6 +226,8 @@ export function nextRound(session: GameSession): GameSession {
       currentLetter: letter,
       usedLetters: [...s.usedLetters, letter],
       timerSeconds: timerSecs,
+      soloStreak: s.soloStreak,
+      bestStreak: s.bestStreak,
     };
   } else if (session.gameId === 'what-am-i' && session.whatAmIState) {
     const s = session.whatAmIState;
@@ -239,11 +275,7 @@ export function nextLetter(session: GameSession): GameSession {
   const letter = getRandomLetter(s.usedLetters);
   return {
     ...session,
-    alphabetState: {
-      ...s,
-      currentLetter: letter,
-      usedLetters: [...s.usedLetters, letter],
-    },
+    alphabetState: { ...s, currentLetter: letter, usedLetters: [...s.usedLetters, letter] },
   };
 }
 
@@ -277,12 +309,16 @@ export function revealNextClue(session: GameSession): GameSession {
 }
 
 export function endGame(session: GameSession): GameSession {
-  return { ...session, status: 'ended' };
+  return { ...session, status: 'ended', gameState: 'gameComplete' };
 }
 
 export function getWinners(session: GameSession): Player[] {
   const maxScore = Math.max(...Object.values(session.scores));
   return session.players.filter(p => session.scores[p.id] === maxScore);
+}
+
+export function getTotalScore(session: GameSession): number {
+  return Object.values(session.scores).reduce((sum, s) => sum + s, 0);
 }
 
 export function getHostLine(type: 'roundStart' | 'correct' | 'skip' | 'gameEnd' | 'nextPlayer', name?: string, n?: number): string {

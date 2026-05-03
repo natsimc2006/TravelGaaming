@@ -1,0 +1,279 @@
+Upgrade the Game Host Expo app to Phase 2.
+
+Do not rebuild the app. Extend the current architecture cleanly.
+
+GOAL
+
+Evolve the app from “playable games” into a system that supports:
+- deeper gameplay logic
+- replayability
+- solo + group flexibility
+- progression and retention
+- better game flow control
+
+Focus on 4 core upgrades:
+1. Game Session Engine
+2. Turn + Round System (robust)
+3. Solo Mode Engine (properly implemented)
+4. Game Packs + Content Expansion System
+
+-----------------------------------
+PART 1: GAME SESSION ENGINE
+-----------------------------------
+
+Create a central session manager:
+src/utils/sessionEngine.ts
+
+It should manage:
+- gameId
+- players
+- currentPlayerIndex
+- currentRound
+- totalRounds
+- scores
+- gameState
+- answerMode
+- isSoloMode
+
+GameState enum:
+- "setup"
+- "playing"
+- "guessing"
+- "roundComplete"
+- "gameComplete"
+
+Functions:
+- startGame()
+- nextPlayer()
+- nextRound()
+- addScore(playerId, points)
+- endRound()
+- endGame()
+- resetGame()
+
+All games should use this engine instead of managing state individually.
+
+-----------------------------------
+PART 2: TURN + ROUND SYSTEM
+-----------------------------------
+
+Create consistent turn logic across all games.
+
+If players > 1:
+- rotate turns using nextPlayer()
+
+If players === 1:
+- do not rotate
+- always use “solo player”
+
+Update UI:
+- show “Round X of Y”
+- show “Turn: Player Name” (or “Your turn” in solo)
+
+Add optional setting:
+“Play style”
+- Turn-based
+- Free play (no strict turns)
+
+-----------------------------------
+PART 3: SOLO MODE ENGINE
+-----------------------------------
+
+Create proper solo gameplay instead of just “1 player”.
+
+Add solo-specific behaviour:
+
+WHAT AM I:
+- score based on how early guess is made
+- show performance message:
+  - 5 pts = “Sharp.”
+  - 3 pts = “Respectable.”
+  - 1 pt = “We got there.”
+
+CATEGORY DASH:
+- user types answers
+- then self-check scoring screen
+
+ALPHABET SHOWDOWN:
+- timed solo challenge
+- 30 seconds per letter
+- show streak counter:
+  “3 in a row!”
+
+Add:
+soloPerformanceSummary()
+Returns:
+- total score
+- best round
+- streaks
+- average clues used
+
+-----------------------------------
+PART 4: GAME PACK SYSTEM
+-----------------------------------
+
+Create a flexible content system.
+
+Structure:
+
+src/data/packs/
+  corePack.ts
+  roadTripPack.ts
+  dinnerPack.ts
+  calmPack.ts
+
+Each pack contains:
+- categories
+- prompts
+- whatAmI items
+- forbiddenWord cards
+
+Each pack has metadata:
+- id
+- name
+- description
+- tags (car, dinner, calm, chaos)
+
+Update game data to pull from packs instead of a single dataset.
+
+Default:
+corePack is always loaded.
+
+-----------------------------------
+PART 5: QUICK PLAY ENGINE
+-----------------------------------
+
+Upgrade “Save the Moment” button.
+
+Instead of random:
+Create logic:
+
+quickPlay()
+- skip setup
+- auto create 1–3 players
+- pick game based on:
+  - last played
+  - mood
+- set short rounds
+- immediately start game
+
+Add loading line:
+“Give me a second… picking something good.”
+
+-----------------------------------
+PART 6: PROGRESSION (LIGHTWEIGHT)
+-----------------------------------
+
+Create simple local progression (no accounts).
+
+Store in AsyncStorage:
+- totalGamesPlayed
+- totalRoundsPlayed
+- favouriteGame
+- highestScore
+
+Add small display on home:
+“Family stats”
+
+Example:
+- 12 games played
+- Favourite: What Am I?
+- Longest streak: 5
+
+Do NOT gamify heavily. Keep it subtle.
+
+-----------------------------------
+PART 7: BETTER END GAME SCREEN
+-----------------------------------
+
+Upgrade end screen.
+
+GROUP MODE:
+- ranked scoreboard
+- winner highlight
+- host message:
+  “Victory has been claimed.”
+
+SOLO MODE:
+- performance summary
+- message based on score
+
+Examples:
+- “Sharp work.”
+- “We got there eventually.”
+- “Effort was undeniable.”
+
+Buttons:
+- Play Again
+- Try Another Game
+- Home
+
+-----------------------------------
+PART 8: VOICE HOST IMPROVEMENTS
+-----------------------------------
+
+Extend voiceHost system:
+
+Add events:
+- soloStart
+- incorrect
+- answerReveal
+- streak
+
+Call voice events at:
+- game start
+- round start
+- guess result
+- round end
+- game end
+
+Add slight delay system:
+- speak host line
+- then speak clue
+
+-----------------------------------
+PART 9: UI POLISH FIXES
+-----------------------------------
+
+Fix from current screenshots:
+
+- game cards clipping on horizontal scroll → use snapToInterval or proper spacing
+- mood pills cut off → add horizontal scroll padding
+- active game buttons cramped → stack buttons on smaller screens
+- add bottom safe area padding
+- improve spacing between sections
+- ensure text never truncates mid sentence
+
+-----------------------------------
+PART 10: PREP FOR FUTURE FEATURES
+-----------------------------------
+
+Add placeholders (no logic yet):
+
+- “Host Voice Styles”
+  - Calm
+  - Fun
+  - Chaos
+
+- “Multiplayer mode (future online)”
+
+- “Custom packs (future)”
+
+-----------------------------------
+
+EXPECTED RESULT
+
+The app should now feel like:
+- a structured game system
+- not just a collection of mini games
+- works for solo or group
+- has replayability
+- has personality
+- has scalable content
+
+Do not overcomplicate.
+Keep code modular.
+Keep UI consistent.
+Keep tone playful but calm.
+
+Return updated code.

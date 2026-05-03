@@ -1,18 +1,20 @@
 import { Feather } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GAME_PACK_PREVIEWS } from '@/data/games';
+import { ALL_PACKS } from '@/data/packs';
 import { useColors } from '@/hooks/useColors';
 
-const PACK_COLORS = ['#FF6B35', '#4ECDC4', '#F59E0B', '#8B5CF6', '#10B981'];
+const TAG_COLORS: Record<string, string> = {
+  car: '#FF6B3D',
+  dinner: '#4ECDC4',
+  calm: '#8B5CF6',
+  bedtime: '#6366F1',
+  long: '#F59E0B',
+  'all-ages': '#10B981',
+  waiting: '#F59E0B',
+};
 
 export default function PacksScreen() {
   const colors = useColors();
@@ -20,135 +22,144 @@ export default function PacksScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: 'Game Packs',
-          headerShown: true,
-          headerStyle: { backgroundColor: colors.background },
-          headerTitleStyle: { fontFamily: 'Inter_700Bold', color: colors.foreground },
-          headerTintColor: colors.primary,
-          headerShadowVisible: false,
-        }}
-      />
-      <ScrollView
-        style={{ backgroundColor: colors.background }}
-        contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.banner, { backgroundColor: colors.accent, borderRadius: colors.radius }]}>
-          <Feather name="package" size={28} color={colors.foreground} />
-          <View>
-            <Text style={[styles.bannerTitle, { color: colors.foreground }]}>Coming Soon</Text>
-            <Text style={[styles.bannerSub, { color: colors.foreground + 'AA' }]}>
-              Themed game packs with exclusive content
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={colors.foreground} />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Game Packs</Text>
+            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
+              New content bundles, expanding the Game Host library.
             </Text>
           </View>
         </View>
 
-        {GAME_PACK_PREVIEWS.map((pack, i) => (
-          <View
-            key={pack.id}
-            style={[
-              styles.packCard,
-              {
-                backgroundColor: colors.card,
-                borderRadius: colors.radius,
-                borderLeftWidth: 4,
-                borderLeftColor: PACK_COLORS[i % PACK_COLORS.length],
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 8,
-                elevation: 2,
-              },
-            ]}
-          >
-            <View style={[styles.packIcon, { backgroundColor: PACK_COLORS[i % PACK_COLORS.length] + '20' }]}>
-              <Feather name={pack.icon as any} size={22} color={PACK_COLORS[i % PACK_COLORS.length]} />
-            </View>
+        <ScrollView
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 40 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {ALL_PACKS.map(pack => {
+            const isIncluded = pack.included;
+            return (
+              <View
+                key={pack.id}
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: colors.card,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: isIncluded ? colors.primary + '40' : colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={[
+                    styles.packIcon,
+                    { backgroundColor: isIncluded ? colors.softOrange : colors.muted },
+                  ]}>
+                    <Text style={{ fontSize: 24 }}>{isIncluded ? '🎮' : '🔒'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.nameRow}>
+                      <Text style={[styles.packName, { color: colors.foreground }]}>{pack.name}</Text>
+                      {isIncluded && (
+                        <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                          <Text style={styles.badgeText}>Included</Text>
+                        </View>
+                      )}
+                      {pack.comingSoon && (
+                        <View style={[styles.badge, { backgroundColor: colors.muted }]}>
+                          <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>Soon</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.packDesc, { color: colors.mutedForeground }]}>{pack.description}</Text>
+                  </View>
+                </View>
+                <View style={styles.tagRow}>
+                  {pack.tags.map(tag => (
+                    <View
+                      key={tag}
+                      style={[styles.tag, { backgroundColor: (TAG_COLORS[tag] ?? colors.secondary) + '20' }]}
+                    >
+                      <Text style={[styles.tagText, { color: TAG_COLORS[tag] ?? colors.secondary }]}>
+                        {tag}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })}
+
+          <View style={[styles.comingSoonCard, { backgroundColor: colors.softTeal, borderRadius: 18 }]}>
+            <Text style={{ fontSize: 28 }}>🎁</Text>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.packName, { color: colors.foreground }]}>{pack.name}</Text>
-              <Text style={[styles.packDesc, { color: colors.mutedForeground }]}>{pack.description}</Text>
-            </View>
-            <View style={[styles.comingSoonBadge, { backgroundColor: colors.muted }]}>
-              <Text style={[styles.comingSoonText, { color: colors.mutedForeground }]}>Soon</Text>
+              <Text style={[styles.csTitle, { color: colors.foreground }]}>More packs are being built</Text>
+              <Text style={[styles.csSub, { color: colors.mutedForeground }]}>
+                Road Trip, Dinner Table, and Calm packs are in the works. They'll unlock automatically when ready.
+              </Text>
             </View>
           </View>
-        ))}
 
-        <View style={[styles.freeNote, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
-          <Feather name="check-circle" size={18} color={colors.success} />
-          <Text style={[styles.freeNoteText, { color: colors.foreground }]}>
-            All 4 current games are free, forever.
-          </Text>
-        </View>
-      </ScrollView>
+          <View style={[styles.futureCard, { backgroundColor: colors.muted, borderRadius: 18 }]}>
+            <Text style={[styles.futureTitle, { color: colors.mutedForeground }]}>ON THE HORIZON</Text>
+            <View style={styles.futureList}>
+              {[
+                { icon: '🎙', label: 'Host Voice Styles', sub: 'Calm · Fun · Chaos' },
+                { icon: '📦', label: 'Custom Packs', sub: 'Build your own content' },
+                { icon: '👥', label: 'Online Multiplayer', sub: 'Play across devices' },
+              ].map(item => (
+                <View key={item.label} style={styles.futureItem}>
+                  <Text style={{ fontSize: 22 }}>{item.icon}</Text>
+                  <View>
+                    <Text style={[styles.futureItemLabel, { color: colors.foreground }]}>{item.label}</Text>
+                    <Text style={[styles.futureItemSub, { color: colors.mutedForeground }]}>{item.sub}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    gap: 14,
-  },
-  banner: {
+  root: { flex: 1 },
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 18,
-    gap: 14,
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    gap: 12,
   },
-  bannerTitle: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 18,
-  },
-  bannerSub: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  packCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 14,
-  },
-  packIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  packName: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 16,
-  },
-  packDesc: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    marginTop: 3,
-  },
-  comingSoonBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 100,
-  },
-  comingSoonText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 11,
-  },
-  freeNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    marginTop: 4,
-  },
-  freeNoteText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 14,
-    flex: 1,
-  },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  headerTitle: { fontFamily: 'Inter_700Bold', fontSize: 22, letterSpacing: -0.3 },
+  headerSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
+  list: { padding: 16, gap: 14 },
+  card: { padding: 16, gap: 14 },
+  cardHeader: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
+  packIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
+  packName: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  badge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 100 },
+  badgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: '#FFF' },
+  packDesc: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 18 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100 },
+  tagText: { fontFamily: 'Inter_600SemiBold', fontSize: 11 },
+  comingSoonCard: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 14 },
+  csTitle: { fontFamily: 'Inter_700Bold', fontSize: 15 },
+  csSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
+  futureCard: { padding: 18, gap: 14 },
+  futureTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 11, letterSpacing: 1 },
+  futureList: { gap: 16 },
+  futureItem: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  futureItemLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 15 },
+  futureItemSub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2 },
 });

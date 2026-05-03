@@ -6,11 +6,15 @@ export type VoiceEvent =
   | 'turnStart'
   | 'clueReveal'
   | 'correct'
+  | 'incorrect'
   | 'skip'
   | 'next'
   | 'pressure'
   | 'roundEnd'
-  | 'gameEnd';
+  | 'gameEnd'
+  | 'soloStart'
+  | 'answerReveal'
+  | 'streak';
 
 export type GameKey =
   | 'alphabetShowdown'
@@ -31,6 +35,8 @@ type VoiceContext = {
   letter?: string;
   answer?: string;
   gameName?: string;
+  streak?: number;
+  score?: number;
 };
 
 const randomFrom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
@@ -47,7 +53,9 @@ const fillTemplate = (line: string, ctx: VoiceContext = {}) =>
     .replaceAll('{category}', ctx.category ?? 'your category')
     .replaceAll('{letter}', ctx.letter ?? 'your letter')
     .replaceAll('{answer}', ctx.answer ?? 'the answer')
-    .replaceAll('{gameName}', ctx.gameName ?? 'the game');
+    .replaceAll('{gameName}', ctx.gameName ?? 'the game')
+    .replaceAll('{streak}', String(ctx.streak ?? 0))
+    .replaceAll('{score}', String(ctx.score ?? 0));
 
 const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
   global: {
@@ -57,6 +65,12 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
       'Point awarded. Glory temporary.',
       'Correct. Very respectable.',
       'Strong work.',
+    ],
+    incorrect: [
+      'Not quite. Have another think.',
+      'Close, maybe. Try again.',
+      'Interesting guess. Not the answer though.',
+      'Nope. But we respect the confidence.',
     ],
     skip: [
       'A strategic retreat.',
@@ -80,13 +94,32 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
       'Game over. Honour mostly intact.',
       'Victory has been claimed.',
       'Family harmony is mostly intact.',
-      'Nobody flipped the table, so technically a success.',
+      "Nobody flipped the table, so technically a success.",
+    ],
+    soloStart: [
+      "Solo mode. Just you, the clock, and your brain. Good luck.",
+      "Flying solo today. No judgement. Well, a little judgement.",
+      "Solo challenge. Let's see what you've got.",
+    ],
+    streak: [
+      "{streak} in a row! Impressive.",
+      "That's {streak} consecutive. You're on fire.",
+      "{streak} streak! Keep it going.",
+    ],
+    answerReveal: [
+      "The answer was {answer}.",
+      "It was {answer}. Of course it was.",
+      "And the answer: {answer}.",
     ],
   },
 
   alphabetShowdown: {
     gameStart: [
       "Alright. Alphabet Showdown is live. I'll give you a category and a letter. Take turns naming something that fits. No repeats. Mild panic is acceptable. Let's go.",
+    ],
+    soloStart: [
+      "Solo Alphabet Showdown. Name something for each letter before the timer. Go.",
+      "Just you and the alphabet. Let's see how many you can get.",
     ],
     roundStart: [
       'New round. Category: {category}. Starting letter: {letter}.',
@@ -104,6 +137,10 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
       'Nice answer.',
       "We'll allow it.",
     ],
+    streak: [
+      "{streak} in a row! Keep going.",
+      "That's {streak} straight. Impressive.",
+    ],
     roundEnd: [
       'Round complete. Some strong answers. Some creative interpretations.',
       'That round is done. Honour remains questionable.',
@@ -114,6 +151,10 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
   whatAmI: {
     gameStart: [
       "Welcome to What Am I. I'll reveal clues one by one. The earlier you guess it, the more points you get. Let's see who's paying attention.",
+    ],
+    soloStart: [
+      "Solo What Am I. Guess the mystery as early as you can. Points drop with each clue.",
+      "Just you and the clues. How sharp are you today?",
     ],
     roundStart: [
       'New mystery. Clue one.',
@@ -130,6 +171,15 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
       'Yes. Strong work.',
       'That is correct. Very suspiciously clever.',
     ],
+    incorrect: [
+      'Not quite. Keep thinking.',
+      'That was a guess. Not the right one. Try again.',
+      'Nope. Another clue might help.',
+    ],
+    answerReveal: [
+      'The answer was {answer}.',
+      'It was {answer}. Well played regardless.',
+    ],
     skip: [
       'Alright, revealing next clue.',
       'No guess yet. Let us keep going.',
@@ -145,6 +195,9 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
   categoryDash: {
     gameStart: [
       "Category Dash. I'll give you a letter and a set of categories. Think fast. Say something that fits. Let's begin.",
+    ],
+    soloStart: [
+      "Solo Category Dash. Five categories, one letter. Think fast.",
     ],
     roundStart: [
       'Letter: {letter}. Think fast.',
@@ -166,6 +219,9 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
   forbiddenWord: {
     gameStart: [
       "Forbidden Word. One player describes the word. But you cannot say the forbidden words. This will go well. Probably.",
+    ],
+    soloStart: [
+      "Forbidden Word solo practice. Read the word and forbidden list. Think about how you'd describe it.",
     ],
     turnStart: [
       "{playerName}, you're describing. Your word is ready.",
@@ -190,13 +246,13 @@ const LINES: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
   },
 };
 
-export function getVoiceLine(gameKey: GameKey, event: VoiceEvent, ctx: VoiceContext = ''): string {
+export function getVoiceLine(gameKey: GameKey, event: VoiceEvent, ctx: VoiceContext = {}): string {
   const gameLines = LINES[gameKey]?.[event];
   const globalLines = LINES.global?.[event];
   const selected =
     gameLines?.length ? randomFrom(gameLines) :
     globalLines?.length ? randomFrom(globalLines) : '';
-  return fillTemplate(selected, ctx as VoiceContext);
+  return fillTemplate(selected, ctx);
 }
 
 export function speakHost(

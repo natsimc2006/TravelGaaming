@@ -5,10 +5,12 @@ import {
   addScore,
   createSession,
   endGame,
+  incrementSoloStreak,
   nextCategory,
   nextLetter,
   nextPlayer,
   nextRound,
+  resetSoloStreak,
   revealNextClue,
 } from '@/utils/gameEngine';
 
@@ -23,6 +25,8 @@ interface GameContextValue {
   revealClue: () => void;
   finishGame: () => void;
   resetGame: () => void;
+  bumpStreak: () => void;
+  breakStreak: () => void;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -66,6 +70,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }, []);
 
+  const bumpStreak = useCallback(() => {
+    setSession(prev => prev ? incrementSoloStreak(prev) : prev);
+  }, []);
+
+  const breakStreak = useCallback(() => {
+    setSession(prev => prev ? resetSoloStreak(prev) : prev);
+  }, []);
+
   return (
     <GameContext.Provider value={{
       session,
@@ -78,6 +90,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       revealClue,
       finishGame,
       resetGame,
+      bumpStreak,
+      breakStreak,
     }}>
       {children}
     </GameContext.Provider>
