@@ -1,0 +1,487 @@
+Add plug-and-play voice host functionality across the Expo app using expo-speech.
+
+Do not rebuild the app from scratch. Keep the current screens, game logic and UI.
+
+GOAL
+Create a reusable voice host system that can speak short host lines across all games:
+- game intro
+- round start
+- player turn
+- clue reveal
+- correct answer
+- skip
+- round end
+- game end
+- random funny host reactions
+
+INSTALL
+If expo-speech is not installed, install it:
+npx expo install expo-speech
+
+CREATE FILE:
+src/utils/voiceHost.ts
+
+Add this code:
+
+import * as Speech from "expo-speech";
+
+export type VoiceEvent =
+  | "gameStart"
+  | "roundStart"
+  | "turnStart"
+  | "clueReveal"
+  | "correct"
+  | "skip"
+  | "next"
+  | "pressure"
+  | "roundEnd"
+  | "gameEnd";
+
+export type GameKey =
+  | "alphabetShowdown"
+  | "whatAmI"
+  | "categoryDash"
+  | "forbiddenWord"
+  | "global";
+
+type VoiceContext = {
+  playerName?: string;
+  teamName?: string;
+  round?: number;
+  totalRounds?: number;
+  clueNumber?: number;
+  totalClues?: number;
+  points?: number;
+  category?: string;
+  letter?: string;
+  answer?: string;
+  gameName?: string;
+};
+
+const randomFrom = (lines: string[]) =>
+  lines[Math.floor(Math.random() * lines.length)];
+
+const fillTemplate = (line: string, context: VoiceContext = {}) => {
+  return line
+    .replaceAll("{playerName}", context.playerName || "Player")
+    .replaceAll("{teamName}", context.teamName || "Team")
+    .replaceAll("{round}", String(context.round || 1))
+    .replaceAll("{totalRounds}", String(context.totalRounds || ""))
+    .replaceAll("{clueNumber}", String(context.clueNumber || 1))
+    .replaceAll("{totalClues}", String(context.totalClues || 5))
+    .replaceAll("{points}", String(context.points || ""))
+    .replaceAll("{category}", context.category || "your category")
+    .replaceAll("{letter}", context.letter || "your letter")
+    .replaceAll("{answer}", context.answer || "the answer")
+    .replaceAll("{gameName}", context.gameName || "the game");
+};
+
+const lines: Record<GameKey, Partial<Record<VoiceEvent, string[]>>> = {
+  global: {
+    correct: [
+      "Nice. Suspiciously fast.",
+      "That was either skill or luck.",
+      "Point awarded. Glory temporary.",
+      "Correct. Very respectable.",
+      "Strong work.",
+    ],
+    skip: [
+      "A strategic retreat.",
+      "We’ll pretend that never happened.",
+      "Skipped. Probably for the best.",
+      "Moving on before anyone overthinks it.",
+    ],
+    next: [
+      "Still anyone’s game.",
+      "The plot thickens.",
+      "This could go either way.",
+      "Alright. Next one.",
+    ],
+    pressure: [
+      "Clock is ticking.",
+      "We’re thinking. We’re thinking.",
+      "No rush. But also, yes, rush.",
+      "You might want to lock something in soon.",
+    ],
+    gameEnd: [
+      "Game over. Honour mostly intact.",
+      "Victory has been claimed.",
+      "Family harmony is mostly intact.",
+      "Nobody flipped the table, so technically a success.",
+    ],
+  },
+
+  alphabetShowdown: {
+    gameStart: [
+      "Alright. Alphabet Showdown is live. I’ll give you a category and a letter. Take turns naming something that fits. No repeats. Mild panic is acceptable. Let’s go.",
+    ],
+    roundStart: [
+      "New round. Category: {category}. Starting letter: {letter}.",
+      "Round {round}. Your category is {category}. Your letter is {letter}.",
+      "Here we go. {category}. Starting with {letter}.",
+    ],
+    turnStart: [
+      "{playerName}, you’re up.",
+      "{playerName}, your turn.",
+      "Over to you, {playerName}.",
+    ],
+    correct: [
+      "Good one.",
+      "That counts. Moving on.",
+      "Nice answer.",
+      "We’ll allow it.",
+    ],
+    roundEnd: [
+      "Round complete. Some strong answers. Some creative interpretations.",
+      "That round is done. Honour remains questionable.",
+      "Nice work. Next round coming in.",
+    ],
+  },
+
+  whatAmI: {
+    gameStart: [
+      "Welcome to What Am I. I’ll reveal clues one by one. The earlier you guess it, the more points you get. Let’s see who’s paying attention.",
+    ],
+    roundStart: [
+      "New mystery. Clue one.",
+      "Round {round}. New mystery incoming.",
+      "Alright. New one. Stay sharp.",
+    ],
+    clueReveal: [
+      "Clue {clueNumber}.",
+      "Here comes clue {clueNumber}.",
+      "Clue {clueNumber}. This one might help.",
+    ],
+    correct: [
+      "Correct. That came together nicely.",
+      "Yes. Strong work.",
+      "That is correct. Very suspiciously clever.",
+    ],
+    skip: [
+      "Alright, revealing next clue.",
+      "No guess yet. Let’s keep going.",
+      "Fair enough. Next clue.",
+    ],
+    roundEnd: [
+      "Round done. Next mystery loading.",
+      "Mystery solved. Or survived.",
+      "That one is finished. Moving on.",
+    ],
+  },
+
+  categoryDash: {
+    gameStart: [
+      "Category Dash. I’ll give you a letter and a set of categories. Think fast. Say something that fits. Let’s begin.",
+    ],
+    roundStart: [
+      "Letter: {letter}. Your category is {category}. Go.",
+      "Round {round}. Letter {letter}. Think fast.",
+      "New dash. Letter {letter}. No pressure. Except there absolutely is.",
+    ],
+    pressure: [
+      "Keep going.",
+      "Time is moving.",
+      "Don’t let the silence win.",
+    ],
+    roundEnd: [
+      "And stop. That was either impressive or chaotic.",
+      "Round complete. Let’s score it.",
+      "Time’s up. Some answers may require legal review.",
+    ],
+  },
+
+  forbiddenWord: {
+    gameStart: [
+      "Forbidden Word. One player describes the word. But you cannot say the forbidden words. This will go well. Probably.",
+    ],
+    turnStart: [
+      "{playerName}, you’re describing. Your word is ready.",
+      "{playerName}, you’re up. Avoid the forbidden words.",
+      "Over to {playerName}. Try not to say the obvious thing.",
+    ],
+    correct: [
+      "Got it. Nice teamwork.",
+      "Correct. Very smooth.",
+      "Nice. Communication has occurred.",
+    ],
+    skip: [
+      "Skipping. A strategic decision.",
+      "Moving on. No shame. Well, maybe a little.",
+      "Skipped. That word was clearly cursed.",
+    ],
+    roundEnd: [
+      "Time’s up. That was either smooth or slightly stressful.",
+      "Round done. Everyone breathe.",
+      "That’s the round. Words were used. Mostly legal ones.",
+    ],
+  },
+};
+
+export const getVoiceLine = (
+  gameKey: GameKey,
+  event: VoiceEvent,
+  context: VoiceContext = {}
+) => {
+  const gameLines = lines[gameKey]?.[event];
+  const globalLines = lines.global?.[event];
+
+  const selected =
+    gameLines && gameLines.length > 0
+      ? randomFrom(gameLines)
+      : globalLines && globalLines.length > 0
+      ? randomFrom(globalLines)
+      : "";
+
+  return fillTemplate(selected, context);
+};
+
+export const speakHost = async (
+  gameKey: GameKey,
+  event: VoiceEvent,
+  context: VoiceContext = {},
+  options?: {
+    rate?: number;
+    pitch?: number;
+    autoStop?: boolean;
+  }
+) => {
+  const text = getVoiceLine(gameKey, event, context);
+
+  if (!text) return;
+
+  if (options?.autoStop !== false) {
+    Speech.stop();
+  }
+
+  Speech.speak(text, {
+    rate: options?.rate ?? 0.92,
+    pitch: options?.pitch ?? 1.03,
+  });
+};
+
+export const speakText = async (
+  text: string,
+  options?: {
+    rate?: number;
+    pitch?: number;
+    autoStop?: boolean;
+  }
+) => {
+  if (!text) return;
+
+  if (options?.autoStop !== false) {
+    Speech.stop();
+  }
+
+  Speech.speak(text, {
+    rate: options?.rate ?? 0.92,
+    pitch: options?.pitch ?? 1.03,
+  });
+};
+
+export const stopHostVoice = () => {
+  Speech.stop();
+};
+
+export const isHostSpeaking = async () => {
+  return Speech.isSpeakingAsync();
+};
+
+NEXT: Add a simple reusable voice button component.
+
+CREATE FILE:
+src/components/VoiceHostButton.tsx
+
+Add this code:
+
+import React, { useState } from "react";
+import { Pressable, Text, StyleSheet } from "react-native";
+import { speakHost, stopHostVoice, GameKey, VoiceEvent } from "../utils/voiceHost";
+
+type Props = {
+  gameKey: GameKey;
+  event: VoiceEvent;
+  context?: Record<string, any>;
+  label?: string;
+};
+
+export default function VoiceHostButton({
+  gameKey,
+  event,
+  context = {},
+  label = "Read aloud",
+}: Props) {
+  const [speaking, setSpeaking] = useState(false);
+
+  const handlePress = async () => {
+    if (speaking) {
+      stopHostVoice();
+      setSpeaking(false);
+      return;
+    }
+
+    setSpeaking(true);
+
+    await speakHost(gameKey, event, context, {
+      rate: 0.92,
+      pitch: 1.03,
+    });
+
+    setTimeout(() => setSpeaking(false), 2500);
+  };
+
+  return (
+    <Pressable style={styles.button} onPress={handlePress}>
+      <Text style={styles.text}>{speaking ? "Stop voice" : label}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FFFCF7",
+    borderColor: "#EFE4D8",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  text: {
+    color: "#17172F",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+});
+
+INTEGRATE INTO ACTIVE GAME SCREEN
+
+In ActiveGameScreen, import:
+
+import { speakHost, speakText, stopHostVoice } from "../utils/voiceHost";
+
+Map each game id to a voice game key:
+
+const getVoiceGameKey = (gameId: string) => {
+  switch (gameId) {
+    case "alphabet-showdown":
+      return "alphabetShowdown";
+    case "what-am-i":
+      return "whatAmI";
+    case "category-dash":
+      return "categoryDash";
+    case "forbidden-word":
+      return "forbiddenWord";
+    default:
+      return "global";
+  }
+};
+
+When a game starts, call:
+
+speakHost(getVoiceGameKey(game.id), "gameStart", {
+  gameName: game.title,
+});
+
+When a new round starts, call:
+
+speakHost(getVoiceGameKey(game.id), "roundStart", {
+  round: currentRound,
+  totalRounds,
+  category: currentCategory,
+  letter: currentLetter,
+  gameName: game.title,
+});
+
+When player turn changes, call:
+
+speakHost(getVoiceGameKey(game.id), "turnStart", {
+  playerName: currentPlayer?.name || "Player",
+});
+
+When revealing a clue in What Am I, call:
+
+speakHost("whatAmI", "clueReveal", {
+  clueNumber: currentClueIndex + 1,
+  totalClues: currentItem?.clues?.length || 5,
+  points: pointsAvailable,
+});
+
+Then also read the actual clue text after a short delay:
+
+setTimeout(() => {
+  speakText(currentClueText);
+}, 900);
+
+When user taps “We Got It” or “Correct”, call:
+
+speakHost(getVoiceGameKey(game.id), "correct", {
+  playerName: currentPlayer?.name || "Player",
+  points: pointsAvailable,
+});
+
+When user taps “Skip”, call:
+
+speakHost(getVoiceGameKey(game.id), "skip");
+
+When user taps “Reveal Next Clue” or “Next”, call:
+
+speakHost(getVoiceGameKey(game.id), "next");
+
+When a round ends, call:
+
+speakHost(getVoiceGameKey(game.id), "roundEnd", {
+  round: currentRound,
+});
+
+When the game ends, call:
+
+speakHost(getVoiceGameKey(game.id), "gameEnd");
+
+ADD VOICE TO UI
+
+On the ActiveGameScreen:
+- Add a pill button near the host message area:
+  “🔊 Read host line”
+- Add a second small button if useful:
+  “🔇 Stop voice”
+
+The stop button should call:
+stopHostVoice();
+
+ADD SETTINGS
+
+If the app already has settings, add:
+- Voice Host: on/off
+
+If there is no settings screen yet, add a simple local boolean state in ActiveGameScreen:
+const [voiceEnabled, setVoiceEnabled] = useState(true);
+
+Only call speakHost or speakText if voiceEnabled is true.
+
+Add a small toggle button:
+voiceEnabled ? "🔊 Voice on" : "🔇 Voice off"
+
+IMPORTANT
+- Do not make the app speak huge paragraphs repeatedly.
+- Stop any current speech before speaking the next line.
+- Avoid speaking automatically every time a component re-renders.
+- Use useEffect carefully with stable dependencies so speech only triggers on true game events.
+- Ensure speech stops when leaving the ActiveGameScreen:
+useEffect(() => {
+  return () => stopHostVoice();
+}, []);
+
+EXPECTED RESULT
+The app should now feel like a live voice-hosted family game app.
+
+The host should:
+- introduce games
+- announce rounds
+- call player turns
+- read clues
+- react to correct answers
+- react to skips
+- end games with personality
+
+Keep everything family-safe, short, playful and clear.
