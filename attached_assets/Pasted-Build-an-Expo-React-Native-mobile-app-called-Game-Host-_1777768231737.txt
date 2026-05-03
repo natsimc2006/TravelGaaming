@@ -1,0 +1,273 @@
+Build an Expo React Native mobile app called “Game Host” as a polished App Store-ready MVP.
+
+Concept:
+A family-friendly game host app for car trips, dinner tables, waiting rooms, holidays and screen-light family moments. The app does not just list games. It runs the game, gives prompts, manages turns, keeps score where needed, and reduces the mental load for parents.
+
+Core positioning:
+“Press play. The app hosts the game.”
+
+Target users:
+Parents and families with children roughly aged 4–12, but the app should also work for mixed-age groups, grandparents, cousins and casual family gatherings.
+
+Tone:
+Warm, fun, lightly witty, calm and family-safe. Avoid cheesy babyish language. It should feel clever enough for adults but simple enough for kids.
+
+Design style:
+Bright, modern, friendly and polished.
+Use large touch targets.
+Designed mobile-first.
+Suitable for use in the car, so buttons must be clear and screens uncluttered.
+Use playful cards, rounded corners, soft gradients and simple icons.
+No dark-heavy gaming aesthetic.
+
+App structure:
+Use Expo React Native.
+Create a clean tab or stack navigation app.
+Use local state for MVP.
+No backend required for V1.
+Store basic saved settings locally using AsyncStorage.
+
+Main screens:
+
+1. Home screen
+- App logo/name
+- Short tagline: “Family games, hosted for you.”
+- Big primary CTA: “Start a Game”
+- Secondary CTA: “Quick Play”
+- Small sections:
+  - “Best for the car”
+  - “Best at the table”
+  - “Calm games”
+  - “Silly games”
+
+2. Game Picker screen
+Show game cards with:
+- game name
+- short description
+- best setting chips: Car / Dinner / Waiting / Bedtime
+- age range
+- energy level: Calm / Medium / Chaotic
+- host type:
+  - “App hosts”
+  - “Reader needed”
+- estimated round length
+
+Include filters:
+- Age: 4–6, 7–9, 10+
+- Situation: Car, Dinner, Waiting, Bedtime
+- Energy: Calm, Medium, Chaotic
+- Players: 2, 3–4, 5+
+
+3. Setup screen
+Before starting a game, let users choose:
+- number of players
+- player names, optional
+- kids’ age range
+- round length: quick / normal / long
+- difficulty: easy / mixed / spicy but family-safe
+- teams or individual play where relevant
+
+4. Active Game screen
+This is the most important screen.
+
+It should feel like the app is actively hosting.
+
+Include:
+- current round
+- current player/team
+- prompt/question/clue
+- big “Next” button
+- “Correct” and “Skip” buttons when relevant
+- score display when relevant
+- timer where relevant
+- “End Game” button
+- optional “Read aloud” button placeholder for future text-to-speech
+
+5. End Game screen
+- Winner or completion message
+- scores
+- funny family-safe wrap-up line
+- buttons:
+  - “Play Again”
+  - “Try Another Game”
+  - “Home”
+
+V1 Games to include:
+
+GAME 1: Alphabet Showdown
+Host type: App hosts
+Setting: Car / Dinner / Waiting
+How it works:
+- App chooses a category and a starting letter.
+- Players take turns answering.
+- Example categories:
+  - Animals
+  - Food
+  - Things at school
+  - Things you pack for a holiday
+  - Things that smell funny
+  - Things you would find in grandma’s house
+  - Things you do not want in your shoe
+  - Things that would be useless on the moon
+- App moves through letters A-Z or random letters depending on mode.
+- Score one point per valid answer.
+- Include timer option.
+- Include “Next Letter” and “New Category” buttons.
+
+GAME 2: What Am I?
+Host type: App hosts
+Setting: Car / Dinner / Bedtime / Waiting
+How it works:
+- App selects a mystery answer.
+- It reveals clues one by one.
+- Players guess after each clue.
+- Fewer clues = more points.
+- Include easy, medium and hard answers.
+Example:
+Answer: Penguin
+Clue 1: I am an animal.
+Clue 2: I cannot fly.
+Clue 3: I wear a natural tuxedo.
+Clue 4: I live somewhere very cold.
+Clue 5: I waddle.
+
+GAME 3: Category Dash
+Host type: App hosts
+Setting: Dinner / Waiting / Car
+Inspired by Scattergories but generic and original.
+How it works:
+- App gives one letter and several categories.
+- Players race to think of answers.
+- Example:
+Letter: B
+Categories:
+  - Something you eat
+  - A place
+  - An animal
+  - Something annoying
+  - Something you might find in a car
+- Score manually with buttons.
+- Include “New Round”.
+
+GAME 4: Forbidden Word
+Host type: Reader needed
+Setting: Dinner / Waiting
+Inspired by taboo-style play but original.
+How it works:
+- One player sees a secret word and forbidden words.
+- They must get others to guess the main word without saying the forbidden words.
+- App provides:
+  - target word
+  - 3–5 forbidden words
+  - timer
+  - correct/skip buttons
+Example:
+Target: Pizza
+Forbidden words: cheese, slice, pepperoni, oven, crust
+
+Important:
+Do not use trademarked names like Taboo, Scattergories or Heads Up inside the app UI. The mechanics can be familiar but the branding and wording must be original.
+
+Game content:
+Create a local content library with at least:
+- 50 Alphabet Showdown categories
+- 40 What Am I mystery items, each with 5 clues
+- 40 Category Dash rounds
+- 40 Forbidden Word cards
+
+Content must be family-safe, age-appropriate and not too American-specific. Use mostly universal wording, but Australian-friendly examples are okay.
+
+Create reusable data structures for games:
+- game metadata
+- game settings
+- prompt decks
+- scoring rules
+- host type
+- age range
+- situation tags
+- energy level
+
+Suggested file structure:
+src/
+  data/
+    games.ts
+    alphabetCategories.ts
+    whatAmI.ts
+    categoryDash.ts
+    forbiddenWord.ts
+  screens/
+    HomeScreen.tsx
+    GamePickerScreen.tsx
+    GameSetupScreen.tsx
+    ActiveGameScreen.tsx
+    EndGameScreen.tsx
+  components/
+    GameCard.tsx
+    PrimaryButton.tsx
+    ScoreBoard.tsx
+    Timer.tsx
+    PlayerTurnCard.tsx
+    PromptCard.tsx
+  utils/
+    gameEngine.ts
+    storage.ts
+  theme/
+    colors.ts
+    typography.ts
+
+Game engine:
+Create a simple reusable game engine that can:
+- start a game session
+- load the chosen game
+- track round number
+- track current player
+- move to next player
+- update score
+- skip prompt
+- complete game
+- reset game
+
+Settings:
+Allow users to save:
+- default player names
+- preferred age range
+- sound on/off placeholder
+- voice host on/off placeholder
+
+For now, text-to-speech can be a placeholder button unless simple Expo Speech can be safely implemented. If implementing Expo Speech is straightforward, add it so the app can read prompts aloud.
+
+UX details:
+- The app should be usable one-handed.
+- Use big “Next” and “Correct” buttons.
+- Avoid tiny text.
+- Use a persistent “pause/end game” option.
+- Keep instructions short and practical.
+- Add a “How to play” collapsible section for each game.
+
+Important product feel:
+The app should feel like a confident host, not a rule book.
+Use lines like:
+- “Round 1. No pressure. Except there absolutely is.”
+- “Player 2, you’re up.”
+- “New clue coming in…”
+- “That one was either genius or deeply suspicious.”
+- “Family peace has been restored. Mostly.”
+
+Monetisation placeholder:
+Do not build payments yet, but include a future-ready “Game Packs” screen placeholder:
+- Road Trip Pack
+- Dinner Table Pack
+- Silly Kids Pack
+- Calm Bedtime Pack
+- Big Family Pack
+
+For MVP, all current games should be free.
+
+Build priorities:
+1. Make the app flow fully usable.
+2. Make at least 4 games playable.
+3. Make the Active Game screen feel hosted and polished.
+4. Make content easy to expand.
+5. Keep code clean and modular.
+
+Please generate the full Expo React Native app with sample data, navigation, styling, and working game logic.
