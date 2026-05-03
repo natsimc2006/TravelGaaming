@@ -20,13 +20,6 @@ type PlayersFilter = 'any' | 'solo' | 'duo' | 'group';
 type HostFilter = 'any' | 'app' | 'reader';
 type SortMode = 'best' | 'quickest' | 'newest' | 'popular';
 
-const SOFT_COLORS: Record<string, string> = {
-  alphabet: '#FFE3D6',
-  whatAmI: '#DDF7F4',
-  categoryDash: '#ECE5FF',
-  forbiddenWord: '#FFF3C4',
-};
-
 const ENERGY_META: Record<string, { label: string; emoji: string }> = {
   Calm: { label: 'Calm', emoji: '😴' },
   Medium: { label: 'Thinky', emoji: '🤔' },
@@ -47,7 +40,10 @@ function Pill({
   small?: boolean;
 }) {
   const colors = useColors();
-  const bg = selected ? (color ?? colors.primary) : colors.card;
+  const bg = selected ? colors.foreground : colors.card;
+  const borderColor = selected ? colors.foreground : colors.border;
+  const textColor = selected ? '#FFF' : colors.mutedForeground;
+
   return (
     <Pressable
       onPress={onPress}
@@ -57,7 +53,7 @@ function Pill({
         paddingHorizontal: small ? 12 : 16,
         paddingVertical: small ? 7 : 9,
         borderWidth: 1.5,
-        borderColor: selected ? (color ?? colors.primary) : colors.border,
+        borderColor: borderColor,
         opacity: pressed ? 0.8 : 1,
         transform: [{ scale: pressed ? 0.96 : 1 }],
       })}
@@ -65,7 +61,7 @@ function Pill({
       <Text style={{
         fontFamily: 'Inter_600SemiBold',
         fontSize: small ? 12 : 13,
-        color: selected ? '#FFF' : colors.mutedForeground,
+        color: textColor,
       }}>
         {label}
       </Text>
@@ -106,48 +102,70 @@ function SortPill({
 function AllGameCard({ game }: { game: GameMeta }) {
   const colors = useColors();
   const gameColor = GAME_COLORS[game.colorKey as keyof typeof GAME_COLORS] ?? colors.primary;
-  const softColor = SOFT_COLORS[game.colorKey] ?? colors.muted;
   const energy = ENERGY_META[game.energyLevel];
+
+  const getSoftColor = (key: string) => {
+    const colorMap: Record<string, string> = {
+      alphabet: colors.gameSoftAlphabet,
+      whatAmI: colors.gameSoftWhatAmI,
+      categoryDash: colors.gameSoftCategoryDash,
+      forbiddenWord: colors.gameSoftForbiddenWord,
+      wouldYouRather: colors.gameSoftWouldYouRather,
+      rapidFire: colors.gameSoftRapidFire,
+      guessTheSound: colors.gameSoftGuessTheSound,
+      thisOrThat: colors.gameSoftThisOrThat,
+      riddles: colors.gameSoftRiddles,
+    };
+    return colorMap[key] || colors.muted;
+  };
+
+  const softColor = getSoftColor(game.colorKey);
 
   return (
     <AnimatedPressable
       onPress={() => router.push({ pathname: '/setup', params: { gameId: game.id } })}
       style={[styles.card, {
         backgroundColor: colors.card,
-        borderRadius: 20,
-        borderWidth: 1.5,
+        borderRadius: 24,
+        borderWidth: 1,
         borderColor: colors.border,
-        shadowColor: gameColor,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowColor: '#15152B',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.07,
         shadowRadius: 12,
         elevation: 3,
+        overflow: 'hidden',
+        marginBottom: 2,
       }]}
       scaleDown={0.97}
     >
-      {/* Top colour band */}
-      <View style={[styles.cardBand, { backgroundColor: softColor }]}>
-        <View style={[styles.cardIcon, { backgroundColor: gameColor }]}>
-          <Feather name={game.iconName as any} size={20} color="#FFF" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.cardName, { color: colors.foreground }]}>{game.name}</Text>
-          <View style={styles.energyRow}>
-            <Text style={[styles.energyText, { color: colors.mutedForeground }]}>
-              {energy.emoji} {energy.label}
-            </Text>
+      <View style={styles.cardInner}>
+        {/* Header row */}
+        <View style={styles.headerRow}>
+          <View style={[styles.iconTile, { backgroundColor: softColor }]}>
+            <Feather name={game.iconName as any} size={22} color={gameColor} />
+          </View>
+          <View style={styles.headerRight}>
+            <View style={styles.headerRightTop}>
+              <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
+              <View style={[styles.energyBadge, { backgroundColor: colors.muted }]}>
+                <Text style={[styles.energyBadgeText, { color: colors.mutedForeground }]}>
+                  {energy.emoji} {energy.label}
+                </Text>
+              </View>
+            </View>
+            {game.soloSupported && (
+              <View style={[styles.soloBadge, { backgroundColor: colors.muted }]}>
+                <Text style={[styles.soloBadgeText, { color: colors.mutedForeground }]}>Solo ✓</Text>
+              </View>
+            )}
           </View>
         </View>
-        {game.soloSupported && (
-          <View style={[styles.soloBadge, { backgroundColor: gameColor + '20' }]}>
-            <Text style={[styles.soloBadgeText, { color: gameColor }]}>Solo ✓</Text>
-          </View>
-        )}
-      </View>
 
-      {/* Description */}
-      <View style={styles.cardBody}>
-        <Text style={[styles.cardDesc, { color: colors.mutedForeground }]}>{game.description}</Text>
+        {/* Description */}
+        <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
+          {game.description}
+        </Text>
 
         {/* Meta row */}
         <View style={styles.metaRow}>
@@ -169,29 +187,27 @@ function AllGameCard({ game }: { game: GameMeta }) {
 
         {/* Badges row */}
         <View style={styles.badgeRow}>
-          <View style={[styles.hostBadge, {
-            backgroundColor: game.hostType === 'App hosts' ? colors.primary + '14' : colors.secondary + '14',
-          }]}>
+          <View style={[styles.hostBadge, { backgroundColor: colors.muted }]}>
             <Feather
               name={game.hostType === 'App hosts' ? 'smartphone' : 'mic'}
-              size={10}
-              color={game.hostType === 'App hosts' ? colors.primary : colors.secondary}
+              size={12}
+              color={colors.mutedForeground}
             />
-            <Text style={[styles.hostBadgeText, {
-              color: game.hostType === 'App hosts' ? colors.primary : colors.secondary,
-            }]}>{game.hostType}</Text>
+            <Text style={[styles.hostBadgeText, { color: colors.mutedForeground }]}>{game.hostType}</Text>
           </View>
-          {game.settings.slice(0, 2).map(s => (
-            <View key={s} style={[styles.settingBadge, { backgroundColor: gameColor + '14' }]}>
-              <Text style={[styles.settingBadgeText, { color: gameColor }]}>{s}</Text>
+          {game.settings.slice(0, 2).map((s) => (
+            <View key={s} style={[styles.settingBadge, { backgroundColor: colors.muted }]}>
+              <Text style={[styles.settingBadgeText, { color: colors.mutedForeground }]}>{s}</Text>
             </View>
           ))}
         </View>
 
-        {/* Play button */}
-        <View style={[styles.playBtn, { backgroundColor: gameColor }]}>
-          <Text style={styles.playBtnText}>Play now</Text>
-          <Feather name="arrow-right" size={15} color="#FFF" />
+        {/* Action row */}
+        <View style={styles.actionRow}>
+          <View style={[styles.playBtn, { backgroundColor: colors.primary }]}>
+            <Text style={styles.playBtnText}>Play now</Text>
+            <Feather name="arrow-right" size={14} color="#FFF" />
+          </View>
         </View>
       </View>
     </AnimatedPressable>
@@ -250,7 +266,7 @@ export default function GamesScreen() {
       <View style={[styles.root, { backgroundColor: colors.background }]}>
 
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: colors.background }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 16, backgroundColor: colors.background }]}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color={colors.foreground} />
           </Pressable>
@@ -360,7 +376,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginTop: 2,
   },
-  headerTitle: { fontFamily: 'Inter_700Bold', fontSize: 24, letterSpacing: -0.3 },
+  headerTitle: { fontFamily: 'Inter_700Bold', fontSize: 28, letterSpacing: -0.3 },
   headerSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 2 },
 
   sortBar: { borderBottomWidth: 1, paddingBottom: 2 },
@@ -393,44 +409,86 @@ const styles = StyleSheet.create({
   clearLink: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
 
   card: { overflow: 'hidden' },
-  cardBand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
+  cardInner: {
+    padding: 18,
     gap: 12,
   },
-  cardIcon: {
-    width: 40, height: 40,
-    borderRadius: 13,
-    alignItems: 'center', justifyContent: 'center',
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  cardName: { fontFamily: 'Inter_700Bold', fontSize: 17, letterSpacing: -0.2 },
-  energyRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  energyText: { fontFamily: 'Inter_500Medium', fontSize: 12 },
-  soloBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 100 },
-  soloBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 11 },
+  iconTile: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  headerRightTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  gameName: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 18,
+    letterSpacing: -0.2,
+  },
+  energyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 100,
+  },
+  energyBadgeText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+  },
+  soloBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 100,
+  },
+  soloBadgeText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+  },
 
-  cardBody: { padding: 14, paddingTop: 10, gap: 10 },
-  cardDesc: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 19 },
+  description: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+  },
 
-  metaRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
+  metaRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontFamily: 'Inter_500Medium', fontSize: 12 },
 
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   hostBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 9, paddingVertical: 5, borderRadius: 100,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100,
   },
-  hostBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 11 },
-  settingBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 100 },
-  settingBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 11 },
+  hostBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
+  settingBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
+  settingBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
 
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
   playBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, paddingVertical: 13, borderRadius: 13,
+    gap: 8, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 100,
   },
-  playBtnText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: '#FFF' },
+  playBtnText: { fontFamily: 'Inter_700Bold', fontSize: 14, color: '#FFF' },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 10 },
   emptyTitle: { fontFamily: 'Inter_700Bold', fontSize: 22, marginTop: 8 },

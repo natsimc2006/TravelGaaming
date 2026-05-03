@@ -70,7 +70,7 @@ function ActionBtn({
   return (
     <AnimatedPressable
       onPress={onPress}
-      style={[styles.actionBtn, { backgroundColor: color, paddingVertical: pv, borderRadius: 16 }]}
+      style={[styles.actionBtn, { backgroundColor: color, paddingVertical: pv, borderRadius: 20 }]}
       scaleDown={0.95}
     >
       {icon && <Feather name={icon as any} size={fs} color={tc} />}
@@ -260,7 +260,7 @@ export default function PlayScreen() {
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
 
         {/* Header */}
-        <View style={[styles.topBar, { backgroundColor: gameColor }]}>
+        <View style={[styles.topBar, { backgroundColor: gameColor + '14', paddingTop: 12, paddingBottom: 12 }]}>
           <View style={styles.topLeft}>
             <Text style={styles.gameName} numberOfLines={1}>{session.gameName}</Text>
             <Text style={styles.roundText}>Round {session.round} of {session.totalRounds}</Text>

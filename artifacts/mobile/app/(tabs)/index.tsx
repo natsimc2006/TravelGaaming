@@ -35,25 +35,25 @@ const SECTIONS: {
   filter: (g: GameMeta) => boolean;
 }[] = [
   {
-    label: '🚗 Perfect for the car',
+    label: 'Perfect for the car',
     icon: 'navigation',
     micro: 'Minimal props. Maximum distraction.',
     filter: g => g.settings.includes('Car' as GameSetting),
   },
   {
-    label: '🍽 Dinner table lifesavers',
+    label: 'Dinner table games',
     icon: 'coffee',
     micro: 'For when everyone is technically still at the table.',
     filter: g => g.settings.includes('Dinner' as GameSetting),
   },
   {
-    label: '⏳ Waiting room winners',
+    label: 'Waiting room games',
     icon: 'clock',
     micro: 'Because queues build character. Apparently.',
     filter: g => g.settings.includes('Waiting' as GameSetting),
   },
   {
-    label: '😴 Calm wind-down games',
+    label: 'Wind-down games',
     icon: 'moon',
     micro: 'Still fun. Just less feral.',
     filter: g => g.energyLevel === ('Calm' as EnergyLevel),
@@ -125,7 +125,7 @@ function MoodStrip() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.moodRow}
+        contentContainerStyle={[styles.moodRow, { paddingHorizontal: 6 }]}
       >
         {MOODS.map(m => {
           const isSelected = selected === m.value;
@@ -136,8 +136,8 @@ function MoodStrip() {
               style={({ pressed }) => [
                 styles.moodPill,
                 {
-                  backgroundColor: isSelected ? m.color : colors.card,
-                  borderColor: isSelected ? m.color : colors.border,
+                  backgroundColor: isSelected ? colors.foreground : colors.card,
+                  borderColor: isSelected ? colors.foreground : colors.border,
                   borderWidth: 1.5,
                   opacity: pressed ? 0.82 : 1,
                   transform: [{ scale: pressed ? 0.96 : isSelected ? 1.04 : 1 }],
@@ -173,9 +173,10 @@ function FreshnessCard() {
       onPress={() => router.push('/games')}
       style={({ pressed }) => [
         freshnessCardStyles.card,
-        { backgroundColor: colors.softTeal, borderRadius: 20, opacity: pressed ? 0.88 : 1 },
+        { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.88 : 1, overflow: 'hidden' },
       ]}
     >
+      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: colors.secondary, borderTopLeftRadius: 20, borderBottomLeftRadius: 20 }} />
       <View style={freshnessCardStyles.row}>
         <Text style={{ fontSize: 24 }}>✨</Text>
         <View style={{ flex: 1 }}>
@@ -206,7 +207,7 @@ const freshnessCardStyles = StyleSheet.create({
 function AISettingsHint() {
   const colors = useColors();
   return (
-    <View style={[aiStyles.card, { backgroundColor: colors.muted, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
+    <View style={[aiStyles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
       <View style={aiStyles.row}>
         <View style={[aiStyles.icon, { backgroundColor: colors.gameCategoryDash + '18' }]}>
           <Text style={{ fontSize: 18 }}>🤖</Text>
@@ -240,7 +241,7 @@ function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
   if (stats.totalGamesPlayed === 0) return null;
 
   return (
-    <View style={[styles.statsCard, { backgroundColor: colors.softOrange, borderRadius: 20 }]}>
+    <View style={[styles.statsCard, { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }]}>
       <View style={styles.statsHeader}>
         <Text style={{ fontSize: 20 }}>📊</Text>
         <Text style={[styles.statsTitle, { color: colors.foreground }]}>Family Stats</Text>
@@ -275,11 +276,11 @@ function HorizontalGameRow({ games }: { games: GameMeta[] }) {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.hRow}
-      snapToInterval={316}
+      snapToInterval={268}
       decelerationRate="fast"
     >
       {games.map(g => (
-        <View key={g.id} style={{ width: 300, marginRight: 16 }}>
+        <View key={g.id} style={{ width: 252, marginRight: 16 }}>
           <GameCard game={g} />
         </View>
       ))}
@@ -381,7 +382,7 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Hero */}
-      <View style={[styles.heroBg, { backgroundColor: colors.softOrange, borderRadius: 28 }]}>
+      <View style={[styles.heroBg, { backgroundColor: colors.card, borderRadius: 28, borderWidth: 1, borderColor: colors.border }]}>
         <View style={styles.logoRow}>
           <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
             <Feather name="star" size={26} color="#FFF" />
@@ -450,7 +451,7 @@ export default function HomeScreen() {
         onPress={() => router.push('/packs')}
         style={({ pressed }) => [
           styles.packTeaser,
-          { backgroundColor: colors.softTeal, borderRadius: 20, opacity: pressed ? 0.85 : 1 },
+          { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
         ]}
       >
         <Text style={{ fontSize: 28 }}>🎁</Text>
@@ -519,7 +520,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderRadius: 18,
+    borderRadius: 22,
     paddingVertical: 20,
     shadowColor: '#FF6B3D',
     shadowOffset: { width: 0, height: 6 },
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderRadius: 18,
+    borderRadius: 22,
     paddingVertical: 16,
     borderWidth: 1.5,
     shadowColor: '#000',

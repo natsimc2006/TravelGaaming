@@ -1,0 +1,427 @@
+Upgrade the visual design system of the Game Host Expo app to feel modern, premium, playful and App Store-ready.
+
+Do not rebuild the app.
+Do not change the game logic.
+Focus on visual polish, layout refinement, colour discipline, spacing, typography and component consistency.
+
+CURRENT ISSUE
+The app currently feels fun but slightly cheap due to:
+- too many bright colours competing
+- heavy pastel blocks
+- large saturated buttons on every card
+- inconsistent card colours
+- cramped filter/header area
+- visual hierarchy not premium enough
+- game cards feel more like children’s worksheets than a modern family app
+
+NEW DESIGN DIRECTION
+
+The app should feel:
+- premium but still fun
+- calm enough for parents
+- playful enough for kids
+- modern App Store quality
+- clean, warm, tactile, polished
+
+Think:
+- warm cream base
+- deep navy typography
+- soft coral as primary brand accent
+- teal as secondary accent
+- restrained use of game colours
+- more whitespace
+- less full-card colour flooding
+- subtle borders and shadows
+- fewer emojis in primary UI
+- icons should feel consistent and intentional
+
+-----------------------------------
+PART 1: CREATE A PREMIUM THEME
+-----------------------------------
+
+Update theme constants.
+
+Use this refined palette:
+
+background: #FFF9F1
+surface: #FFFFFF
+surfaceWarm: #FFF4E8
+surfaceTint: #F7EFE6
+
+textPrimary: #15152B
+textSecondary: #6F6F82
+textMuted: #9A96A8
+
+primary: #FF6B3D
+primaryDark: #E95A30
+primarySoft: #FFE2D6
+
+secondary: #35BDB2
+secondaryDark: #179E96
+secondarySoft: #DDF7F4
+
+premiumInk: #19172F
+premiumLilac: #8B6EF6
+premiumBlue: #3E7BFA
+premiumGreen: #17B883
+premiumRose: #F43F6B
+premiumAmber: #F7B731
+
+borderSoft: #EDE4DA
+borderMedium: #DDD2C6
+
+shadow: rgba(21, 21, 43, 0.08)
+
+Avoid using bright full-card backgrounds except in small accent areas.
+
+-----------------------------------
+PART 2: TYPOGRAPHY REFINEMENT
+-----------------------------------
+
+Create consistent typography sizes:
+
+displayTitle:
+- 34–40
+- bold
+- tight line height
+
+screenTitle:
+- 30–34
+- bold
+
+sectionTitle:
+- 22–24
+- bold
+
+cardTitle:
+- 21–24
+- bold
+
+body:
+- 16–18
+- medium line height
+
+caption:
+- 13–14
+- medium
+
+Button text:
+- 17–18
+- bold
+
+Do not let text run too wide.
+Improve line heights.
+Reduce overuse of emojis in headings.
+
+-----------------------------------
+PART 3: HOME SCREEN REDESIGN
+-----------------------------------
+
+Redesign the home screen to feel more premium.
+
+Hero:
+- Replace the large peach hero block with a cleaner premium hero card.
+- Use white/surface card with subtle warm tint.
+- Add a small coral logo tile.
+- Title: Game Host
+- Subtitle should rotate as before.
+- Keep “New prompts added regularly” but style it as a small pill, not plain text.
+
+Hero should feel elegant, not oversized.
+
+Primary CTA area:
+- Start a Game should remain primary but use:
+  - coral gradient or solid coral
+  - rounded 24
+  - soft shadow
+  - height around 64
+- Save the Moment should be secondary:
+  - white card
+  - subtle border
+  - small lightning icon
+  - less visual weight
+
+Fresh prompts card:
+- Make it smaller and more refined.
+- Use white card with teal accent strip or small teal badge.
+- Avoid huge coloured background.
+- Show:
+  “Fresh prompts”
+  “171 ready”
+  “Games stay varied, not recycled.”
+
+Mood selector:
+- Make mood pills smaller and more refined.
+- Use icon + label.
+- Selected pill should be navy or coral.
+- Unselected pills white with border.
+- Ensure horizontal scroll has padding and does not clip.
+
+Recently Played:
+- Style as a compact premium list card.
+- Use white surface, border, subtle shadow.
+- Avoid thick coloured left strip.
+- Include small game icon tile.
+
+Home game sections:
+- Reduce the number of cards visible on home.
+- Each section should show a more premium horizontal carousel.
+- Cards should not clip awkwardly.
+- Use snap spacing.
+- Show 1.1 cards on screen max, not half-clipped tiny cards.
+- Cards should use white base with small coloured icon tile and accent badge, not full pastel block.
+
+-----------------------------------
+PART 4: ALL GAMES SCREEN REDESIGN
+-----------------------------------
+
+This screen currently feels cramped and too colourful.
+
+Upgrade layout:
+
+Header:
+- Respect Dynamic Island and safe area.
+- Title should not sit under the island.
+- Add top padding.
+- Back arrow aligned cleanly.
+- Subtitle under title.
+
+Sticky filter area:
+- Make it cleaner.
+- Use two horizontal rows:
+  1. sort chips
+  2. filter chips
+- Chips should be compact.
+- Selected chip:
+  - navy background
+  - white text
+- Avoid orange selected chips everywhere.
+
+Game count:
+- show as subtle caption:
+  “9 games ready”
+
+Game list cards:
+- Redesign cards as premium white cards.
+- Remove large coloured header panels.
+- Use small icon tile on left.
+- Use a slim accent line or small corner badge per game type.
+- Keep the game colour only as:
+  - icon tile background
+  - tiny tag
+  - button accent
+- Description text should be shorter and cleaner.
+- Metadata row should be tidy and not too dense.
+- Tags should be muted pills.
+- “Play now” should not be a huge saturated full-width bar on every card.
+  Instead:
+  - use a compact right-aligned button
+  - or a premium bottom row with smaller button
+  - reserve large CTAs for setup/active game screens
+
+Card layout:
+- icon tile + title + energy badge on top row
+- description
+- metadata row
+- tags row
+- action row
+
+Make cards feel like App Store product cards, not worksheet tiles.
+
+-----------------------------------
+PART 5: GAME CARD COMPONENT REBUILD
+-----------------------------------
+
+Refactor GameCard component.
+
+New card style:
+- background: white
+- borderRadius: 28
+- padding: 18–22
+- border: 1px solid borderSoft
+- subtle shadow
+- marginBottom: 16
+
+Icon tile:
+- 52x52
+- rounded 16
+- coloured by game type
+- white icon
+
+Game colours:
+Alphabet: primary/coral
+What Am I: secondary/teal
+Category Dash: premiumLilac
+Forbidden Word: premiumAmber or primaryDark
+Would You Rather: premiumRose
+Rapid Fire: premiumGreen
+Guess the Sound: premiumBlue
+This or That: premiumBlue
+Riddles: premiumLilac
+
+Important:
+Do not flood the whole card with these colours.
+
+Badges:
+- Solo
+- App hosts
+- Reader needed
+- Ages
+- Energy
+Use small muted pills.
+
+CTA:
+- “Play”
+- compact pill button
+- background primary only if card is focused/featured
+- otherwise navy or outline
+
+-----------------------------------
+PART 6: ACTIVE GAME SCREEN POLISH
+-----------------------------------
+
+Make the active game screen feel like a premium hosted session.
+
+Header:
+- use safe area correctly
+- use deep navy or game accent
+- avoid overly bright solid blocks where possible
+- title and round should be readable
+
+Main content:
+- centre the active game content better vertically
+- reduce huge empty bottom area
+- use a main “stage card” for prompt/clue
+- place player turn card above stage
+- action buttons below stage with strong hierarchy
+
+For What Am I:
+- “Worth 5 points” card should feel like a score badge, not a giant block.
+- Clue card should be elegant:
+  - white card
+  - subtle accent left border
+  - newest clue highlighted softly
+
+Buttons:
+- Primary action should be clear.
+- Secondary actions should not be cramped.
+- On small screens stack:
+  - Make a Guess / I Got It full width
+  - Next Clue and Skip below as two smaller buttons
+- Make Skip readable.
+
+Voice button:
+- Small circular icon button
+- not visually dominant
+
+-----------------------------------
+PART 7: SETUP SCREEN POLISH
+-----------------------------------
+
+Current setup is good but can be more premium.
+
+Update:
+- more whitespace
+- softer cards
+- selected states more refined
+- avoid thick bright borders
+- use subtle glow/background for selected option
+- player number controls should feel tactile and polished
+
+Game summary card:
+- white card with icon tile and title
+- not large coloured pastel block
+
+Option cards:
+- selected:
+  - thin accent border
+  - very soft accent background
+  - small checkmark
+- unselected:
+  - white/neutral surface
+
+-----------------------------------
+PART 8: REDUCE EMOJI DEPENDENCY
+-----------------------------------
+
+Keep some emoji warmth, but reduce overuse in premium UI.
+
+Where possible:
+- use lucide-react-native icons instead of emojis
+- keep emojis only in friendly microcopy or mood chips
+
+Use icons for:
+- car
+- dinner
+- timer
+- users
+- microphone
+- volume
+- sparkles
+- game categories
+
+If lucide-react-native is already installed, use it.
+If not, install:
+npm install lucide-react-native
+
+-----------------------------------
+PART 9: CONSISTENCY RULES
+-----------------------------------
+
+Apply these across all screens:
+
+- Consistent horizontal padding: 20 or 24
+- Consistent card radius: 24–28
+- Consistent button radius: 18–22
+- Shadows should be soft, not heavy
+- Avoid more than 2 strong colours visible in one component
+- Use navy for primary text
+- Use muted grey-purple for secondary text
+- Use coral only for key actions
+- Use teal for freshness/voice/success
+- Avoid large pastel blocks
+
+-----------------------------------
+PART 10: ANIMATION REFINEMENT
+-----------------------------------
+
+Keep animations subtle:
+- press scale: 0.97
+- fade in cards
+- gentle slide for host messages
+- no bouncy childish motion everywhere
+
+Premium playful, not cartoonish.
+
+-----------------------------------
+PART 11: SPECIFIC SCREENSHOT FIXES
+-----------------------------------
+
+Fix these issues visible now:
+
+1. All Games title is too close to Dynamic Island. Add safe-area top spacing.
+2. Filter chips feel cramped and too bright. Refine chip styling.
+3. Full-width bright Play Now bars make every card shout. Replace with smaller premium CTA.
+4. Game cards use too much pastel background. Convert to mostly white cards with accent icon.
+5. Home hero feels too peach-heavy. Make it cleaner and more premium.
+6. Mood chips still clip on right. Fix scroll padding.
+7. Some cards are horizontally clipped. Fix carousel sizing.
+8. Reduce emoji usage in section headings where it feels cheap.
+9. Make “171 ready” badge smaller and more elegant.
+10. Improve spacing between header, filters and game list.
+
+-----------------------------------
+EXPECTED RESULT
+-----------------------------------
+
+After this upgrade, the app should feel:
+- cleaner
+- more premium
+- still playful
+- more parent-friendly
+- less cheap/kiddy
+- App Store-ready
+- visually consistent across Home, All Games, Setup and Active Game screens
+
+Keep all existing features working.
+Return updated code.

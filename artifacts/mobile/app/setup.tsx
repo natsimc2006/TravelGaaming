@@ -58,7 +58,7 @@ function LargeOptionCard<T extends string>({
       style={[
         styles.optCard,
         {
-          backgroundColor: selected ? color + '18' : colors.muted,
+          backgroundColor: selected ? color + '12' : colors.muted,
           borderRadius: 14,
           borderWidth: 2,
           borderColor: selected ? color : 'transparent',
@@ -66,6 +66,11 @@ function LargeOptionCard<T extends string>({
       ]}
       scaleDown={0.96}
     >
+      {selected && (
+        <View style={{ position: 'absolute', top: 10, right: 10 }}>
+          <Feather name="check" size={14} color={color} />
+        </View>
+      )}
       <Text style={{ fontSize: 22 }}>{opt.emoji}</Text>
       <Text style={[styles.optLabel, { color: selected ? color : colors.foreground }]}>{opt.label}</Text>
       <Text style={[styles.optSub, { color: colors.mutedForeground }]}>{opt.sub}</Text>
@@ -259,7 +264,7 @@ export default function SetupScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Game banner */}
-          <View style={[styles.gameBanner, { backgroundColor: gameColor + '14', borderRadius: 18 }]}>
+          <View style={[styles.gameBanner, { backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border }]}>
             <View style={[styles.bannerIcon, { backgroundColor: gameColor }]}>
               <Feather name={game.iconName as any} size={22} color="#FFF" />
             </View>
@@ -292,14 +297,14 @@ export default function SetupScreen() {
             <View style={styles.countRow}>
               <Pressable
                 onPress={() => setPlayerCount(c => Math.max(1, c - 1))}
-                style={[styles.countBtn, { backgroundColor: colors.muted }]}
+                style={[styles.countBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}
               >
                 <Feather name="minus" size={20} color={colors.foreground} />
               </Pressable>
               <Text style={[styles.countNum, { color: gameColor }]}>{playerCount}</Text>
               <Pressable
                 onPress={() => setPlayerCount(c => Math.min(10, c + 1))}
-                style={[styles.countBtn, { backgroundColor: colors.muted }]}
+                style={[styles.countBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}
               >
                 <Feather name="plus" size={20} color={colors.foreground} />
               </Pressable>
@@ -316,10 +321,10 @@ export default function SetupScreen() {
                   style={[
                     styles.playerChip,
                     {
-                      backgroundColor: colors.muted,
+                      backgroundColor: colors.card,
                       borderRadius: 14,
-                      borderLeftWidth: 3,
-                      borderLeftColor: gameColor,
+                      borderWidth: 1,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -468,7 +473,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderRadius: 18,
+    borderRadius: 22,
     paddingVertical: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
