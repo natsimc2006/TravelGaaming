@@ -846,6 +846,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
+    paddingHorizontal: 14,
+    minWidth: 0,
   },
   playerTurnCard: {
     flexDirection: 'row',

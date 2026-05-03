@@ -113,31 +113,31 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
       <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
       <Text style={[styles.description, { color: colors.mutedForeground }]}>{game.description}</Text>
 
-      {/* Footer row */}
-      <View style={styles.footer}>
-        <View style={styles.settingChips}>
-          {game.settings.slice(0, 2).map(s => (
-            <View key={s} style={[styles.settingChip, { backgroundColor: gameColor + '20' }]}>
-              <Feather name={SETTING_ICONS[s] as any} size={10} color={gameColor} />
-              <Text style={[styles.settingText, { color: gameColor }]}>{s}</Text>
-            </View>
-          ))}
-          {game.hostType === 'App hosts' ? (
-            <View style={[styles.settingChip, { backgroundColor: '#FFF' + 'CC' }]}>
-              <Feather name="smartphone" size={10} color={colors.mutedForeground} />
-              <Text style={[styles.settingText, { color: colors.mutedForeground }]}>App hosts</Text>
-            </View>
-          ) : (
-            <View style={[styles.settingChip, { backgroundColor: '#FFF' + 'CC' }]}>
-              <Feather name="mic" size={10} color={colors.mutedForeground} />
-              <Text style={[styles.settingText, { color: colors.mutedForeground }]}>Reader needed</Text>
-            </View>
-          )}
-        </View>
-        <View style={[styles.playBtn, { backgroundColor: gameColor }]}>
-          <Text style={styles.playBtnText}>Play now</Text>
-          <Feather name="arrow-right" size={14} color="#FFF" />
-        </View>
+      {/* Chips row */}
+      <View style={styles.settingChips}>
+        {game.settings.slice(0, 2).map(s => (
+          <View key={s} style={[styles.settingChip, { backgroundColor: gameColor + '20' }]}>
+            <Feather name={SETTING_ICONS[s] as any} size={10} color={gameColor} />
+            <Text style={[styles.settingText, { color: gameColor }]}>{s}</Text>
+          </View>
+        ))}
+        {game.hostType === 'App hosts' ? (
+          <View style={[styles.settingChip, { backgroundColor: '#FFFFFFCC' }]}>
+            <Feather name="smartphone" size={10} color={colors.mutedForeground} />
+            <Text style={[styles.settingText, { color: colors.mutedForeground }]}>App hosts</Text>
+          </View>
+        ) : (
+          <View style={[styles.settingChip, { backgroundColor: '#FFFFFFCC' }]}>
+            <Feather name="mic" size={10} color={colors.mutedForeground} />
+            <Text style={[styles.settingText, { color: colors.mutedForeground }]}>Reader needed</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Full-width Play button */}
+      <View style={[styles.playBtn, { backgroundColor: gameColor }]}>
+        <Text style={styles.playBtnText}>Play now</Text>
+        <Feather name="arrow-right" size={16} color="#FFF" />
       </View>
     </AnimatedPressable>
   );
@@ -189,25 +189,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-    gap: 10,
-  },
   settingChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    flex: 1,
   },
   settingChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 100,
   },
   settingText: {
@@ -217,14 +209,16 @@ const styles = StyleSheet.create({
   playBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 100,
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 2,
   },
   playBtnText: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 13,
+    fontSize: 15,
     color: '#FFF',
   },
   compactCard: {
