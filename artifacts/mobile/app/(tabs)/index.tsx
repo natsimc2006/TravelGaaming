@@ -17,6 +17,7 @@ import { loadRecentGames } from '@/utils/storage';
 import { loadFamilyStats, type FamilyStats } from '@/utils/progression';
 import { getNewThisWeekCount } from '@/data/contentRelease';
 import { getLocalPromptStats } from '@/utils/aiPromptEngine';
+import { getSeenMap } from '@/utils/contentMemory';
 
 const SUBTITLES = [
   "Ready to rescue the next 'I'm bored' moment?",
@@ -286,17 +287,49 @@ function HorizontalGameRow({ games }: { games: GameMeta[] }) {
   );
 }
 
+// Prompt counts per game — kept in sync with getLocalPromptStats()
+const PROMPT_COUNTS: Record<string, number> = {
+  'what-am-i': 40,
+  'alphabet-showdown': 51,
+  'category-dash': 40,
+  'forbidden-word': 40,
+};
+
 function QuickPlayButton() {
   const colors = useColors();
   const [loading, setLoading] = useState(false);
 
   const handleQuickPlay = async () => {
     setLoading(true);
-    const recent = await loadRecentGames();
+
+    const [recent, seenMap] = await Promise.all([
+      loadRecentGames(),
+      getSeenMap(),
+    ]);
+
     await new Promise(r => setTimeout(r, 900));
-    const avoidId = recent[0];
-    const candidates = GAMES.filter(g => g.id !== avoidId);
-    const pick = candidates[Math.floor(Math.random() * candidates.length)] ?? GAMES[0];
+
+    // Avoid replaying the same game twice in a row
+    const lastPlayedId = recent[0];
+    const candidates = GAMES.filter(g => g.id !== lastPlayedId);
+
+    // Weight each game by how many unseen prompts it has left
+    // (more fresh prompts = higher chance of being picked)
+    const weights = candidates.map(g => {
+      const total = PROMPT_COUNTS[g.id] ?? 20;
+      const seenCount = Object.values(seenMap).filter(r => r.lastGameId === g.id).length;
+      const freshCount = Math.max(1, total - seenCount);
+      return freshCount;
+    });
+
+    const totalWeight = weights.reduce((s, w) => s + w, 0);
+    let rand = Math.random() * totalWeight;
+    let pick = candidates[0];
+    for (let i = 0; i < candidates.length; i++) {
+      rand -= weights[i];
+      if (rand <= 0) { pick = candidates[i]; break; }
+    }
+
     setLoading(false);
     router.push({ pathname: '/setup', params: { gameId: pick.id, quick: '1' } });
   };
@@ -317,7 +350,7 @@ function QuickPlayButton() {
     >
       <Feather name="zap" size={18} color={colors.primary} />
       <Text style={[styles.saveBtnText, { color: colors.foreground }]}>
-        {loading ? 'Picking something good…' : 'Save the Moment'}
+        {loading ? 'Finding something fresh…' : 'Save the Moment'}
       </Text>
     </Pressable>
   );

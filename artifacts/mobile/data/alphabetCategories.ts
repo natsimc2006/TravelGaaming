@@ -2,6 +2,8 @@ export interface AlphabetCategory {
   id: string;
   name: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  category?: string;
+  tags?: string[];
 }
 
 export const ALPHABET_CATEGORIES: AlphabetCategory[] = [

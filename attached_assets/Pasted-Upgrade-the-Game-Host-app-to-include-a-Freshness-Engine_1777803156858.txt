@@ -1,0 +1,193 @@
+Upgrade the Game Host app to include a “Freshness Engine” so repeat gameplay feels new and not repetitive.
+
+Do not rebuild the app. Extend current structure.
+
+GOAL
+
+Ensure users rarely see repeated prompts, and when they do, it feels intentional and fresh.
+
+-----------------------------------
+PART 1: PROMPT MEMORY SYSTEM
+-----------------------------------
+
+Create:
+src/utils/contentMemory.ts
+
+Store per prompt:
+- id (required)
+- lastSeenAt (timestamp)
+- timesSeen (number)
+- lastGamePlayed (string)
+
+Use AsyncStorage to persist.
+
+Functions:
+
+recordPromptSeen(promptId, gameId)
+
+getPromptStats(promptId)
+
+getAllSeenPrompts()
+
+-----------------------------------
+PART 2: SMART PROMPT SELECTION
+-----------------------------------
+
+Update all game data selection logic.
+
+When selecting prompts:
+- prioritise prompts never seen
+- then prompts not seen recently
+- deprioritise prompts seen in last 3 sessions
+- allow occasional resurfacing if:
+  - lastSeenAt > 7 days ago
+
+Create utility:
+
+selectFreshPrompt(promptList)
+
+Logic:
+1. filter unseen prompts
+2. if none → sort by oldest lastSeenAt
+3. randomise within filtered set
+
+-----------------------------------
+PART 3: VARIATION ENGINE
+-----------------------------------
+
+Create:
+src/utils/promptVariation.ts
+
+For category-based games (Alphabet, Category Dash):
+
+Base category:
+“Things in a kitchen”
+
+Generate variations:
+- “Things in your kitchen right now”
+- “Things in a messy kitchen”
+- “Things that don’t belong in a kitchen”
+- “Things you forgot to clean in the kitchen”
+
+Store variation templates:
+- “Things in a {place}”
+- “Things you’d find in a {mood} {place}”
+- “Things that shouldn’t be in a {place}”
+
+Apply randomly when generating prompts.
+
+-----------------------------------
+PART 4: FRESHNESS TAGS (UI)
+-----------------------------------
+
+Add freshness labels to prompts:
+
+If never seen:
+- show badge: “🆕 New for you”
+
+If not seen in 7+ days:
+- show badge: “🔁 Back again”
+
+If high usage globally (mock for now):
+- show: “🔥 Family favourite”
+
+Update GameCard + ActiveGameScreen to display these.
+
+-----------------------------------
+PART 5: SESSION AWARENESS
+-----------------------------------
+
+Track sessionId per game launch.
+
+Store:
+- prompts used in this session
+
+Do not repeat prompts within same session.
+
+-----------------------------------
+PART 6: WEEKLY “NEW CONTENT” SYSTEM
+-----------------------------------
+
+Create:
+src/data/contentRelease.ts
+
+Structure:
+- releaseWeek
+- newPromptIds
+
+Simulate weekly drops:
+- mark certain prompts as “new this week”
+
+On Home Screen show:
+
+“✨ 18 new prompts added this week”
+
+Even if static for now.
+
+-----------------------------------
+PART 7: QUICK PLAY IMPROVEMENT
+-----------------------------------
+
+Quick Play should:
+- prioritise unseen prompts
+- avoid last played game
+- mix game types
+
+Add logic:
+“Don’t give same game twice in a row unless user manually selects”
+
+-----------------------------------
+PART 8: CONTENT EXPANSION READY
+-----------------------------------
+
+Ensure all prompts have:
+- id
+- category
+- tags
+- difficulty
+
+This allows future:
+- AI generation
+- packs
+- filtering
+
+-----------------------------------
+PART 9: VOICE HOST INTEGRATION
+-----------------------------------
+
+Add voice lines:
+
+For new prompt:
+“Fresh one. Let’s see how you go.”
+
+For resurfaced:
+“You haven’t seen this one in a while.”
+
+For repeat:
+“Alright… this one’s making a comeback.”
+
+-----------------------------------
+PART 10: UI FIX
+
+On Home Screen:
+Add small line under header:
+
+“New prompts added regularly”
+
+Optional dynamic:
+“23 new prompts this week”
+
+-----------------------------------
+
+EXPECTED RESULT
+
+The app should now:
+- avoid obvious repetition
+- feel like it has endless content
+- subtly signal freshness
+- reuse content intelligently
+- be ready for AI expansion later
+
+Do not overcomplicate.
+Keep it fast.
+Keep it invisible to the user except for small freshness cues.

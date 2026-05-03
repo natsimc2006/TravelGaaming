@@ -2,6 +2,7 @@ export interface CategoryDashRound {
   id: string;
   categories: [string, string, string, string, string];
   difficulty: 'easy' | 'medium' | 'hard';
+  tags?: string[];
 }
 
 export const CATEGORY_DASH_ROUNDS: CategoryDashRound[] = [

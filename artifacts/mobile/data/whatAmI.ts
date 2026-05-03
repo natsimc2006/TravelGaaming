@@ -3,6 +3,8 @@ export interface WhatAmIItem {
   answer: string;
   clues: [string, string, string, string, string];
   difficulty: 'easy' | 'medium' | 'hard';
+  category?: string;
+  tags?: string[];
 }
 
 export const WHAT_AM_I_ITEMS: WhatAmIItem[] = [

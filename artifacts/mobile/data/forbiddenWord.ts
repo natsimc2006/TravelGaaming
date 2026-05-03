@@ -3,6 +3,8 @@ export interface ForbiddenWordCard {
   targetWord: string;
   forbiddenWords: [string, string, string, string, string];
   difficulty: 'easy' | 'medium' | 'hard';
+  category?: string;
+  tags?: string[];
 }
 
 export const FORBIDDEN_WORD_CARDS: ForbiddenWordCard[] = [
