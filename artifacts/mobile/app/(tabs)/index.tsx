@@ -61,10 +61,10 @@ const SECTIONS: {
 ];
 
 const MOODS = [
-  { label: '😴 Calm', value: 'Calm', color: '#4ECDC4', line: 'Good choice. Peaceful chaos incoming.' },
+  { label: '😴 Calm', value: 'Calm', color: '#35BDB2', line: 'Good choice. Peaceful chaos incoming.' },
   { label: '😄 Fun', value: 'Fun', color: '#FF6B3D', line: 'Fun mode: engaged. Hold on.' },
-  { label: '⚡ Focused', value: 'Medium', color: '#F59E0B', line: 'The thinking caps are on.' },
-  { label: '🤪 Chaos', value: 'Chaotic', color: '#8B5CF6', line: "Good choice. We'll keep the chaos at a manageable level." },
+  { label: '⚡ Focused', value: 'Medium', color: '#F7B731', line: 'The thinking caps are on.' },
+  { label: '🤪 Chaos', value: 'Chaotic', color: '#8B6EF6', line: "Manageable chaos. Probably." },
 ];
 
 function NewPromptsTag() {
@@ -78,17 +78,17 @@ function NewPromptsTag() {
     );
   }
   return (
-    <View style={[newPromptStyles.pill, { backgroundColor: colors.primary + '18' }]}>
+    <View style={[newPromptStyles.pill, { backgroundColor: colors.primarySoft }]}>
       <Text style={[newPromptStyles.pillText, { color: colors.primary }]}>
-        ✨ {count} new prompts this week
+        {count} new prompts this week
       </Text>
     </View>
   );
 }
 
 const newPromptStyles = StyleSheet.create({
-  line: { fontFamily: 'Inter_400Regular', fontSize: 12, textAlign: 'center' },
-  pill: { borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6 },
+  line: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+  pill: { borderRadius: 100, paddingHorizontal: 12, paddingVertical: 5 },
   pillText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
 });
 
@@ -125,7 +125,7 @@ function MoodStrip() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.moodRow, { paddingHorizontal: 6 }]}
+        contentContainerStyle={styles.moodRow}
       >
         {MOODS.map(m => {
           const isSelected = selected === m.value;
@@ -136,20 +136,15 @@ function MoodStrip() {
               style={({ pressed }) => [
                 styles.moodPill,
                 {
-                  backgroundColor: isSelected ? colors.foreground : colors.card,
-                  borderColor: isSelected ? colors.foreground : colors.border,
+                  backgroundColor: isSelected ? colors.navy : colors.card,
+                  borderColor: isSelected ? colors.navy : colors.border,
                   borderWidth: 1.5,
                   opacity: pressed ? 0.82 : 1,
-                  transform: [{ scale: pressed ? 0.96 : isSelected ? 1.04 : 1 }],
-                  shadowColor: isSelected ? m.color : 'transparent',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 8,
-                  elevation: isSelected ? 3 : 0,
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
                 },
               ]}
             >
-              <Text style={[styles.moodPillText, { color: isSelected ? '#FFF' : colors.foreground }]}>
+              <Text style={[styles.moodPillText, { color: isSelected ? '#FFF' : colors.mutedForeground }]}>
                 {m.label}
               </Text>
             </Pressable>
@@ -157,7 +152,7 @@ function MoodStrip() {
         })}
       </ScrollView>
       {selectedMood && (
-        <Text style={[styles.moodLine, { color: selectedMood.color }]}>
+        <Text style={[styles.moodLine, { color: colors.mutedForeground }]}>
           {selectedMood.line}
         </Text>
       )}
@@ -173,21 +168,30 @@ function FreshnessCard() {
       onPress={() => router.push('/games')}
       style={({ pressed }) => [
         freshnessCardStyles.card,
-        { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.88 : 1, overflow: 'hidden' },
+        {
+          backgroundColor: colors.card,
+          borderRadius: 20,
+          borderWidth: 1,
+          borderColor: colors.border,
+          opacity: pressed ? 0.88 : 1,
+          overflow: 'hidden',
+        },
       ]}
     >
-      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: colors.secondary, borderTopLeftRadius: 20, borderBottomLeftRadius: 20 }} />
+      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: colors.secondary, borderTopLeftRadius: 20, borderBottomLeftRadius: 20 }} />
       <View style={freshnessCardStyles.row}>
-        <Text style={{ fontSize: 24 }}>✨</Text>
+        <View style={[freshnessCardStyles.iconTile, { backgroundColor: colors.secondarySoft }]}>
+          <Feather name="refresh-cw" size={16} color={colors.secondary} />
+        </View>
         <View style={{ flex: 1 }}>
           <Text style={[freshnessCardStyles.title, { color: colors.foreground }]}>Fresh prompts</Text>
           <Text style={[freshnessCardStyles.sub, { color: colors.mutedForeground }]}>
-            New ideas are mixed in so games never feel recycled.
+            New ideas mixed in so games stay varied.
           </Text>
         </View>
-        <View style={[freshnessCardStyles.pill, { backgroundColor: colors.secondary }]}>
-          <Text style={freshnessCardStyles.pillText}>{stats.total}</Text>
-          <Text style={freshnessCardStyles.pillLabel}>ready</Text>
+        <View style={[freshnessCardStyles.badge, { backgroundColor: colors.muted }]}>
+          <Text style={[freshnessCardStyles.badgeNum, { color: colors.foreground }]}>{stats.total}</Text>
+          <Text style={[freshnessCardStyles.badgeLabel, { color: colors.mutedForeground }]}>ready</Text>
         </View>
       </View>
     </Pressable>
@@ -195,45 +199,14 @@ function FreshnessCard() {
 }
 
 const freshnessCardStyles = StyleSheet.create({
-  card: { padding: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  title: { fontFamily: 'Inter_700Bold', fontSize: 15 },
-  sub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17 },
-  pill: { alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, minWidth: 52 },
-  pillText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF' },
-  pillLabel: { fontFamily: 'Inter_500Medium', fontSize: 10, color: '#FFF', opacity: 0.85 },
-});
-
-function AISettingsHint() {
-  const colors = useColors();
-  return (
-    <View style={[aiStyles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
-      <View style={aiStyles.row}>
-        <View style={[aiStyles.icon, { backgroundColor: colors.gameCategoryDash + '18' }]}>
-          <Text style={{ fontSize: 18 }}>🤖</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[aiStyles.title, { color: colors.foreground }]}>AI fresh prompts</Text>
-          <Text style={[aiStyles.sub, { color: colors.mutedForeground }]}>
-            Coming soon: fresh AI-generated rounds, family-safe only.
-          </Text>
-        </View>
-        <View style={[aiStyles.badge, { backgroundColor: colors.gameCategoryDash + '18' }]}>
-          <Text style={[aiStyles.badgeText, { color: colors.gameCategoryDash }]}>Soon</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const aiStyles = StyleSheet.create({
   card: { padding: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  icon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  iconTile: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
-  sub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 16 },
-  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
-  badgeText: { fontFamily: 'Inter_700Bold', fontSize: 11 },
+  sub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17 },
+  badge: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 7, paddingHorizontal: 11, minWidth: 48 },
+  badgeNum: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  badgeLabel: { fontFamily: 'Inter_500Medium', fontSize: 10 },
 });
 
 function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
@@ -243,7 +216,9 @@ function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
   return (
     <View style={[styles.statsCard, { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }]}>
       <View style={styles.statsHeader}>
-        <Text style={{ fontSize: 20 }}>📊</Text>
+        <View style={[styles.statsIconTile, { backgroundColor: colors.primarySoft }]}>
+          <Feather name="bar-chart-2" size={16} color={colors.primary} />
+        </View>
         <Text style={[styles.statsTitle, { color: colors.foreground }]}>Family Stats</Text>
       </View>
       <View style={styles.statsRow}>
@@ -288,7 +263,6 @@ function HorizontalGameRow({ games }: { games: GameMeta[] }) {
   );
 }
 
-// Prompt counts per game — kept in sync with getLocalPromptStats()
 const PROMPT_COUNTS: Record<string, number> = {
   'what-am-i': 40,
   'alphabet-showdown': 51,
@@ -310,12 +284,9 @@ function QuickPlayButton() {
 
     await new Promise(r => setTimeout(r, 900));
 
-    // Avoid replaying the same game twice in a row
     const lastPlayedId = recent[0];
     const candidates = GAMES.filter(g => g.id !== lastPlayedId);
 
-    // Weight each game by how many unseen prompts it has left
-    // (more fresh prompts = higher chance of being picked)
     const weights = candidates.map(g => {
       const total = PROMPT_COUNTS[g.id] ?? 20;
       const seenCount = Object.values(seenMap).filter(r => r.lastGameId === g.id).length;
@@ -349,7 +320,7 @@ function QuickPlayButton() {
         },
       ]}
     >
-      <Feather name="zap" size={18} color={colors.primary} />
+      <Feather name="zap" size={17} color={colors.primary} />
       <Text style={[styles.saveBtnText, { color: colors.foreground }]}>
         {loading ? 'Finding something fresh…' : 'Save the Moment'}
       </Text>
@@ -377,15 +348,15 @@ export default function HomeScreen() {
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.container,
-        { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 90 },
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 90 },
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero */}
-      <View style={[styles.heroBg, { backgroundColor: colors.card, borderRadius: 28, borderWidth: 1, borderColor: colors.border }]}>
+      {/* Open integrated header — no card box */}
+      <View style={styles.header}>
         <View style={styles.logoRow}>
           <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
-            <Feather name="star" size={26} color="#FFF" />
+            <Feather name="star" size={24} color="#FFF" />
           </View>
           <Text style={[styles.appName, { color: colors.foreground }]}>Game Host</Text>
         </View>
@@ -454,18 +425,17 @@ export default function HomeScreen() {
           { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
         ]}
       >
-        <Text style={{ fontSize: 28 }}>🎁</Text>
+        <View style={[styles.packIconTile, { backgroundColor: colors.primarySoft }]}>
+          <Feather name="gift" size={18} color={colors.primary} />
+        </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.packTitle, { color: colors.foreground }]}>More Games on the Way</Text>
           <Text style={[styles.packSub, { color: colors.mutedForeground }]}>
             Road Trip, Bedtime, Big Family packs coming soon
           </Text>
         </View>
-        <Feather name="chevron-right" size={18} color={colors.secondaryDark} />
+        <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
       </Pressable>
-
-      {/* AI settings hint */}
-      <AISettingsHint />
 
       {/* View all games */}
       <Pressable
@@ -502,70 +472,81 @@ function SectionHeader({
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 20, gap: 24 },
-  heroBg: { padding: 24, alignItems: 'center', gap: 12 },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  appName: { fontFamily: 'Inter_700Bold', fontSize: 34, letterSpacing: -0.5 },
+  container: { paddingHorizontal: 20, gap: 28 },
+
+  header: { gap: 10 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  logoIcon: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  appName: { fontFamily: 'Inter_700Bold', fontSize: 32, letterSpacing: -0.5 },
   subtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    textAlign: 'center',
     lineHeight: 22,
-    paddingHorizontal: 10,
   },
-  ctas: { gap: 12 },
+
+  ctas: { gap: 10 },
   startBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderRadius: 22,
-    paddingVertical: 20,
+    borderRadius: 20,
+    paddingVertical: 19,
     shadowColor: '#FF6B3D',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.3,
     shadowRadius: 14,
     elevation: 6,
   },
-  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 19, color: '#FFF' },
+  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF' },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderRadius: 22,
-    paddingVertical: 16,
+    borderRadius: 20,
+    paddingVertical: 15,
     borderWidth: 1.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  saveBtnText: { fontFamily: 'Inter_700Bold', fontSize: 17 },
+  saveBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 16 },
+
   statsCard: { padding: 18, gap: 14 },
   statsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  statsIconTile: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   statsTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
   statsRow: { flexDirection: 'row', gap: 16 },
   statItem: { flex: 1, gap: 3 },
   statValue: { fontFamily: 'Inter_700Bold', fontSize: 20 },
   statLabel: { fontFamily: 'Inter_400Regular', fontSize: 12 },
+
   moodSection: { gap: 10 },
-  moodTitle: { fontFamily: 'Inter_700Bold', fontSize: 17 },
-  moodRow: { flexDirection: 'row', gap: 10, paddingBottom: 4, paddingHorizontal: 2 },
-  moodPill: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 100 },
-  moodPillText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
-  moodLine: { fontFamily: 'Inter_500Medium', fontSize: 13, fontStyle: 'italic' },
+  moodTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  moodRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 4,
+    paddingRight: 20,
+  },
+  moodPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100 },
+  moodPillText: { fontFamily: 'Inter_500Medium', fontSize: 13 },
+  moodLine: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+
   section: { gap: 12 },
   sectionHeader: { gap: 3 },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 18 },
+  sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 17 },
   seeAll: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
-  micro: { fontFamily: 'Inter_400Regular', fontSize: 13, fontStyle: 'italic' },
-  hRow: { paddingBottom: 4, paddingHorizontal: 2 },
-  packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
-  packTitle: { fontFamily: 'Inter_700Bold', fontSize: 15 },
+  micro: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+  hRow: { paddingBottom: 4, paddingRight: 4 },
+
+  packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+  packIconTile: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  packTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
   packSub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2 },
   viewAllText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
 });

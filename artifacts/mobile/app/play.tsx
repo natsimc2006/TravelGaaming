@@ -260,10 +260,20 @@ export default function PlayScreen() {
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
 
         {/* Header */}
-        <View style={[styles.topBar, { backgroundColor: gameColor + '14', paddingTop: 12, paddingBottom: 12 }]}>
+        <View style={[
+          styles.topBar,
+          {
+            backgroundColor: colors.card,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+            paddingTop: 12,
+            paddingBottom: 12,
+          },
+        ]}>
+          <View style={[styles.topBarAccent, { backgroundColor: gameColor }]} />
           <View style={styles.topLeft}>
-            <Text style={styles.gameName} numberOfLines={1}>{session.gameName}</Text>
-            <Text style={styles.roundText}>Round {session.round} of {session.totalRounds}</Text>
+            <Text style={[styles.gameName, { color: colors.foreground }]} numberOfLines={1}>{session.gameName}</Text>
+            <Text style={[styles.roundText, { color: colors.mutedForeground }]}>Round {session.round} of {session.totalRounds}</Text>
           </View>
           <View style={styles.topRight}>
             {/* Voice toggle */}
@@ -272,21 +282,21 @@ export default function PlayScreen() {
                 if (voiceEnabled) stopHostVoice();
                 setVoiceEnabled(v => !v);
               }}
-              style={[styles.headerIconBtn, { backgroundColor: '#FFFFFF22' }]}
+              style={[styles.headerIconBtn, { backgroundColor: colors.muted }]}
             >
-              <Text style={{ fontSize: 16 }}>{voiceEnabled ? '🔊' : '🔇'}</Text>
+              <Text style={{ fontSize: 15 }}>{voiceEnabled ? '🔊' : '🔇'}</Text>
             </Pressable>
             <Pressable
               onPress={() => setShowScores(s => !s)}
-              style={[styles.headerIconBtn, { backgroundColor: '#FFFFFF22' }]}
+              style={[styles.headerIconBtn, { backgroundColor: colors.muted }]}
             >
-              <Feather name="bar-chart-2" size={18} color="#FFF" />
+              <Feather name="bar-chart-2" size={17} color={colors.mutedForeground} />
             </Pressable>
             <Pressable
               onPress={handleExitGame}
-              style={[styles.headerIconBtn, { backgroundColor: '#FFFFFF22' }]}
+              style={[styles.headerIconBtn, { backgroundColor: colors.muted }]}
             >
-              <Feather name="x" size={18} color="#FFF" />
+              <Feather name="x" size={17} color={colors.mutedForeground} />
             </Pressable>
           </View>
         </View>
@@ -1574,10 +1584,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
+    overflow: 'hidden',
   },
-  topLeft: { gap: 2, flex: 1 },
-  gameName: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF' },
-  roundText: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#FFFFFFCC' },
+  topBarAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
+  topLeft: { gap: 2, flex: 1, paddingLeft: 10 },
+  gameName: { fontFamily: 'Inter_700Bold', fontSize: 18 },
+  roundText: { fontFamily: 'Inter_400Regular', fontSize: 12 },
   topRight: { flexDirection: 'row', gap: 8 },
   headerIconBtn: {
     width: 36,
