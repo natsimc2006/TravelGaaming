@@ -89,7 +89,7 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
           borderRadius: 24,
           borderWidth: 1,
           borderColor: colors.border,
-          shadowColor: '#15152B',
+          shadowColor: '#0F0F1A',
           shadowOffset: { width: 0, height: 3 },
           shadowOpacity: 0.07,
           shadowRadius: 12,
@@ -100,8 +100,8 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
     >
       {/* Header row */}
       <View style={styles.headerRow}>
-        <View style={[styles.iconCircle, { backgroundColor: softColor }]}>
-          <Feather name={game.iconName as any} size={20} color={gameColor} />
+        <View style={[styles.iconCircle, { backgroundColor: gameColor }]}>
+          <Feather name={game.iconName as any} size={20} color="#FFFFFF" />
         </View>
         <View style={styles.headerMiddle}>
           <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>

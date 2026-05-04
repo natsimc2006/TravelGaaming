@@ -129,7 +129,7 @@ function AllGameCard({ game }: { game: GameMeta }) {
         borderRadius: 24,
         borderWidth: 1,
         borderColor: colors.border,
-        shadowColor: '#15152B',
+        shadowColor: '#0F0F1A',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.07,
         shadowRadius: 12,
@@ -142,8 +142,8 @@ function AllGameCard({ game }: { game: GameMeta }) {
       <View style={styles.cardInner}>
         {/* Header row */}
         <View style={styles.headerRow}>
-          <View style={[styles.iconTile, { backgroundColor: softColor }]}>
-            <Feather name={game.iconName as any} size={22} color={gameColor} />
+          <View style={[styles.iconTile, { backgroundColor: gameColor }]}>
+            <Feather name={game.iconName as any} size={22} color="#FFFFFF" />
           </View>
           <View style={styles.headerRight}>
             <View style={styles.headerRightTop}>
