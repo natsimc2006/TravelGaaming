@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -124,92 +125,108 @@ function AllGameCard({ game }: { game: GameMeta }) {
   return (
     <AnimatedPressable
       onPress={() => router.push({ pathname: '/setup', params: { gameId: game.id } })}
-      style={[styles.card, {
-        backgroundColor: colors.card,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: colors.border,
-        shadowColor: '#0F0F1A',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.07,
-        shadowRadius: 12,
-        elevation: 3,
-        overflow: 'hidden',
+      style={[styles.cardShadow, {
+        shadowColor: colors.navy,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.09,
+        shadowRadius: 20,
+        elevation: 5,
+        borderRadius: 26,
         marginBottom: 2,
       }]}
       scaleDown={0.97}
     >
-      <View style={styles.cardInner}>
-        {/* Header row */}
-        <View style={styles.headerRow}>
-          <View style={[styles.iconTile, { backgroundColor: gameColor }]}>
-            <Feather name={game.iconName as any} size={22} color="#FFFFFF" />
-          </View>
-          <View style={styles.headerRight}>
-            <View style={styles.headerRightTop}>
-              <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
-              <View style={[styles.energyBadge, { backgroundColor: colors.muted }]}>
-                <Text style={[styles.energyBadgeText, { color: colors.mutedForeground }]}>
-                  {energy.emoji} {energy.label}
-                </Text>
-              </View>
+      <LinearGradient
+        colors={['#FFFFFF', '#FDFAF7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[styles.card, {
+          borderRadius: 26,
+          borderWidth: 1,
+          borderColor: colors.border,
+          overflow: 'hidden',
+        }]}
+      >
+        {/* Top highlight */}
+        <View style={styles.topHighlight} />
+
+        <View style={styles.cardInner}>
+          {/* Header row */}
+          <View style={styles.headerRow}>
+            <View style={[styles.iconTile, { backgroundColor: gameColor }]}>
+              <Feather name={game.iconName as any} size={22} color="#FFFFFF" />
             </View>
-            {game.soloSupported && (
-              <View style={[styles.soloBadge, { backgroundColor: colors.muted }]}>
-                <Text style={[styles.soloBadgeText, { color: colors.mutedForeground }]}>Solo ✓</Text>
+            <View style={styles.headerRight}>
+              <View style={styles.headerRightTop}>
+                <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
+                <View style={[styles.energyBadge, { backgroundColor: softColor }]}>
+                  <Text style={[styles.energyBadgeText, { color: gameColor }]}>
+                    {energy.emoji} {energy.label}
+                  </Text>
+                </View>
               </View>
-            )}
-          </View>
-        </View>
-
-        {/* Description */}
-        <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
-          {game.description}
-        </Text>
-
-        {/* Meta row */}
-        <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <Feather name="clock" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{game.estimatedRoundLength}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Feather name="users" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-              {game.minPlayers === game.maxPlayers ? `${game.minPlayers}` : `${game.minPlayers}–${game.maxPlayers}`} players
-            </Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Feather name="user" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>Ages {game.ageRange}</Text>
-          </View>
-        </View>
-
-        {/* Badges row */}
-        <View style={styles.badgeRow}>
-          <View style={[styles.hostBadge, { backgroundColor: colors.muted }]}>
-            <Feather
-              name={game.hostType === 'App hosts' ? 'smartphone' : 'mic'}
-              size={12}
-              color={colors.mutedForeground}
-            />
-            <Text style={[styles.hostBadgeText, { color: colors.mutedForeground }]}>{game.hostType}</Text>
-          </View>
-          {game.settings.slice(0, 2).map((s) => (
-            <View key={s} style={[styles.settingBadge, { backgroundColor: colors.muted }]}>
-              <Text style={[styles.settingBadgeText, { color: colors.mutedForeground }]}>{s}</Text>
+              {game.soloSupported && (
+                <View style={[styles.soloBadge, { backgroundColor: softColor }]}>
+                  <Text style={[styles.soloBadgeText, { color: gameColor }]}>Solo ✓</Text>
+                </View>
+              )}
             </View>
-          ))}
-        </View>
+          </View>
 
-        {/* Action row */}
-        <View style={styles.actionRow}>
-          <View style={[styles.playBtn, { backgroundColor: colors.primary }]}>
-            <Text style={styles.playBtnText}>Play now</Text>
-            <Feather name="arrow-right" size={14} color="#FFF" />
+          {/* Description */}
+          <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
+            {game.description}
+          </Text>
+
+          {/* Meta row */}
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Feather name="clock" size={12} color={colors.mutedForeground} />
+              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{game.estimatedRoundLength}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Feather name="users" size={12} color={colors.mutedForeground} />
+              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+                {game.minPlayers === game.maxPlayers ? `${game.minPlayers}` : `${game.minPlayers}–${game.maxPlayers}`} players
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Feather name="user" size={12} color={colors.mutedForeground} />
+              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>Ages {game.ageRange}</Text>
+            </View>
+          </View>
+
+          {/* Badges row — tinted with game soft colour */}
+          <View style={styles.badgeRow}>
+            <View style={[styles.hostBadge, { backgroundColor: softColor }]}>
+              <Feather
+                name={game.hostType === 'App hosts' ? 'smartphone' : 'mic'}
+                size={12}
+                color={gameColor}
+              />
+              <Text style={[styles.hostBadgeText, { color: gameColor }]}>{game.hostType}</Text>
+            </View>
+            {game.settings.slice(0, 2).map((s) => (
+              <View key={s} style={[styles.settingBadge, { backgroundColor: softColor }]}>
+                <Text style={[styles.settingBadgeText, { color: gameColor }]}>{s}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Action row — gradient play pill */}
+          <View style={styles.actionRow}>
+            <LinearGradient
+              colors={[colors.primaryMid, colors.primaryDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.playBtn}
+            >
+              <Text style={styles.playBtnText}>Play now</Text>
+              <Feather name="arrow-right" size={14} color="#FFF" />
+            </LinearGradient>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     </AnimatedPressable>
   );
 }
@@ -408,9 +425,20 @@ const styles = StyleSheet.create({
   resultCount: { fontFamily: 'Inter_500Medium', fontSize: 13 },
   clearLink: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
 
+  cardShadow: {},
   card: { overflow: 'hidden' },
+  topHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 1,
+    zIndex: 1,
+  },
   cardInner: {
-    padding: 18,
+    padding: 20,
     gap: 12,
   },
   headerRow: {

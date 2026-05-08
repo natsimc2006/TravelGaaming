@@ -1,13 +1,13 @@
 export const GAME_COLORS = {
-  alphabet: '#FF6B35',
-  whatAmI: '#4ECDC4',
-  categoryDash: '#A78BFA',
-  forbiddenWord: '#F97316',
-  wouldYouRather: '#F43F5E',
-  rapidFire: '#EF4444',
-  guessTheSound: '#10B981',
-  thisOrThat: '#3B82F6',
-  riddles: '#A855F7',
+  alphabet: '#D95F2B',      // coral-amber — matches new primary
+  whatAmI: '#2DAAA0',       // teal
+  categoryDash: '#7C5CDB',  // violet
+  forbiddenWord: '#E8A820', // amber
+  wouldYouRather: '#E8325A', // rose
+  rapidFire: '#15A876',     // emerald
+  guessTheSound: '#3568F0', // royal blue
+  thisOrThat: '#3568F0',    // royal blue
+  riddles: '#7C5CDB',       // violet
 } as const;
 
 export type GameColorKey = keyof typeof GAME_COLORS;

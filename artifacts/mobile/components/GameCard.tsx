@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -59,9 +60,14 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
           styles.compactCard,
           {
             backgroundColor: colors.card,
-            borderRadius: 16,
+            borderRadius: 18,
             borderWidth: 1,
             borderColor: colors.border,
+            shadowColor: colors.navy,
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+            elevation: 3,
           },
         ]}
       >
@@ -83,101 +89,133 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
     <AnimatedPressable
       onPress={handlePress}
       style={[
-        styles.card,
+        styles.cardShadow,
         {
-          backgroundColor: colors.card,
-          borderRadius: 24,
-          borderWidth: 1,
-          borderColor: colors.border,
-          shadowColor: '#0F0F1A',
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.07,
-          shadowRadius: 12,
-          elevation: 3,
+          shadowColor: colors.navy,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.09,
+          shadowRadius: 20,
+          elevation: 5,
+          borderRadius: 28,
         },
       ]}
       scaleDown={0.97}
     >
-      {/* Header row */}
-      <View style={styles.headerRow}>
-        <View style={[styles.iconCircle, { backgroundColor: gameColor }]}>
-          <Feather name={game.iconName as any} size={20} color="#FFFFFF" />
+      {/* Card with subtle top-to-bottom gradient for depth */}
+      <LinearGradient
+        colors={['#FFFFFF', '#FDFAF7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[
+          styles.card,
+          {
+            borderRadius: 28,
+            borderWidth: 1,
+            borderColor: colors.border,
+            overflow: 'hidden',
+          },
+        ]}
+      >
+        {/* Subtle top-edge highlight */}
+        <View style={styles.topHighlight} />
+
+        {/* Header row */}
+        <View style={styles.headerRow}>
+          <View style={[styles.iconCircle, { backgroundColor: gameColor }]}>
+            <Feather name={game.iconName as any} size={20} color="#FFFFFF" />
+          </View>
+          <View style={styles.headerMiddle}>
+            <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
+            <View style={[styles.energyBadge, { backgroundColor: softColor }]}>
+              <Text style={[styles.energyBadgeText, { color: gameColor }]}>
+                {energy.emoji} {energy.label}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.agesBadge, { backgroundColor: colors.muted }]}>
+            <Text style={[styles.agesBadgeText, { color: colors.mutedForeground }]}>Ages {game.ageRange}</Text>
+          </View>
         </View>
-        <View style={styles.headerMiddle}>
-          <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
-          <View style={[styles.energyBadge, { backgroundColor: colors.muted }]}>
-            <Text style={[styles.energyBadgeText, { color: colors.mutedForeground }]}>
-              {energy.emoji} {energy.label}
+
+        {/* Description */}
+        <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
+          {game.description}
+        </Text>
+
+        {/* Meta row */}
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Feather name="clock" size={12} color={colors.mutedForeground} />
+            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{game.estimatedRoundLength}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Feather name="users" size={12} color={colors.mutedForeground} />
+            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+              {game.minPlayers === game.maxPlayers ? `${game.minPlayers}` : `${game.minPlayers}–${game.maxPlayers}`} players
             </Text>
           </View>
         </View>
-        <View style={[styles.agesBadge, { backgroundColor: colors.muted }]}>
-          <Text style={[styles.agesBadgeText, { color: colors.mutedForeground }]}>Ages {game.ageRange}</Text>
-        </View>
-      </View>
 
-      {/* Description */}
-      <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
-        {game.description}
-      </Text>
-
-      {/* Meta row */}
-      <View style={styles.metaRow}>
-        <View style={styles.metaItem}>
-          <Feather name="clock" size={12} color={colors.mutedForeground} />
-          <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{game.estimatedRoundLength}</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Feather name="users" size={12} color={colors.mutedForeground} />
-          <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-            {game.minPlayers === game.maxPlayers ? `${game.minPlayers}` : `${game.minPlayers}–${game.maxPlayers}`} players
-          </Text>
-        </View>
-      </View>
-
-      {/* Tags row */}
-      <View style={styles.tagsRow}>
-        <View style={[styles.tagChip, { backgroundColor: colors.muted }]}>
-          <Feather
-            name={game.hostType === 'App hosts' ? 'smartphone' : 'mic'}
-            size={10}
-            color={colors.mutedForeground}
-          />
-          <Text style={[styles.tagText, { color: colors.mutedForeground }]}>{game.hostType}</Text>
-        </View>
-        {game.settings.slice(0, 2).map((s) => (
-          <View key={s} style={[styles.tagChip, { backgroundColor: colors.muted }]}>
-            <Feather name={SETTING_ICONS[s] as any} size={10} color={colors.mutedForeground} />
-            <Text style={[styles.tagText, { color: colors.mutedForeground }]}>{s}</Text>
+        {/* Tags row — tinted with game soft colour */}
+        <View style={styles.tagsRow}>
+          <View style={[styles.tagChip, { backgroundColor: softColor }]}>
+            <Feather
+              name={game.hostType === 'App hosts' ? 'smartphone' : 'mic'}
+              size={10}
+              color={gameColor}
+            />
+            <Text style={[styles.tagText, { color: gameColor }]}>{game.hostType}</Text>
           </View>
-        ))}
-      </View>
-
-      {/* CTA row */}
-      <View style={styles.ctaRow}>
-        <View style={[styles.playBtn, { backgroundColor: colors.primary }]}>
-          <Text style={styles.playBtnText}>Play</Text>
-          <Feather name="arrow-right" size={14} color="#FFF" />
+          {game.settings.slice(0, 2).map((s) => (
+            <View key={s} style={[styles.tagChip, { backgroundColor: softColor }]}>
+              <Feather name={SETTING_ICONS[s] as any} size={10} color={gameColor} />
+              <Text style={[styles.tagText, { color: gameColor }]}>{s}</Text>
+            </View>
+          ))}
         </View>
-      </View>
+
+        {/* CTA row — gradient play pill */}
+        <View style={styles.ctaRow}>
+          <LinearGradient
+            colors={[colors.primary, colors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.playBtn}
+          >
+            <Text style={styles.playBtnText}>Play</Text>
+            <Feather name="arrow-right" size={14} color="#FFF" />
+          </LinearGradient>
+        </View>
+      </LinearGradient>
     </AnimatedPressable>
   );
 }
 
 const styles = StyleSheet.create({
+  cardShadow: {
+    // shadow props set inline
+  },
   card: {
-    padding: 18,
+    padding: 20,
     gap: 12,
-    marginBottom: 0,
+  },
+  topHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 1,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 50,
+    height: 50,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -185,11 +223,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     alignItems: 'flex-start',
-    gap: 4,
+    gap: 5,
   },
   gameName: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 19,
+    fontSize: 18,
+    letterSpacing: -0.2,
   },
   energyBadge: {
     paddingHorizontal: 8,
@@ -197,8 +236,9 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   energyBadgeText: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 11,
+    letterSpacing: 0.1,
   },
   agesBadge: {
     paddingHorizontal: 8,
@@ -208,6 +248,7 @@ const styles = StyleSheet.create({
   agesBadgeText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
+    letterSpacing: 0.1,
   },
   description: {
     fontFamily: 'Inter_400Regular',
@@ -236,13 +277,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 100,
   },
   tagText: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 11,
+    letterSpacing: 0.2,
   },
   ctaRow: {
     flexDirection: 'row',
@@ -253,25 +295,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 100,
   },
   playBtnText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
     color: '#FFF',
+    letterSpacing: 0.1,
   },
   compactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    padding: 15,
     gap: 12,
     marginBottom: 8,
   },
   compactIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',

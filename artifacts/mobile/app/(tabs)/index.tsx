@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -368,16 +369,26 @@ export default function HomeScreen() {
       <View style={styles.ctas}>
         <Pressable
           onPress={() => router.push('/games')}
-          style={({ pressed }) => [
-            styles.startBtn,
-            {
-              backgroundColor: pressed ? colors.primaryDark : colors.primary,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
-          ]}
+          style={({ pressed }) => ({
+            transform: [{ scale: pressed ? 0.97 : 1 }],
+            opacity: pressed ? 0.94 : 1,
+            borderRadius: 20,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.38,
+            shadowRadius: 16,
+            elevation: 8,
+          })}
         >
-          <Feather name="play-circle" size={20} color="#FFF" />
-          <Text style={styles.startBtnText}>Start a Game</Text>
+          <LinearGradient
+            colors={[colors.primaryMid, colors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.startBtn}
+          >
+            <Feather name="play-circle" size={20} color="#FFF" />
+            <Text style={styles.startBtnText}>Start a Game</Text>
+          </LinearGradient>
         </Pressable>
         <QuickPlayButton />
       </View>
@@ -461,7 +472,11 @@ function SectionHeader({
   return (
     <Pressable onPress={onPress} style={styles.sectionHeader}>
       <View style={styles.sectionHeaderLeft}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{label}</Text>
+        <View style={styles.sectionTitleRow}>
+          {/* Decorative accent mark */}
+          <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{label}</Text>
+        </View>
         {onPress && (
           <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
         )}
@@ -492,13 +507,8 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 20,
     paddingVertical: 19,
-    shadowColor: '#FF6B3D',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14,
-    elevation: 6,
   },
-  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF' },
+  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF', letterSpacing: 0.1 },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -537,11 +547,13 @@ const styles = StyleSheet.create({
   moodLine: { fontFamily: 'Inter_400Regular', fontSize: 13 },
 
   section: { gap: 12 },
-  sectionHeader: { gap: 3 },
+  sectionHeader: { gap: 4 },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 17 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionAccent: { width: 3, height: 20, borderRadius: 2 },
+  sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 19, letterSpacing: -0.1 },
   seeAll: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
-  micro: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+  micro: { fontFamily: 'Inter_400Regular', fontSize: 13, paddingLeft: 11 },
   hRow: { paddingBottom: 4, paddingRight: 4 },
 
   packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
