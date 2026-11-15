@@ -1,3 +1,4 @@
+import { filterByTier } from '@/utils/director';
 export interface CategoryDashRound {
   id: string;
   categories: [string, string, string, string, string];
@@ -59,11 +60,7 @@ export function getRandomDashRound(
   difficulty?: 'easy' | 'medium' | 'hard',
   seenMap?: import('@/utils/contentMemory').SeenMap,
 ): CategoryDashRound {
-  let pool = CATEGORY_DASH_ROUNDS.filter(r => !usedIds.includes(r.id));
-  if (difficulty === 'easy') {
-    const easy = pool.filter(r => r.difficulty === 'easy');
-    if (easy.length > 0) pool = easy;
-  }
+  let pool = filterByTier(CATEGORY_DASH_ROUNDS.filter(r => !usedIds.includes(r.id)), difficulty);
   if (pool.length === 0) pool = CATEGORY_DASH_ROUNDS;
   if (seenMap) {
     const { selectFreshPrompt } = require('@/utils/freshPrompt');

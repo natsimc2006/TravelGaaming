@@ -16,6 +16,7 @@ import { GAME_COLORS } from '@/data/gameColors';
 import { useGame } from '@/context/GameContext';
 import { useColors } from '@/hooks/useColors';
 import { getWinners, getTotalScore } from '@/utils/gameEngine';
+import { LEVEL_NAMES } from '@/utils/director';
 import { recordGameCompleted, getSoloPerformanceMessage } from '@/utils/progression';
 
 const GROUP_END_TITLES = [
@@ -238,6 +239,23 @@ export default function EndScreen() {
                 <Text style={[styles.soloStatLabel, { color: colors.mutedForeground }]}>Best streak</Text>
               </View>
             </View>
+          </Animated.View>
+        )}
+
+        {/* Level-ups */}
+        {session.director.events.some(e => e.to > e.from) && (
+          <Animated.View style={[styles.soloDetailCard, { backgroundColor: colors.card, borderRadius: 20, opacity: contentOpacity }]}>
+            <Text style={[styles.scoreSectionTitle, { color: colors.foreground }]}>Levelled up</Text>
+            {Object.entries(
+              session.director.events.reduce<Record<string, { name: string; to: number }>>((acc, e) => {
+                acc[e.playerId] = { name: e.playerName, to: e.to };
+                return acc;
+              }, {}),
+            ).map(([id, v]) => (
+              <Text key={id} style={{ fontFamily: 'Nunito_700Bold', fontSize: 15, color: gameColor }}>
+                {session.director.levels[id] > 0 ? `${v.name} is now a ${LEVEL_NAMES[session.director.levels[id]]}` : v.name}
+              </Text>
+            ))}
           </Animated.View>
         )}
 

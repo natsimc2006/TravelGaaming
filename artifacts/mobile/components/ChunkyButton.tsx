@@ -32,7 +32,7 @@ export default function ChunkyButton({
             ]}
           >
             {left}
-            <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.label, { color: textColor, fontSize: s.f, flexShrink: 1 }]}>{label}</Text>
+            <Text style={[styles.label, { color: textColor, fontSize: s.f, flexShrink: 1, textAlign: 'center' }]}>{label}</Text>
             {right}
           </View>
         </View>

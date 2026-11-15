@@ -1,5 +1,7 @@
 import type { SeenMap } from '@/utils/contentMemory';
 import { selectFreshPrompt } from '@/utils/freshPrompt';
+import { filterByTier, type Tier } from '@/utils/director';
+import { isAnswerMatch } from '@/utils/answerMatch';
 
 export interface Riddle {
   id: string;
@@ -37,27 +39,31 @@ export const RIDDLES: Riddle[] = [
   { id: 'rd23', question: 'What has four legs in the morning, two legs at noon, and three legs in the evening?', answer: 'Human', acceptedAnswers: ['human', 'a human', 'person', 'man', 'people'], difficulty: 'hard', category: 'Life', tags: ['classic', 'philosophy'] },
   { id: 'rd24', question: 'What is always in front of you but cannot be seen?', answer: 'The future', acceptedAnswers: ['the future', 'future', 'tomorrow'], difficulty: 'medium', category: 'Life', tags: ['life', 'thinking'] },
   { id: 'rd25', question: 'I have no legs but I always run. I have no mouth but the news I always tell. What am I?', answer: 'Watch / Clock', acceptedAnswers: ['watch', 'clock', 'a watch', 'a clock', 'timer'], difficulty: 'medium', category: 'Objects', tags: ['time', 'everyday'] },
+  { id: 'rd90', question: 'What has a neck but no head?', answer: 'Bottle', acceptedAnswers: ['bottle', 'a bottle'], difficulty: 'easy', category: 'Objects' },
+  { id: 'rd91', question: 'What gets bigger the more you take away from it?', answer: 'Hole', acceptedAnswers: ['hole', 'a hole'], difficulty: 'medium', category: 'Wordplay' },
+  { id: 'rd92', question: 'What can fill a room but takes up no space?', answer: 'Light', acceptedAnswers: ['light', 'sunlight', 'a light'], difficulty: 'medium', category: 'Nature' },
+  { id: 'rd93', question: 'What has to be broken before you can use it?', answer: 'Egg', acceptedAnswers: ['egg', 'an egg'], difficulty: 'easy', category: 'Food' },
+  { id: 'rd94', question: 'The more of me there is, the less you see. What am I?', answer: 'Darkness', acceptedAnswers: ['darkness', 'dark', 'the dark'], difficulty: 'hard', category: 'Nature' },
+  { id: 'rd95', question: 'What can run but never walks, and has a bed but never sleeps?', answer: 'River', acceptedAnswers: ['river', 'a river'], difficulty: 'medium', category: 'Nature' },
+  { id: 'rd96', question: 'I shave every day, but my beard stays the same. What am I?', answer: 'Barber', acceptedAnswers: ['barber', 'a barber', 'hairdresser'], difficulty: 'hard', category: 'People' },
+  { id: 'rd97', question: 'What has four legs but cannot walk?', answer: 'Table', acceptedAnswers: ['table', 'a table', 'chair', 'a chair'], difficulty: 'easy', category: 'Objects' },
+  { id: 'rd98', question: 'What word is spelled wrong in every dictionary?', answer: 'Wrong', acceptedAnswers: ['wrong', 'the word wrong'], difficulty: 'hard', category: 'Wordplay' },
+  { id: 'rd99', question: 'What begins with T, ends with T, and has T in it?', answer: 'Teapot', acceptedAnswers: ['teapot', 'a teapot'], difficulty: 'hard', category: 'Wordplay' },
+  { id: 'rd100', question: 'What goes through towns and over hills but never moves?', answer: 'Road', acceptedAnswers: ['road', 'a road', 'path', 'street'], difficulty: 'medium', category: 'Places' },
+  { id: 'rd101', question: 'What can you hold in your right hand but never in your left?', answer: 'Your left hand', acceptedAnswers: ['left hand', 'your left hand', 'my left hand', 'left elbow'], difficulty: 'hard', category: 'Body' },
 ];
 
 export function getRandomRiddle(
   usedIds: string[],
-  difficulty?: 'easy' | 'medium' | 'hard',
+  difficulty?: Tier,
   seenMap?: SeenMap,
 ): Riddle {
-  let pool = RIDDLES.filter(r => !usedIds.includes(r.id));
-  if (difficulty) {
-    const filtered = pool.filter(r => r.difficulty === difficulty || r.difficulty === 'easy');
-    if (filtered.length > 0) pool = filtered;
-  }
+  let pool = filterByTier(RIDDLES.filter(r => !usedIds.includes(r.id)), difficulty);
   if (pool.length === 0) pool = RIDDLES;
   if (seenMap) return selectFreshPrompt(pool, usedIds, seenMap);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export function checkRiddleAnswer(userAnswer: string, riddle: Riddle): boolean {
-  const normalised = userAnswer.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
-  return riddle.acceptedAnswers.some(a => {
-    const normA = a.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-    return normA === normalised || normalised.includes(normA) || normA.includes(normalised);
-  });
+  return isAnswerMatch(userAnswer, [riddle.answer, ...riddle.acceptedAnswers]);
 }

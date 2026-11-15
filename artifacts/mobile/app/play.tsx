@@ -25,7 +25,7 @@ import { getHostLine } from '@/utils/gameEngine';
 import { saveRecentGame } from '@/utils/storage';
 import { recordPromptSeen } from '@/utils/contentMemory';
 import { getFreshnessTag, type FreshnessTag } from '@/utils/freshPrompt';
-import { generateFreshPrompt } from '@/utils/aiPromptEngine';
+import { LEVEL_NAMES } from '@/utils/director';
 import {
   getVoiceGameKey,
   speakHost,
@@ -35,6 +35,7 @@ import {
 import { checkSoundAnswer } from '@/data/guessTheSound';
 import { checkRiddleAnswer } from '@/data/riddles';
 import { darken } from '@/utils/colorUtil';
+import { isAnswerMatch } from '@/utils/answerMatch';
 import ChunkyButton from '@/components/ChunkyButton';
 
 function getGameColor(gameId: string) {
@@ -99,7 +100,7 @@ function PromptFade({ children, triggerKey }: { children: React.ReactNode; trigg
 export default function PlayScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { session, addPlayerScore, advanceRound, advancePlayer, newLetter, newCategory, revealClue, finishGame, resetGame, bumpStreak, breakStreak, selectWYROption, bumpTotStreak, addRapidFireCount } = useGame();
+  const { session, addPlayerScore, advanceRound, advancePlayer, newLetter, newCategory, revealClue, swapPrompt, recordOutcome, finishGame, resetGame, bumpStreak, breakStreak, selectWYROption, bumpTotStreak, addRapidFireCount } = useGame();
   const [hostMsg, setHostMsg] = useState('');
   const [hostMsgVisible, setHostMsgVisible] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -108,8 +109,6 @@ export default function PlayScreen() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [freshnessTag, setFreshnessTag] = useState<FreshnessTag>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [freshPromptLoading, setFreshPromptLoading] = useState(false);
-  const [freshPromptError, setFreshPromptError] = useState(false);
   const msgTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameStartedRef = useRef(false);
 
@@ -118,6 +117,13 @@ export default function PlayScreen() {
     setHostMsg(getHostLine(type, name, n));
     setHostMsgVisible(true);
     msgTimeout.current = setTimeout(() => setHostMsgVisible(false), 3200);
+  }, []);
+
+  const showCustomMsg = useCallback((text: string) => {
+    if (msgTimeout.current) clearTimeout(msgTimeout.current);
+    setHostMsg(text);
+    setHostMsgVisible(true);
+    msgTimeout.current = setTimeout(() => setHostMsgVisible(false), 3600);
   }, []);
 
   const voice = useCallback((
@@ -221,35 +227,25 @@ export default function PlayScreen() {
     router.replace('/games');
   }, [resetGame]);
 
-  const handleFreshPrompt = useCallback(async () => {
-    if (!session || freshPromptLoading) return;
-    setFreshPromptLoading(true);
-    setFreshPromptError(false);
-    try {
-      await generateFreshPrompt({
-        gameId: session.gameId,
-        ageRange: session.settings.ageRange === 'easy' ? '4-7' : session.settings.ageRange === 'all' ? '10+' : '8-10',
-        difficulty: session.settings.difficulty === 'easy' ? 'easy' : session.settings.difficulty === 'spicy' ? 'hard' : 'mixed',
-        familySafeOnly: true,
-      });
-      // Advance the game to the next prompt using the existing seenMap-aware engine
-      if (session.gameId === 'alphabet-showdown') {
-        newCategory();
-      } else if (session.gameId === 'forbidden-word') {
-        advanceRound();
-        advancePlayer();
-      } else {
-        advanceRound();
-      }
-    } catch {
-      setFreshPromptError(true);
-      setTimeout(() => setFreshPromptError(false), 2800);
-      // Fall back to local prompt — advance anyway
-      advanceRound();
-    } finally {
-      setFreshPromptLoading(false);
+  // Swap prompt: a different prompt, same round and same player (no round is burned).
+  const handleFreshPrompt = useCallback(() => {
+    if (!session) return;
+    swapPrompt();
+    setTimerRunning(false);
+    setTimerKey(k => k + 1);
+  }, [session, swapPrompt]);
+
+  // Celebrate level changes
+  const lastEventCount = useRef(0);
+  useEffect(() => {
+    const evs = session?.director.events ?? [];
+    if (evs.length > lastEventCount.current) {
+      const e = evs[evs.length - 1];
+      if (e.to > e.from) showCustomMsg(session!.isSoloMode ? `Level up! You're now a ${LEVEL_NAMES[e.to]}.` : `${e.playerName} levelled up to ${LEVEL_NAMES[e.to]}!`);
+      else showCustomMsg(`Easing things down for ${session!.isSoloMode ? 'you' : e.playerName} — you've got this.`);
     }
-  }, [session, freshPromptLoading, newCategory, advanceRound, advancePlayer]);
+    lastEventCount.current = evs.length;
+  }, [session?.director.events.length]);
 
   if (!session) return null;
 
@@ -274,7 +270,7 @@ export default function PlayScreen() {
                 />
               ))}
             </View>
-            <Text style={styles.roundText}>Round {session.round} of {session.totalRounds}</Text>
+            <Text style={styles.roundText}>Round {session.round} of {session.totalRounds}  ·  {LEVEL_NAMES[session.level]}</Text>
           </View>
           <View style={styles.topRight}>
             <Pressable
@@ -320,11 +316,9 @@ export default function PlayScreen() {
           {freshnessTag && <FreshnessBadge tag={freshnessTag} />}
 
           {/* Fresh prompt button */}
-          <FreshPromptButton
-            loading={freshPromptLoading}
-            error={freshPromptError}
-            onPress={handleFreshPrompt}
-          />
+          <FreshPromptButton loading={false} error={false} onPress={handleFreshPrompt} />
+
+          {session.twist && <TwistCard twist={session.twist} color={gameColor} />}
 
           {session.gameId === 'alphabet-showdown' && session.alphabetState && (
             <AlphabetGame
@@ -347,6 +341,7 @@ export default function PlayScreen() {
                 if (session.isSoloMode) {
                   if (scored) bumpStreak(); else breakStreak();
                 }
+                session.players.forEach(p => recordOutcome(p.id, scored ? 'solved' : 'struggled'));
                 voice('roundEnd');
                 advanceRound();
               }}
@@ -368,12 +363,15 @@ export default function PlayScreen() {
                 revealClue();
               }}
               onAwardAndAdvance={(pts: number) => {
+                const revealed = session.whatAmIState!.cluesRevealed;
+                recordOutcome(currentPlayer.id, revealed <= 2 ? 'ace' : revealed <= 4 ? 'solved' : 'struggled');
                 addPlayerScore(currentPlayer.id, pts);
                 showHostMsg('correct');
                 voice('correct', { playerName: currentPlayer?.name, points: pts });
                 advanceRound();
               }}
               onGiveUp={() => {
+                recordOutcome(currentPlayer.id, 'missed');
                 showHostMsg('skip');
                 voice('skip');
                 advanceRound();
@@ -415,17 +413,17 @@ export default function PlayScreen() {
               onTimerToggle={() => setTimerRunning(r => !r)}
               onTimerEnd={() => { setTimerRunning(false); showHostMsg('skip'); voice('roundEnd'); }}
               onCorrect={() => {
+                recordOutcome(currentPlayer.id, 'solved');
                 addPlayerScore(currentPlayer.id, 1);
                 showHostMsg('correct');
                 voice('correct', { playerName: currentPlayer?.name });
                 advanceRound();
-                advancePlayer();
               }}
               onSkip={() => {
+                recordOutcome(currentPlayer.id, 'struggled');
                 showHostMsg('skip');
                 voice('skip');
                 advanceRound();
-                advancePlayer();
               }}
               currentPlayer={currentPlayer}
             />
@@ -444,7 +442,6 @@ export default function PlayScreen() {
                 showHostMsg('next');
                 voice('roundStart');
                 advanceRound();
-                if (!session.isSoloMode) advancePlayer();
               }}
             />
           )}
@@ -468,9 +465,10 @@ export default function PlayScreen() {
               onNextRound={() => {
                 setTimerRunning(false);
                 setTimerKey(k => k + 1);
+                const n = session.rapidFireState?.playerAnswerCount[currentPlayer?.id ?? ''] ?? 0;
+                if (currentPlayer) recordOutcome(currentPlayer.id, n >= 6 ? 'ace' : n >= 3 ? 'solved' : 'struggled');
                 voice('roundStart');
                 advanceRound();
-                if (!session.isSoloMode) advancePlayer();
               }}
             />
           )}
@@ -481,17 +479,17 @@ export default function PlayScreen() {
               gameColor={gameColor}
               currentPlayer={currentPlayer}
               onCorrect={() => {
+                if (currentPlayer) recordOutcome(currentPlayer.id, 'solved');
                 addPlayerScore(currentPlayer?.id ?? session.players[0]?.id, 1);
                 showHostMsg('correct');
                 voice('correct', { playerName: currentPlayer?.name });
                 advanceRound();
-                if (!session.isSoloMode) advancePlayer();
               }}
               onSkip={() => {
+                if (currentPlayer) recordOutcome(currentPlayer.id, 'missed');
                 showHostMsg('skip');
                 voice('skip');
                 advanceRound();
-                if (!session.isSoloMode) advancePlayer();
               }}
             />
           )}
@@ -520,17 +518,17 @@ export default function PlayScreen() {
               gameColor={gameColor}
               currentPlayer={currentPlayer}
               onCorrect={() => {
+                if (currentPlayer) recordOutcome(currentPlayer.id, (session.riddleState?.hintsUsed ?? 0) === 0 ? 'ace' : 'solved');
                 addPlayerScore(currentPlayer?.id ?? session.players[0]?.id, 1);
                 showHostMsg('correct');
                 voice('correct', { playerName: currentPlayer?.name });
                 advanceRound();
-                if (!session.isSoloMode) advancePlayer();
               }}
               onSkip={() => {
+                if (currentPlayer) recordOutcome(currentPlayer.id, 'missed');
                 showHostMsg('skip');
                 voice('skip');
                 advanceRound();
-                if (!session.isSoloMode) advancePlayer();
               }}
             />
           )}
@@ -677,6 +675,26 @@ function ScoreTapGrid({ session, currentPlayer, color, onScore }: any) {
   );
 }
 
+function TwistCard({ twist, color }: { twist: { title: string; rule: string; multiplier: number }; color: string }) {
+  const colors = useColors();
+  return (
+    <PromptFade triggerKey={twist.title}>
+      <View style={{ backgroundColor: colors.navy, borderRadius: 20, padding: 16, gap: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Feather name="zap" size={16} color="#FFD76A" />
+          <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 17, color: '#FFF', flex: 1 }}>Twist: {twist.title}</Text>
+          {twist.multiplier > 1 && (
+            <View style={{ backgroundColor: color, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 }}>
+              <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 13, color: '#FFF' }}>x{twist.multiplier} points</Text>
+            </View>
+          )}
+        </View>
+        <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 14.5, lineHeight: 20, color: 'rgba(255,255,255,0.88)' }}>{twist.rule}</Text>
+      </View>
+    </PromptFade>
+  );
+}
+
 function FreshPromptButton({ loading, error, onPress }: { loading: boolean; error: boolean; onPress: () => void }) {
   const colors = useColors();
   return (
@@ -706,7 +724,7 @@ function FreshPromptButton({ loading, error, onPress }: { loading: boolean; erro
         fontSize: 13,
         color: error ? colors.destructive : colors.secondary,
       }}>
-        {loading ? 'Finding a fresh one…' : error ? 'Used a classic instead' : 'Fresh prompt'}
+        Swap prompt
       </Text>
     </Pressable>
   );
@@ -855,15 +873,11 @@ function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAn
     setRoundDone(false);
   }, [s.currentItemId]);
 
-  const normalise = (str: string) =>
-    str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-
   const handleCheckGuess = () => {
     Keyboard.dismiss();
-    const norm = normalise(guessText);
-    const answer = normalise(s.currentAnswer);
-    if (!norm) return;
-    if (norm === answer || answer.includes(norm) || norm.includes(answer)) {
+    if (!guessText.trim()) return;
+    const variants = [s.currentAnswer, ...s.currentAnswer.split(/\s*[\/,]\s*|\s+or\s+/i)];
+    if (isAnswerMatch(guessText, variants)) {
       setGuessResult('correct');
       setRevealedAnswer(s.currentAnswer);
       setRoundDone(true);

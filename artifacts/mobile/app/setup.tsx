@@ -31,9 +31,9 @@ const ROUND_OPTIONS = [
 ];
 
 const DIFF_OPTIONS = [
-  { value: 'easy' as const, label: 'Easy', sub: 'Little legends', icon: 'smile' },
+  { value: 'easy' as const, label: 'Gentle', sub: 'Little legends', icon: 'smile' },
   { value: 'mixed' as const, label: 'Mixed', sub: 'Everyone in', icon: 'users' },
-  { value: 'spicy' as const, label: 'Spicy', sub: 'Still family-safe', icon: 'trending-up' },
+  { value: 'spicy' as const, label: 'Tricky', sub: 'Bring it on', icon: 'trending-up' },
 ];
 
 const AGE_OPTIONS = [
@@ -55,6 +55,7 @@ function LargeOptionCard<T extends string>({
 }) {
   const colors = useColors();
   return (
+    <View style={{ flex: 1, minWidth: 0 }}>
     <AnimatedPressable
       onPress={onPress}
       style={[
@@ -77,6 +78,7 @@ function LargeOptionCard<T extends string>({
       <Text style={[styles.optLabel, { color: selected ? color : colors.foreground }]}>{opt.label}</Text>
       <Text style={[styles.optSub, { color: colors.mutedForeground }]}>{opt.sub}</Text>
     </AnimatedPressable>
+    </View>
   );
 }
 
@@ -126,8 +128,8 @@ function PlayStyleToggle({
           { value: 'turns' as PlayStyle, label: 'Take turns', sub: 'Rotate players each round', icon: 'repeat' },
           { value: 'free' as PlayStyle, label: 'Free play', sub: 'Anyone can answer', icon: 'shuffle' },
         ] as const).map(opt => (
+          <View key={opt.value} style={{ flex: 1, minWidth: 0 }}>
           <AnimatedPressable
-            key={opt.value}
             onPress={() => onChange(opt.value)}
             style={[
               styles.toggleCard,
@@ -144,6 +146,7 @@ function PlayStyleToggle({
             <Text style={[styles.optLabel, { color: value === opt.value ? color : colors.foreground }]}>{opt.label}</Text>
             <Text style={[styles.optSub, { color: colors.mutedForeground }]}>{opt.sub}</Text>
           </AnimatedPressable>
+          </View>
         ))}
       </View>
     </View>
@@ -379,7 +382,8 @@ export default function SetupScreen() {
 
           {/* Difficulty */}
           <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Difficulty?</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Where should we start?</Text>
+            <Text style={[styles.optSub, { color: colors.mutedForeground, textAlign: 'left', marginTop: -8 }]}>Pip adapts to each player as you go.</Text>
             <View style={styles.optRow}>
               {DIFF_OPTIONS.map(opt => (
                 <LargeOptionCard
@@ -454,7 +458,6 @@ const styles = StyleSheet.create({
   },
   optRow: { flexDirection: 'row', gap: 10 },
   optCard: {
-    flex: 1,
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 6,
@@ -463,7 +466,7 @@ const styles = StyleSheet.create({
   optLabel: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, textAlign: 'center' },
   optSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, textAlign: 'center', lineHeight: 15 },
   toggleRow: { flexDirection: 'row', gap: 10 },
-  toggleCard: { flex: 1, alignItems: 'center', paddingVertical: 14, paddingHorizontal: 6, gap: 6 },
+  toggleCard: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 6, gap: 6 },
   howToCard: { padding: 16, gap: 10 },
   howToRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   howToTitle: { fontFamily: 'Nunito_700Bold', fontSize: 15, flex: 1 },

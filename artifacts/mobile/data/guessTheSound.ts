@@ -1,3 +1,5 @@
+import { filterByTier } from '@/utils/director';
+import { isAnswerMatch } from '@/utils/answerMatch';
 import type { SeenMap } from '@/utils/contentMemory';
 import { selectFreshPrompt } from '@/utils/freshPrompt';
 
@@ -32,6 +34,15 @@ export const SOUND_ITEMS: SoundItem[] = [
   { id: 'gs18', soundText: 'Hoot hoot', answer: 'Owl', acceptedAnswers: ['owl', 'owlet'], difficulty: 'easy', category: 'Animals', tags: ['animals', 'birds'] },
   { id: 'gs19', soundText: 'Roar!', answer: 'Lion / Tiger', acceptedAnswers: ['lion', 'tiger', 'dinosaur', 't-rex', 'bear', 'beast'], difficulty: 'easy', category: 'Animals', tags: ['animals', 'wild'] },
   { id: 'gs20', soundText: 'Ka-ching!', answer: 'Cash register / Money', acceptedAnswers: ['cash register', 'till', 'money', 'register', 'checkout'], difficulty: 'medium', category: 'Shopping', tags: ['shopping', 'money'] },
+  { id: 'gs90', soundText: 'Tick-tock, tick-tock', answer: 'Clock', acceptedAnswers: ['clock', 'watch', 'a clock'], difficulty: 'medium', category: 'Household' },
+  { id: 'gs91', soundText: 'Drip… drip… drip…', answer: 'Tap', acceptedAnswers: ['tap', 'leaky tap', 'faucet', 'dripping tap', 'rain'], difficulty: 'medium', category: 'Household' },
+  { id: 'gs92', soundText: 'Whoosh… then a loud POP!', answer: 'Balloon', acceptedAnswers: ['balloon', 'popping balloon', 'a balloon'], difficulty: 'medium', category: 'Fun' },
+  { id: 'gs93', soundText: 'Rumble, rumble, CRACK!', answer: 'Thunder', acceptedAnswers: ['thunder', 'thunderstorm', 'storm'], difficulty: 'medium', category: 'Nature' },
+  { id: 'gs94', soundText: 'Click-clack, click-clack, ding!', answer: 'Typewriter', acceptedAnswers: ['typewriter', 'a typewriter'], difficulty: 'hard', category: 'Objects' },
+  { id: 'gs95', soundText: 'Whirrrr… then a gentle chug-chug-chug', answer: 'Washing machine', acceptedAnswers: ['washing machine', 'washer', 'a washing machine'], difficulty: 'medium', category: 'Household' },
+  { id: 'gs96', soundText: 'Hoo-hoo… hoo-hoo… (at night)', answer: 'Owl', acceptedAnswers: ['owl', 'an owl'], difficulty: 'medium', category: 'Animals' },
+  { id: 'gs97', soundText: 'A long, low, rumbling CHOO-CHOO with a whistle', answer: 'Steam train', acceptedAnswers: ['steam train', 'train', 'a train'], difficulty: 'hard', category: 'Vehicles' },
+  { id: 'gs98', soundText: 'Crunch… crunch… crunch… (in the snow)', answer: 'Footsteps in snow', acceptedAnswers: ['footsteps', 'walking in snow', 'walking', 'snow', 'footsteps in snow'], difficulty: 'hard', category: 'Nature' },
 ];
 
 export function getRandomSoundItem(
@@ -39,17 +50,12 @@ export function getRandomSoundItem(
   difficulty?: 'easy' | 'medium' | 'hard',
   seenMap?: SeenMap,
 ): SoundItem {
-  let pool = SOUND_ITEMS.filter(i => !usedIds.includes(i.id));
-  if (difficulty) {
-    const filtered = pool.filter(i => i.difficulty === difficulty || i.difficulty === 'easy');
-    if (filtered.length > 0) pool = filtered;
-  }
+  let pool = filterByTier(SOUND_ITEMS.filter(i => !usedIds.includes(i.id)), difficulty);
   if (pool.length === 0) pool = SOUND_ITEMS;
   if (seenMap) return selectFreshPrompt(pool, usedIds, seenMap);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export function checkSoundAnswer(userAnswer: string, item: SoundItem): boolean {
-  const normalised = userAnswer.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
-  return item.acceptedAnswers.some(a => a.toLowerCase().includes(normalised) || normalised.includes(a.toLowerCase()));
+  return isAnswerMatch(userAnswer, [item.answer, ...item.acceptedAnswers]);
 }
