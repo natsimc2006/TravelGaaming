@@ -30,10 +30,9 @@ workflows:
           cd ios && pod install
           echo "Bundle ID after pod install:"
           grep -n "PRODUCT_BUNDLE_IDENTIFIER" GameHost.xcodeproj/project.pbxproj
-          # Safety net: make sure the app target uses our real bundle ID, never the template placeholder.
-          sed -i '' 's/org\.name\.GameHost/com.natsimc.gamehost/g' GameHost.xcodeproj/project.pbxproj
-          echo "Bundle ID after fix:"
-          grep -n "PRODUCT_BUNDLE_IDENTIFIER" GameHost.xcodeproj/project.pbxproj
+          cd ..
+          # Safety net: make sure the generated project has our bundle ID and app icon.
+          node scripts/ci-fix-ios.js
       - name: Set up code signing
         script: |
           cd artifacts/mobile
