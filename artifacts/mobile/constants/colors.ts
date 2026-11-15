@@ -4,7 +4,7 @@ const colors = {
     tint: '#F26B38',
 
     // Backgrounds
-    background: '#FFF8EC',      // warm cream
+    background: '#FCF8F2',      // softer, less yellow cream — lets colour accents breathe
     foreground: '#2A2350',      // deep indigo ink
 
     card: '#FFFFFF',
@@ -16,6 +16,7 @@ const colors = {
     primaryDark: '#C94E1F',
     primaryMid: '#F57D4D',      // midpoint for gradients
     primarySoft: '#FFE6D8',
+    primaryText: '#B84716',     // orange for small text/links — passes WCAG AA on cream
 
     // Secondary — teal
     secondary: '#18A39A',
@@ -27,13 +28,13 @@ const colors = {
     accentForeground: '#2A2350',
 
     // Surfaces
-    muted: '#F4EBDD',           // warm tinted surface
-    mutedForeground: '#6A6388', // readable muted text
-    surfaceWarm: '#FBF1DF',
-    surfaceTint: '#F1E5D0',
+    muted: '#F3EDE4',           // warm tinted surface
+    mutedForeground: '#5A5378', // darker so body text reads clearly on cream
+    surfaceWarm: '#F8F1E6',
+    surfaceTint: '#EFE7DA',
 
     // Borders
-    border: '#EADFCB',          // warm, not grey
+    border: '#ECE5DA',          // quieter — prefer shadow over outlines
     borderMedium: '#D4C9BC',
     borderStrong: '#C2B5A5',
     input: '#EADFCB',

@@ -1,8 +1,8 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,90 +10,26 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FadeScrollRow from '@/components/FadeScrollRow';
+import FilterChip from '@/components/FilterChip';
 import GameCard from '@/components/GameCard';
 import Mascot from '@/components/Mascot';
-import { GAME_COLORS } from '@/data/gameColors';
 import { GAMES, type GameMeta, type GameSetting, type EnergyLevel } from '@/data/games';
+import { SITUATIONS, VIBES } from '@/data/taxonomy';
 import { useColors } from '@/hooks/useColors';
 
 type SituationFilter = GameSetting | 'all';
 type EnergyFilter = EnergyLevel | 'all';
 type PlayersFilter = 'any' | 'solo' | 'duo' | 'group';
 type HostFilter = 'any' | 'app' | 'reader';
-type SortMode = 'best' | 'quickest' | 'newest' | 'popular';
+type SortMode = 'best' | 'quickest' | 'newest' | 'groups';
 
-function Pill({
-  label,
-  selected,
-  onPress,
-  color,
-  small,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  color?: string;
-  small?: boolean;
-}) {
-  const colors = useColors();
-  const bg = selected ? colors.foreground : colors.card;
-  const borderColor = selected ? colors.foreground : colors.border;
-  const textColor = selected ? '#FFF' : colors.mutedForeground;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: bg,
-        borderRadius: 100,
-        paddingHorizontal: small ? 12 : 16,
-        paddingVertical: small ? 7 : 9,
-        borderWidth: 1.5,
-        borderColor: borderColor,
-        opacity: pressed ? 0.8 : 1,
-        transform: [{ scale: pressed ? 0.96 : 1 }],
-      })}
-    >
-      <Text style={{
-        fontFamily: 'Nunito_700Bold',
-        fontSize: small ? 12 : 13,
-        color: textColor,
-      }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function SortPill({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const colors = useColors();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        paddingHorizontal: 14,
-        paddingVertical: 7,
-        borderRadius: 100,
-        backgroundColor: selected ? colors.foreground : 'transparent',
-        opacity: pressed ? 0.75 : 1,
-      })}
-    >
-      <Text style={{
-        fontFamily: selected ? 'Fredoka_600SemiBold' : 'Nunito_600SemiBold',
-        fontSize: 13,
-        color: selected ? colors.background : colors.mutedForeground,
-      }}>{label}</Text>
-    </Pressable>
-  );
-}
+const SORTS: { key: SortMode; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { key: 'best', label: 'Best match', icon: 'star' },
+  { key: 'quickest', label: 'Quickest', icon: 'zap' },
+  { key: 'newest', label: 'Newest', icon: 'gift' },
+  { key: 'groups', label: 'Biggest groups', icon: 'users' },
+];
 
 function applySort(games: GameMeta[], sort: SortMode): GameMeta[] {
   const sorted = [...games];
@@ -102,11 +38,56 @@ function applySort(games: GameMeta[], sort: SortMode): GameMeta[] {
       return sorted.sort((a, b) => a.estimatedMinutes - b.estimatedMinutes);
     case 'newest':
       return sorted.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
-    case 'popular':
-      return sorted.sort((a, b) => (b.maxPlayers - a.maxPlayers));
+    case 'groups':
+      return sorted.sort((a, b) => b.maxPlayers - a.maxPlayers);
     default:
       return sorted;
   }
+}
+
+function SortSheet({
+  visible,
+  value,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  value: SortMode;
+  onSelect: (s: SortMode) => void;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.sheetBackdrop} onPress={onClose}>
+        <Pressable
+          style={[styles.sheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 16 }]}
+          onPress={() => {}}
+        >
+          <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Sort games</Text>
+          {SORTS.map(s => {
+            const on = s.key === value;
+            return (
+              <Pressable
+                key={s.key}
+                onPress={() => { onSelect(s.key); onClose(); }}
+                style={({ pressed }) => [
+                  styles.sheetRow,
+                  { backgroundColor: on ? colors.muted : pressed ? colors.surfaceWarm : 'transparent' },
+                ]}
+              >
+                <Feather name={s.icon} size={18} color={on ? colors.primaryText : colors.mutedForeground} />
+                <Text style={[styles.sheetRowText, { color: colors.foreground }]}>{s.label}</Text>
+                {on && <Feather name="check" size={18} color={colors.primaryText} />}
+              </Pressable>
+            );
+          })}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
 }
 
 export default function GamesScreen() {
@@ -117,6 +98,7 @@ export default function GamesScreen() {
   const [players, setPlayers] = useState<PlayersFilter>('any');
   const [host, setHost] = useState<HostFilter>('any');
   const [sort, setSort] = useState<SortMode>('best');
+  const [sortOpen, setSortOpen] = useState(false);
 
   const filtered = GAMES.filter(g => {
     if (situation !== 'all' && !g.settings.includes(situation)) return false;
@@ -130,7 +112,7 @@ export default function GamesScreen() {
   });
 
   const sorted = applySort(filtered, sort);
-
+  const sortLabel = SORTS.find(s => s.key === sort)!.label;
   const hasFilters = situation !== 'all' || energy !== 'all' || players !== 'any' || host !== 'any';
 
   const clearAll = () => {
@@ -141,14 +123,17 @@ export default function GamesScreen() {
     setSort('best');
   };
 
+  const toggle = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T, off: T) =>
+    () => setter(v => (v === value ? off : value));
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.root, { backgroundColor: colors.background }]}>
 
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 16, backgroundColor: colors.background }]}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Back">
             <Feather name="arrow-left" size={22} color={colors.foreground} />
           </Pressable>
           <View style={{ flex: 1 }}>
@@ -159,58 +144,72 @@ export default function GamesScreen() {
           </View>
         </View>
 
-        {/* Sort bar */}
-        <View style={[styles.sortBar, { borderBottomColor: colors.border }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortRow}>
-            {([
-              { key: 'best', label: 'Best match' },
-              { key: 'quickest', label: 'Quickest' },
-              { key: 'newest', label: 'Newest' },
-              { key: 'popular', label: 'Most popular' },
-            ] as { key: SortMode; label: string }[]).map(s => (
-              <SortPill
-                key={s.key}
+        {/* Filters — two rows, same names as the home screen */}
+        <View style={[styles.filterBlock, { borderBottomColor: colors.border }]}>
+          <FadeScrollRow contentContainerStyle={styles.filterRow}>
+            <FilterChip size="sm" label="Anywhere" selected={situation === 'all'} onPress={() => setSituation('all')} />
+            {SITUATIONS.map(s => (
+              <FilterChip
+                key={s.value}
+                size="sm"
+                icon={s.icon as any}
                 label={s.label}
-                selected={sort === s.key}
-                onPress={() => setSort(s.key)}
+                selected={situation === s.value}
+                onPress={() => setSituation(s.value)}
               />
             ))}
-          </ScrollView>
+          </FadeScrollRow>
+
+          <FadeScrollRow contentContainerStyle={styles.filterRow}>
+            <FilterChip size="sm" label="Any vibe" selected={energy === 'all'} onPress={() => setEnergy('all')} />
+            {VIBES.map(v => (
+              <FilterChip
+                key={v.value}
+                size="sm"
+                label={v.label}
+                selected={energy === v.value}
+                onPress={() => setEnergy(v.value)}
+              />
+            ))}
+            <View style={[styles.divider, { backgroundColor: colors.borderMedium }]} />
+            <FilterChip size="sm" icon="user" label="Play solo" selected={players === 'solo'} onPress={toggle<PlayersFilter>(setPlayers, 'solo', 'any')} />
+            <FilterChip size="sm" label="2 players" selected={players === 'duo'} onPress={toggle<PlayersFilter>(setPlayers, 'duo', 'any')} />
+            <FilterChip size="sm" icon="users" label="Groups" selected={players === 'group'} onPress={toggle<PlayersFilter>(setPlayers, 'group', 'any')} />
+            <View style={[styles.divider, { backgroundColor: colors.borderMedium }]} />
+            <FilterChip size="sm" label="App hosts" selected={host === 'app'} onPress={toggle<HostFilter>(setHost, 'app', 'any')} />
+            <FilterChip size="sm" label="Needs a reader" selected={host === 'reader'} onPress={toggle<HostFilter>(setHost, 'reader', 'any')} />
+          </FadeScrollRow>
         </View>
 
-        {/* Filter rows */}
-        <View style={[styles.filterBlock, { borderBottomColor: colors.border }]}>
-          {/* Row 1: Situation */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-            <Pill label="All situations" selected={situation === 'all'} onPress={() => setSituation('all')} small />
-            <Pill label="Car" selected={situation === 'Car'} onPress={() => setSituation('Car')} color={colors.primary} small />
-            <Pill label="Dinner" selected={situation === 'Dinner'} onPress={() => setSituation('Dinner')} color={colors.primary} small />
-            <Pill label="Waiting" selected={situation === 'Waiting'} onPress={() => setSituation('Waiting')} color={colors.primary} small />
-            <Pill label="Bedtime" selected={situation === 'Bedtime'} onPress={() => setSituation('Bedtime')} color={colors.primary} small />
-          </ScrollView>
-
-          {/* Row 2: Energy + Players + Host */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-            <Pill label="Any vibe" selected={energy === 'all'} onPress={() => setEnergy('all')} small />
-            <Pill label="Calm" selected={energy === 'Calm'} onPress={() => setEnergy('Calm')} color={colors.secondary} small />
-            <Pill label="Thinky" selected={energy === 'Medium'} onPress={() => setEnergy('Medium')} color={colors.secondary} small />
-            <Pill label="Lively" selected={energy === 'Chaotic'} onPress={() => setEnergy('Chaotic')} color={colors.secondary} small />
-            <View style={styles.divider} />
-            <Pill label="Solo ok" selected={players === 'solo'} onPress={() => setPlayers(v => v === 'solo' ? 'any' : 'solo')} color={colors.gameCategoryDash} small />
-            <Pill label="2 players" selected={players === 'duo'} onPress={() => setPlayers(v => v === 'duo' ? 'any' : 'duo')} color={colors.gameCategoryDash} small />
-            <Pill label="Group" selected={players === 'group'} onPress={() => setPlayers(v => v === 'group' ? 'any' : 'group')} color={colors.gameCategoryDash} small />
-            <View style={styles.divider} />
-            <Pill label="App hosts" selected={host === 'app'} onPress={() => setHost(v => v === 'app' ? 'any' : 'app')} color={colors.gameForbiddenWord} small />
-            <Pill label="Reader" selected={host === 'reader'} onPress={() => setHost(v => v === 'reader' ? 'any' : 'reader')} color={colors.gameForbiddenWord} small />
-          </ScrollView>
-        </View>
-
-        {/* Results list */}
+        {/* Results */}
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
         >
+          <View style={styles.resultMeta}>
+            <Text style={[styles.resultCount, { color: colors.mutedForeground }]}>
+              {sorted.length} game{sorted.length !== 1 ? 's' : ''}
+              {hasFilters ? ' match' : ' ready'}
+            </Text>
+            <View style={styles.resultActions}>
+              {hasFilters && (
+                <Pressable onPress={clearAll} hitSlop={8}>
+                  <Text style={[styles.clearLink, { color: colors.primaryText }]}>Clear</Text>
+                </Pressable>
+              )}
+              <Pressable
+                onPress={() => setSortOpen(true)}
+                style={[styles.sortBtn, { backgroundColor: colors.card, shadowColor: colors.navy }]}
+                accessibilityLabel={`Sort: ${sortLabel}`}
+              >
+                <Feather name="bar-chart-2" size={13} color={colors.mutedForeground} style={{ transform: [{ rotate: '90deg' }] }} />
+                <Text style={[styles.sortBtnText, { color: colors.foreground }]}>{sortLabel}</Text>
+                <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+          </View>
+
           {sorted.length === 0 ? (
             <View style={styles.empty}>
               <Mascot size={96} mood="think" />
@@ -223,22 +222,12 @@ export default function GamesScreen() {
               </Pressable>
             </View>
           ) : (
-            <>
-              <View style={styles.resultMeta}>
-                <Text style={[styles.resultCount, { color: colors.mutedForeground }]}>
-                  {sorted.length} game{sorted.length !== 1 ? 's' : ''} ready
-                </Text>
-                {hasFilters && (
-                  <Pressable onPress={clearAll}>
-                    <Text style={[styles.clearLink, { color: colors.primary }]}>Clear filters</Text>
-                  </Pressable>
-                )}
-              </View>
-              {sorted.map(g => <GameCard key={g.id} game={g} />)}
-            </>
+            sorted.map(g => <GameCard key={g.id} game={g} variant="list" />)
           )}
         </ScrollView>
       </View>
+
+      <SortSheet visible={sortOpen} value={sort} onSelect={setSort} onClose={() => setSortOpen(false)} />
     </>
   );
 }
@@ -249,7 +238,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 10,
     gap: 12,
   },
   backBtn: {
@@ -258,129 +247,41 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, letterSpacing: -0.3 },
-  headerSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 2 },
-
-  sortBar: { borderBottomWidth: 1, paddingBottom: 2 },
-  sortRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 2,
-  },
+  headerSub: { fontFamily: 'Nunito_400Regular', fontSize: 14, marginTop: 2 },
 
   filterBlock: { borderBottomWidth: 1, paddingBottom: 6 },
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    gap: 6,
-    paddingVertical: 5,
+    gap: 8,
+    paddingVertical: 6,
   },
-  divider: { width: 1, height: 18, backgroundColor: '#DDD', marginHorizontal: 2 },
+  divider: { width: 1, height: 18, marginHorizontal: 2 },
 
-  list: { padding: 16, gap: 14 },
+  list: { padding: 16, gap: 12 },
   resultMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  resultCount: { fontFamily: 'Nunito_600SemiBold', fontSize: 13 },
-  clearLink: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  resultActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  resultCount: { fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
+  clearLink: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  sortBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 100,
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 1,
+  },
+  sortBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
 
-  cardShadow: {},
-  card: { overflow: 'hidden' },
-  topHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 16,
-    right: 16,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 1,
-    zIndex: 1,
-  },
-  cardInner: {
-    padding: 20,
-    gap: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  iconTile: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerRight: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: 6,
-  },
-  headerRightTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  gameName: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 18,
-    letterSpacing: -0.2,
-  },
-  energyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 100,
-  },
-  energyBadgeText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 11,
-  },
-  soloBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 100,
-  },
-  soloBadgeText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-  },
-
-  description: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-
-  metaRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12 },
-
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  hostBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100,
-  },
-  hostBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
-  settingBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
-  settingBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
-
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 4,
-  },
-  playBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 100,
-  },
-  playBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, color: '#FFF' },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(42, 35, 80, 0.35)', justifyContent: 'flex-end' },
+  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 16, paddingTop: 10, gap: 4 },
+  sheetHandle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, marginBottom: 10 },
+  sheetTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, paddingHorizontal: 8, marginBottom: 6 },
+  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 14, borderRadius: 16 },
+  sheetRowText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 16 },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 10 },
   emptyTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, marginTop: 8 },
