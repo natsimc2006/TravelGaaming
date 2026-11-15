@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 13,
   },
 });

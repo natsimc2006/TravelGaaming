@@ -1,3 +1,4 @@
+import { filterByTier } from '@/utils/director';
 import type { SeenMap } from '@/utils/contentMemory';
 import { selectFreshPrompt } from '@/utils/freshPrompt';
 
@@ -34,6 +35,16 @@ export const RAPID_FIRE_PROMPTS: RapidFirePrompt[] = [
   { id: 'rf23', prompt: 'Name 5 things that are sticky', difficulty: 'easy', tags: ['texture', 'funny'] },
   { id: 'rf24', prompt: 'Name 5 Australian animals', difficulty: 'easy', tags: ['animals', 'australia'] },
   { id: 'rf25', prompt: 'Name 5 things you do before breakfast', difficulty: 'easy', tags: ['daily', 'routine'] },
+  { id: 'rf90', prompt: 'Name 5 words that rhyme with "cat"', difficulty: 'medium' },
+  { id: 'rf91', prompt: 'Name 5 things with wheels that are not cars', difficulty: 'medium' },
+  { id: 'rf92', prompt: 'Name 5 animals with more than four legs', difficulty: 'hard' },
+  { id: 'rf93', prompt: 'Name 5 countries that start with a vowel', difficulty: 'hard' },
+  { id: 'rf94', prompt: 'Name 5 things you can fold', difficulty: 'medium' },
+  { id: 'rf95', prompt: 'Name 5 words that start and end with the same letter', difficulty: 'hard' },
+  { id: 'rf96', prompt: 'Name 5 things you can only do once', difficulty: 'hard' },
+  { id: 'rf97', prompt: 'Name 5 things that come in pairs', difficulty: 'medium' },
+  { id: 'rf98', prompt: 'Name 5 jobs that start with the letter T', difficulty: 'hard' },
+  { id: 'rf99', prompt: 'Name 5 things that are both round and edible', difficulty: 'medium' },
 ];
 
 export function getRandomRapidFirePrompt(
@@ -41,11 +52,7 @@ export function getRandomRapidFirePrompt(
   difficulty?: 'easy' | 'medium' | 'hard',
   seenMap?: SeenMap,
 ): RapidFirePrompt {
-  let pool = RAPID_FIRE_PROMPTS.filter(p => !usedIds.includes(p.id));
-  if (difficulty) {
-    const filtered = pool.filter(p => p.difficulty === difficulty || difficulty === 'medium');
-    if (filtered.length > 0) pool = filtered;
-  }
+  let pool = filterByTier(RAPID_FIRE_PROMPTS.filter(p => !usedIds.includes(p.id)), difficulty);
   if (pool.length === 0) pool = RAPID_FIRE_PROMPTS;
   if (seenMap) return selectFreshPrompt(pool, usedIds, seenMap);
   return pool[Math.floor(Math.random() * pool.length)];

@@ -1,0 +1,74 @@
+workflows:
+  gamehost-ios-testflight:
+    name: Game Host – iOS to TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # Name of the App Store Connect API key under Codemagic → Settings → Integrations → Developer Portal.
+      app_store_connect: Tallybird
+    environment:
+      node: latest
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.natsimc.gamehost
+    triggering:
+      events: []   # manual builds only — tap "Start new build" in Codemagic
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install -g pnpm@10.28.0 --force
+          pnpm install --filter @workspace/mobile... --frozen-lockfile
+      - name: Generate native iOS project (Expo prebuild)
+        script: |
+          cd artifacts/mobile
+          node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('app.json'));c.expo.ios.buildNumber=process.env.BUILD_NUMBER;fs.writeFileSync('app.json',JSON.stringify(c,null,2))"
+          npx expo prebuild --platform ios --no-install
+          echo "Bundle ID right after prebuild:"
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" ios/GameHost.xcodeproj/project.pbxproj
+          cd ios && pod install
+          echo "Bundle ID after pod install:"
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" GameHost.xcodeproj/project.pbxproj
+          cd ..
+          # Safety net: make sure the generated project has our bundle ID and app icon.
+          node scripts/ci-fix-ios.js
+      - name: Set up code signing
+        script: |
+          cd artifacts/mobile
+          xcode-project use-profiles --project ios/GameHost.xcodeproj
+      - name: Check signing (diagnostic)
+        ignore_failure: true
+        script: |
+          echo "=== Signing identities in keychain ==="
+          security find-identity -v -p codesigning
+          echo
+          echo "=== Provisioning profiles on this machine ==="
+          for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            echo "--- $f"
+            security cms -D -i "$f" > /tmp/profile.plist 2>/dev/null
+            /usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist
+            /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/profile.plist
+            /usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /tmp/profile.plist
+            echo "Certificate SHA-1 fingerprints inside this profile:"
+            i=0
+            while /usr/libexec/PlistBuddy -c "Print :DeveloperCertificates:$i" /tmp/profile.plist > /tmp/cert.bin 2>/dev/null; do
+              openssl x509 -inform DER -in /tmp/cert.bin -noout -fingerprint -sha1 -subject 2>/dev/null
+              i=$((i+1))
+            done
+          done
+          echo
+          echo "=== Project signing settings after use-profiles ==="
+          grep -nE "CODE_SIGN_STYLE|PROVISIONING_PROFILE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER" artifacts/mobile/ios/GameHost.xcodeproj/project.pbxproj
+      - name: Build IPA
+        script: |
+          cd artifacts/mobile
+          xcode-project build-ipa \
+            --workspace "ios/GameHost.xcworkspace" \
+            --scheme "GameHost"
+    artifacts:
+      - artifacts/mobile/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false   # internal testers get builds automatically; external beta review needs extra test info

@@ -1,3 +1,4 @@
+import { filterByTier } from '@/utils/director';
 export interface AlphabetCategory {
   id: string;
   name: string;
@@ -58,6 +59,18 @@ export const ALPHABET_CATEGORIES: AlphabetCategory[] = [
   { id: 'things-that-glow', name: 'Things that glow in the dark', difficulty: 'medium' },
   { id: 'things-in-doctor', name: 'Things at the doctor', difficulty: 'easy' },
   { id: 'fairy-tale-things', name: 'Things in a fairy tale', difficulty: 'easy' },
+  { id: 'things-oval', name: 'Things that are oval', difficulty: 'medium' },
+  { id: 'things-two-words', name: 'Famous duos (like salt & pepper)', difficulty: 'medium' },
+  { id: 'things-ancient', name: 'Things from ancient times', difficulty: 'hard' },
+  { id: 'things-rivers-seas', name: 'Rivers, lakes and seas', difficulty: 'hard' },
+  { id: 'things-nocturnal', name: 'Animals awake at night', difficulty: 'medium' },
+  { id: 'things-planets', name: 'Things you find in space or the sky at night', difficulty: 'medium' },
+  { id: 'things-with-keys', name: 'Things with keys or buttons', difficulty: 'medium' },
+  { id: 'things-in-museum', name: 'Things you find in a museum', difficulty: 'hard' },
+  { id: 'famous-places', name: 'Famous landmarks', difficulty: 'hard' },
+  { id: 'things-rhymes-with', name: 'Words that make a sound (like buzz or crash)', difficulty: 'hard' },
+  { id: 'things-with-stripes', name: 'Things with stripes', difficulty: 'medium' },
+  { id: 'capital-cities', name: 'Capital cities', difficulty: 'hard' },
 ];
 
 export const LETTERS = 'ABCDEFGHIJKLMNOPRSTW'.split('');
@@ -73,11 +86,7 @@ export function getRandomCategory(
   difficulty?: 'easy' | 'medium' | 'hard',
   seenMap?: import('@/utils/contentMemory').SeenMap,
 ): AlphabetCategory {
-  let pool = ALPHABET_CATEGORIES.filter(c => !usedIds.includes(c.id));
-  if (difficulty && difficulty !== 'hard') {
-    const filtered = pool.filter(c => c.difficulty === difficulty || c.difficulty === 'easy');
-    if (filtered.length > 0) pool = filtered;
-  }
+  let pool = filterByTier(ALPHABET_CATEGORIES.filter(c => !usedIds.includes(c.id)), difficulty);
   if (pool.length === 0) pool = ALPHABET_CATEGORIES;
   if (seenMap) {
     const { selectFreshPrompt } = require('@/utils/freshPrompt');

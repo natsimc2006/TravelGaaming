@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   GameSession,
   GameSettings,
@@ -10,16 +10,21 @@ import {
   nextLetter,
   nextPlayer,
   nextRound,
+  recordOutcome as recordSessionOutcome,
+  rerollPrompt,
   resetSoloStreak,
   revealNextClue,
 } from '@/utils/gameEngine';
 import { getSeenMap } from '@/utils/contentMemory';
+import { loadSavedLevels, saveLevels, type Outcome } from '@/utils/director';
 
 interface GameContextValue {
   session: GameSession | null;
   startGame: (gameId: string, gameName: string, settings: GameSettings) => Promise<void>;
   addPlayerScore: (playerId: string, points: number) => void;
   advanceRound: () => void;
+  swapPrompt: () => void;
+  recordOutcome: (playerId: string, outcome: Outcome) => void;
   advancePlayer: () => void;
   newLetter: () => void;
   newCategory: () => void;
@@ -37,10 +42,28 @@ const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<GameSession | null>(null);
+  const persistedRef = useRef(false);
+
+  // Remember each player's skill level when a game ends, so next time starts at the right pitch.
+  useEffect(() => {
+    if (session?.status === 'ended' && !persistedRef.current) {
+      persistedRef.current = true;
+      saveLevels(session.gameId, session.players, session.director);
+    }
+  }, [session?.status]);
 
   const startGame = useCallback(async (gameId: string, gameName: string, settings: GameSettings) => {
-    const seenMap = await getSeenMap();
-    setSession(createSession(gameId, gameName, settings, seenMap));
+    const [seenMap, saved] = await Promise.all([getSeenMap(), loadSavedLevels(gameId)]);
+    persistedRef.current = false;
+    setSession(createSession(gameId, gameName, settings, seenMap, saved));
+  }, []);
+
+  const swapPrompt = useCallback(() => {
+    setSession(prev => prev ? rerollPrompt(prev) : prev);
+  }, []);
+
+  const recordOutcome = useCallback((playerId: string, outcome: Outcome) => {
+    setSession(prev => prev ? recordSessionOutcome(prev, playerId, outcome) : prev);
   }, []);
 
   const addPlayerScore = useCallback((playerId: string, points: number) => {
@@ -120,6 +143,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       startGame,
       addPlayerScore,
       advanceRound,
+      swapPrompt,
+      recordOutcome,
       advancePlayer,
       newLetter,
       newCategory,

@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     textAlign: 'center',
   },
   iconWrapper: {

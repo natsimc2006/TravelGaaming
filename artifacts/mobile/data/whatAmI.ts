@@ -1,3 +1,4 @@
+import { filterByTier } from '@/utils/director';
 export interface WhatAmIItem {
   id: string;
   answer: string;
@@ -488,6 +489,188 @@ export const WHAT_AM_I_ITEMS: WhatAmIItem[] = [
     ],
     difficulty: 'medium',
   },
+  {
+    id: 'passport',
+    answer: 'Passport',
+    clues: [
+      'I am small but I open the whole world.',
+      'I am only useful if I\'m up to date.',
+      'Officials stamp me again and again.',
+      'You show me when you cross a border.',
+      'I carry your photo and let you fly abroad.',
+    ],
+    difficulty: 'hard',
+    category: 'Objects',
+  },
+  {
+    id: 'glacier',
+    answer: 'Glacier',
+    clues: [
+      'I am enormous but I never stop moving.',
+      'My journey takes hundreds of years.',
+      'I carved out valleys long before you were born.',
+      'I am a river that is frozen solid.',
+      'I flow downhill very, very slowly and I\'m made of ice.',
+    ],
+    difficulty: 'hard',
+    category: 'Nature',
+  },
+  {
+    id: 'hourglass',
+    answer: 'Hourglass',
+    clues: [
+      'I hold something that can\'t be held.',
+      'I only ever tell you what\'s already gone.',
+      'I work best when I\'m turned upside down.',
+      'I measure minutes using sand.',
+      'I have two bulbs joined by a narrow neck.',
+    ],
+    difficulty: 'hard',
+    category: 'Objects',
+  },
+  {
+    id: 'echo',
+    answer: 'Echo',
+    clues: [
+      'You can hear me but never catch me.',
+      'I only speak when you speak first.',
+      'I love canyons, caves and empty halls.',
+      'I\'m a sound that bounces back.',
+      'Shout \'hello\' and I say \'hello\' back.',
+    ],
+    difficulty: 'hard',
+    category: 'Nature',
+  },
+  {
+    id: 'bat',
+    answer: 'Bat',
+    clues: [
+      'I am a mammal that breaks a big rule.',
+      'I\'m awake when most animals are asleep.',
+      'I can find my dinner without using my eyes.',
+      'I use sound to navigate in the dark.',
+      'I\'m the only mammal that truly flies — and I sleep upside down.',
+    ],
+    difficulty: 'hard',
+    category: 'Animals',
+  },
+  {
+    id: 'fossil',
+    answer: 'Fossil',
+    clues: [
+      'I am a message from a very long time ago.',
+      'I\'m older than any person who has ever lived.',
+      'I was once alive, but now I am stone.',
+      'Scientists dig me out of rock.',
+      'I\'m the shape of a dinosaur bone or ancient shell, left in the ground.',
+    ],
+    difficulty: 'hard',
+    category: 'Science',
+  },
+  {
+    id: 'kaleidoscope',
+    answer: 'Kaleidoscope',
+    clues: [
+      'I make something beautiful from broken pieces.',
+      'I am more fun the more you twist me.',
+      'I have mirrors hiding inside.',
+      'You look through one end of me.',
+      'I show swirling, symmetrical patterns of coloured glass.',
+    ],
+    difficulty: 'hard',
+    category: 'Objects',
+  },
+  {
+    id: 'moon',
+    answer: 'Moon',
+    clues: [
+      'I\'m always with you, even when you can\'t see me.',
+      'I change my shape every month.',
+      'I have no light of my own.',
+      'I pull on the oceans to make tides.',
+      'Astronauts have walked on me.',
+    ],
+    difficulty: 'hard',
+    category: 'Space',
+  },
+  {
+    id: 'shadow2',
+    answer: 'Reflection',
+    clues: [
+      'I copy you perfectly but I\'m not really you.',
+      'I disappear the moment the light does.',
+      'I\'m always the wrong way around.',
+      'You find me in puddles, windows and glass.',
+      'Look into a still pond and you\'ll see me.',
+    ],
+    difficulty: 'hard',
+    category: 'Nature',
+  },
+  {
+    id: 'barcode',
+    answer: 'Barcode',
+    clues: [
+      'I\'m a secret code hidden in plain sight.',
+      'I\'m made of stripes that only machines can read.',
+      'Shops love me.',
+      'I beep when you see me at the checkout.',
+      'I tell the till what an item is and how much it costs.',
+    ],
+    difficulty: 'hard',
+    category: 'Objects',
+  },
+  {
+    id: 'parachute',
+    answer: 'Parachute',
+    clues: [
+      'I am only useful when I open.',
+      'I hope you never need me, but I\'m glad you have me.',
+      'I\'m made of light fabric and lots of string.',
+      'I help you land softly from the sky.',
+      'You wear me on your back when you jump from a plane.',
+    ],
+    difficulty: 'medium',
+    category: 'Objects',
+  },
+  {
+    id: 'chameleon',
+    answer: 'Chameleon',
+    clues: [
+      'I\'m a master of disguise.',
+      'I can look in two directions at once.',
+      'My tongue is longer than my body.',
+      'I\'m a reptile that changes colour.',
+      'I\'m a lizard who blends into leaves and branches.',
+    ],
+    difficulty: 'medium',
+    category: 'Animals',
+  },
+  {
+    id: 'lantern',
+    answer: 'Lantern',
+    clues: [
+      'I carry light so you don\'t have to.',
+      'I\'ve been around for thousands of years.',
+      'I\'m popular on camping trips.',
+      'I hang from a handle and glow.',
+      'Put a candle or a bulb inside me and I light up the night.',
+    ],
+    difficulty: 'medium',
+    category: 'Objects',
+  },
+  {
+    id: 'tadpole',
+    answer: 'Tadpole',
+    clues: [
+      'I am just getting started.',
+      'I live in water but I won\'t always.',
+      'I am mostly a tail and a head.',
+      'I\'ll grow legs soon.',
+      'I turn into a frog.',
+    ],
+    difficulty: 'medium',
+    category: 'Animals',
+  },
 ];
 
 export function getRandomWhatAmIItem(
@@ -495,14 +678,7 @@ export function getRandomWhatAmIItem(
   difficulty?: 'easy' | 'medium' | 'hard',
   seenMap?: import('@/utils/contentMemory').SeenMap,
 ): WhatAmIItem {
-  let pool = WHAT_AM_I_ITEMS.filter(item => !usedIds.includes(item.id));
-  if (difficulty === 'easy') {
-    const easy = pool.filter(i => i.difficulty === 'easy');
-    if (easy.length > 0) pool = easy;
-  } else if (difficulty === 'hard') {
-    const hard = pool.filter(i => i.difficulty === 'hard' || i.difficulty === 'medium');
-    if (hard.length > 0) pool = hard;
-  }
+  let pool = filterByTier(WHAT_AM_I_ITEMS.filter(item => !usedIds.includes(item.id)), difficulty);
   if (pool.length === 0) pool = WHAT_AM_I_ITEMS;
   if (seenMap) {
     const { selectFreshPrompt } = require('@/utils/freshPrompt');

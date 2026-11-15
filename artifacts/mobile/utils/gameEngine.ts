@@ -8,6 +8,15 @@ import { getRandomSoundItem } from '@/data/guessTheSound';
 import { getRandomThisOrThat } from '@/data/thisOrThat';
 import { getRandomRiddle } from '@/data/riddles';
 import type { SeenMap } from '@/utils/contentMemory';
+import {
+  applyOutcome,
+  initDirector,
+  levelFor,
+  tierForLevel,
+  type DirectorState,
+  type Outcome,
+} from '@/utils/director';
+import { pickTwist, type Twist } from '@/utils/twists';
 
 export interface Player {
   id: string;
@@ -123,6 +132,12 @@ export interface GameSession {
   isSoloMode: boolean;
   gameState: GameState;
   seenMap?: SeenMap;
+  /** Adaptive skill model — see utils/director.ts */
+  director: DirectorState;
+  /** Skill level (1–5) the current prompt was drawn at. */
+  level: number;
+  /** Rule-changing twist for the current round, if any. */
+  twist?: Twist;
   alphabetState?: AlphabetState;
   whatAmIState?: WhatAmIState;
   categoryDashState?: CategoryDashState;
@@ -153,19 +168,18 @@ export function getDifficultyKey(difficulty: GameDifficulty): 'easy' | 'medium' 
   return map[difficulty];
 }
 
+/** Games where players take turns (the prompt is aimed at whoever is up). */
+const TURN_GAMES = new Set(['what-am-i', 'forbidden-word', 'would-you-rather', 'rapid-fire', 'guess-the-sound', 'riddles']);
+
 export function createSession(
   gameId: string,
   gameName: string,
   settings: GameSettings,
   seenMap?: SeenMap,
+  savedLevels?: Record<string, number>,
 ): GameSession {
   const scores: Record<string, number> = {};
   settings.players.forEach(p => { scores[p.id] = 0; });
-
-  const totalRounds = getRoundCount(settings.roundLength);
-  const diff = getDifficultyKey(settings.difficulty);
-  const timerSecs = getTimerSeconds(settings.roundLength);
-  const isSoloMode = settings.players.length === 1;
 
   const session: GameSession = {
     gameId,
@@ -175,109 +189,147 @@ export function createSession(
     scores,
     currentPlayerIndex: 0,
     round: 1,
-    totalRounds,
+    totalRounds: getRoundCount(settings.roundLength),
     status: 'playing',
-    isSoloMode,
+    isSoloMode: settings.players.length === 1,
     gameState: 'playing',
     seenMap,
+    director: initDirector(settings.players, settings.ageRange, settings.difficulty, savedLevels),
+    level: 2,
   };
+  return drawPrompt(session);
+}
+
+/**
+ * Draws a fresh prompt for the current round, pitched at the skill level of whoever it is for.
+ * Does not touch the round counter or whose turn it is — used by nextRound AND by "swap prompt".
+ */
+function drawPrompt(session: GameSession): GameSession {
+  const { gameId, settings } = session;
+  const ids = TURN_GAMES.has(gameId) && session.players[session.currentPlayerIndex]
+    ? [session.players[session.currentPlayerIndex].id]
+    : session.players.map(p => p.id);
+  const level = levelFor(session.director, ids);
+  const diff = tierForLevel(level);
+  const timerSecs = Math.round(getTimerSeconds(settings.roundLength) * (session.twist?.timerScale ?? 1));
+  const sm = session.seenMap;
+  const updated: GameSession = { ...session, level };
 
   if (gameId === 'alphabet-showdown') {
-    const cat = getRandomCategory([], diff, seenMap);
-    const letter = getRandomLetter([]);
-    session.alphabetState = {
+    const s = session.alphabetState;
+    const cat = getRandomCategory(s?.usedCategoryIds ?? [], diff, sm);
+    const letter = getRandomLetter(s?.usedLetters ?? []);
+    updated.alphabetState = {
       currentCategory: { id: cat.id, name: cat.name },
       currentLetter: letter,
-      usedCategoryIds: [cat.id],
-      usedLetters: [letter],
+      usedCategoryIds: [...(s?.usedCategoryIds ?? []), cat.id],
+      usedLetters: [...(s?.usedLetters ?? []), letter],
       timerSeconds: timerSecs,
-      soloStreak: 0,
-      bestStreak: 0,
+      soloStreak: s?.soloStreak ?? 0,
+      bestStreak: s?.bestStreak ?? 0,
     };
   } else if (gameId === 'what-am-i') {
-    const item = getRandomWhatAmIItem([], diff, seenMap);
-    session.whatAmIState = {
+    const s = session.whatAmIState;
+    const item = getRandomWhatAmIItem(s?.usedItemIds ?? [], diff, sm);
+    updated.whatAmIState = {
       currentItemId: item.id,
       currentAnswer: item.answer,
       currentClues: item.clues,
       cluesRevealed: 1,
-      usedItemIds: [item.id],
+      usedItemIds: [...(s?.usedItemIds ?? []), item.id],
       pointsForCorrect: 5,
       guessAttempts: 0,
     };
   } else if (gameId === 'category-dash') {
-    const round = getRandomDashRound([], diff, seenMap);
-    const letter = getRandomDashLetter();
-    session.categoryDashState = {
+    const s = session.categoryDashState;
+    const round = getRandomDashRound(s?.usedRoundIds ?? [], diff, sm);
+    updated.categoryDashState = {
       currentRoundId: round.id,
       currentCategories: round.categories,
-      currentLetter: letter,
-      usedRoundIds: [round.id],
+      currentLetter: getRandomDashLetter(),
+      usedRoundIds: [...(s?.usedRoundIds ?? []), round.id],
       timerSeconds: timerSecs,
     };
   } else if (gameId === 'forbidden-word') {
-    const card = getRandomForbiddenCard([], diff, seenMap);
-    session.forbiddenWordState = {
+    const s = session.forbiddenWordState;
+    const card = getRandomForbiddenCard(s?.usedCardIds ?? [], diff, sm);
+    updated.forbiddenWordState = {
       currentCardId: card.id,
       targetWord: card.targetWord,
       forbiddenWords: card.forbiddenWords,
-      usedCardIds: [card.id],
+      usedCardIds: [...(s?.usedCardIds ?? []), card.id],
       timerSeconds: timerSecs,
     };
   } else if (gameId === 'would-you-rather') {
-    const card = getRandomWYRCard([], undefined, seenMap);
-    session.wouldYouRatherState = {
+    const s = session.wouldYouRatherState;
+    const card = getRandomWYRCard(s?.usedCardIds ?? [], s?.mode, sm);
+    updated.wouldYouRatherState = {
       currentCardId: card.id,
       optionA: card.optionA,
       optionB: card.optionB,
       mode: card.mode,
-      usedCardIds: [card.id],
+      usedCardIds: [...(s?.usedCardIds ?? []), card.id],
       selectedOption: null,
     };
   } else if (gameId === 'rapid-fire') {
-    const prompt = getRandomRapidFirePrompt([], diff, seenMap);
+    const s = session.rapidFireState;
+    const prompt = getRandomRapidFirePrompt(s?.usedPromptIds ?? [], diff, sm);
     const playerAnswerCount: Record<string, number> = {};
-    settings.players.forEach(p => { playerAnswerCount[p.id] = 0; });
-    session.rapidFireState = {
+    session.players.forEach(p => { playerAnswerCount[p.id] = 0; });
+    updated.rapidFireState = {
       currentPromptId: prompt.id,
       currentPrompt: prompt.prompt,
-      usedPromptIds: [prompt.id],
+      usedPromptIds: [...(s?.usedPromptIds ?? []), prompt.id],
       playerAnswerCount,
       timerSeconds: timerSecs,
     };
   } else if (gameId === 'guess-the-sound') {
-    const item = getRandomSoundItem([], diff, seenMap);
-    session.guessSoundState = {
+    const s = session.guessSoundState;
+    const item = getRandomSoundItem(s?.usedItemIds ?? [], diff, sm);
+    updated.guessSoundState = {
       currentItemId: item.id,
       currentSoundText: item.soundText,
       currentAnswer: item.answer,
       acceptedAnswers: item.acceptedAnswers,
-      usedItemIds: [item.id],
+      usedItemIds: [...(s?.usedItemIds ?? []), item.id],
     };
   } else if (gameId === 'this-or-that') {
-    const card = getRandomThisOrThat([], seenMap);
-    session.thisOrThatState = {
+    const s = session.thisOrThatState;
+    const card = getRandomThisOrThat(s?.usedCardIds ?? [], sm);
+    updated.thisOrThatState = {
       currentCardId: card.id,
       optionA: card.optionA,
       optionB: card.optionB,
-      usedCardIds: [card.id],
-      streak: 0,
-      bestStreak: 0,
+      usedCardIds: [...(s?.usedCardIds ?? []), card.id],
+      streak: s?.streak ?? 0,
+      bestStreak: s?.bestStreak ?? 0,
     };
   } else if (gameId === 'riddles') {
-    const riddle = getRandomRiddle([], diff, seenMap);
-    session.riddleState = {
+    const s = session.riddleState;
+    const riddle = getRandomRiddle(s?.usedRiddleIds ?? [], diff, sm);
+    updated.riddleState = {
       currentRiddleId: riddle.id,
       currentQuestion: riddle.question,
       currentAnswer: riddle.answer,
       acceptedAnswers: riddle.acceptedAnswers,
-      usedRiddleIds: [riddle.id],
+      usedRiddleIds: [...(s?.usedRiddleIds ?? []), riddle.id],
       hintsUsed: 0,
       revealed: false,
     };
   }
+  return updated;
+}
 
-  return session;
+/** "Swap prompt": a genuinely different prompt for the same round and player. */
+export function rerollPrompt(session: GameSession): GameSession {
+  return drawPrompt(session);
+}
+
+/** Feed a result to the Director so later prompts adapt. */
+export function recordOutcome(session: GameSession, playerId: string, outcome: Outcome): GameSession {
+  const player = session.players.find(p => p.id === playerId);
+  if (!player) return session;
+  return { ...session, director: applyOutcome(session.director, player, outcome) };
 }
 
 export function nextPlayer(session: GameSession): GameSession {
@@ -287,11 +339,12 @@ export function nextPlayer(session: GameSession): GameSession {
 }
 
 export function addScore(session: GameSession, playerId: string, points: number): GameSession {
+  const total = points * (session.twist?.multiplier ?? 1);
   return {
     ...session,
     scores: {
       ...session.scores,
-      [playerId]: (session.scores[playerId] ?? 0) + points,
+      [playerId]: (session.scores[playerId] ?? 0) + total,
     },
   };
 }
@@ -322,124 +375,15 @@ export function nextRound(session: GameSession): GameSession {
   if (newRound > session.totalRounds) {
     return { ...session, status: 'ended', gameState: 'gameComplete' };
   }
+  // Turn-based games rotate here (single source of truth) so the prompt is aimed at who is next.
+  let next: GameSession = { ...session, round: newRound, gameState: 'playing' as GameState };
+  if (TURN_GAMES.has(session.gameId)) next = nextPlayer(next);
 
-  const diff = getDifficultyKey(session.settings.difficulty);
-  const timerSecs = getTimerSeconds(session.settings.roundLength);
-  let updated = { ...session, round: newRound, gameState: 'playing' as GameState };
-
-  const sm = session.seenMap;
-  if (session.gameId === 'alphabet-showdown' && session.alphabetState) {
-    const s = session.alphabetState;
-    const letter = getRandomLetter(s.usedLetters);
-    const cat = getRandomCategory(s.usedCategoryIds, diff, sm);
-    updated.alphabetState = {
-      ...s,
-      currentCategory: { id: cat.id, name: cat.name },
-      usedCategoryIds: [...s.usedCategoryIds, cat.id],
-      currentLetter: letter,
-      usedLetters: [...s.usedLetters, letter],
-      timerSeconds: timerSecs,
-      soloStreak: s.soloStreak,
-      bestStreak: s.bestStreak,
-    };
-  } else if (session.gameId === 'what-am-i' && session.whatAmIState) {
-    const s = session.whatAmIState;
-    const item = getRandomWhatAmIItem(s.usedItemIds, diff, sm);
-    updated.whatAmIState = {
-      currentItemId: item.id,
-      currentAnswer: item.answer,
-      currentClues: item.clues,
-      cluesRevealed: 1,
-      usedItemIds: [...s.usedItemIds, item.id],
-      pointsForCorrect: 5,
-      guessAttempts: 0,
-    };
-    updated = nextPlayer(updated);
-  } else if (session.gameId === 'category-dash' && session.categoryDashState) {
-    const s = session.categoryDashState;
-    const round = getRandomDashRound(s.usedRoundIds, diff, sm);
-    const letter = getRandomDashLetter();
-    updated.categoryDashState = {
-      currentRoundId: round.id,
-      currentCategories: round.categories,
-      currentLetter: letter,
-      usedRoundIds: [...s.usedRoundIds, round.id],
-      timerSeconds: timerSecs,
-    };
-  } else if (session.gameId === 'forbidden-word' && session.forbiddenWordState) {
-    const s = session.forbiddenWordState;
-    const card = getRandomForbiddenCard(s.usedCardIds, diff, sm);
-    updated.forbiddenWordState = {
-      currentCardId: card.id,
-      targetWord: card.targetWord,
-      forbiddenWords: card.forbiddenWords,
-      usedCardIds: [...s.usedCardIds, card.id],
-      timerSeconds: timerSecs,
-    };
-    updated = nextPlayer(updated);
-  } else if (session.gameId === 'would-you-rather' && session.wouldYouRatherState) {
-    const s = session.wouldYouRatherState;
-    const card = getRandomWYRCard(s.usedCardIds, s.mode, sm);
-    updated.wouldYouRatherState = {
-      currentCardId: card.id,
-      optionA: card.optionA,
-      optionB: card.optionB,
-      mode: card.mode,
-      usedCardIds: [...s.usedCardIds, card.id],
-      selectedOption: null,
-    };
-    updated = nextPlayer(updated);
-  } else if (session.gameId === 'rapid-fire' && session.rapidFireState) {
-    const s = session.rapidFireState;
-    const prompt = getRandomRapidFirePrompt(s.usedPromptIds, diff, sm);
-    const playerAnswerCount: Record<string, number> = {};
-    session.players.forEach(p => { playerAnswerCount[p.id] = 0; });
-    updated.rapidFireState = {
-      currentPromptId: prompt.id,
-      currentPrompt: prompt.prompt,
-      usedPromptIds: [...s.usedPromptIds, prompt.id],
-      playerAnswerCount,
-      timerSeconds: timerSecs,
-    };
-    updated = nextPlayer(updated);
-  } else if (session.gameId === 'guess-the-sound' && session.guessSoundState) {
-    const s = session.guessSoundState;
-    const item = getRandomSoundItem(s.usedItemIds, diff, sm);
-    updated.guessSoundState = {
-      currentItemId: item.id,
-      currentSoundText: item.soundText,
-      currentAnswer: item.answer,
-      acceptedAnswers: item.acceptedAnswers,
-      usedItemIds: [...s.usedItemIds, item.id],
-    };
-    updated = nextPlayer(updated);
-  } else if (session.gameId === 'this-or-that' && session.thisOrThatState) {
-    const s = session.thisOrThatState;
-    const card = getRandomThisOrThat(s.usedCardIds, sm);
-    updated.thisOrThatState = {
-      currentCardId: card.id,
-      optionA: card.optionA,
-      optionB: card.optionB,
-      usedCardIds: [...s.usedCardIds, card.id],
-      streak: s.streak,
-      bestStreak: s.bestStreak,
-    };
-  } else if (session.gameId === 'riddles' && session.riddleState) {
-    const s = session.riddleState;
-    const riddle = getRandomRiddle(s.usedRiddleIds, diff, sm);
-    updated.riddleState = {
-      currentRiddleId: riddle.id,
-      currentQuestion: riddle.question,
-      currentAnswer: riddle.answer,
-      acceptedAnswers: riddle.acceptedAnswers,
-      usedRiddleIds: [...s.usedRiddleIds, riddle.id],
-      hintsUsed: 0,
-      revealed: false,
-    };
-    updated = nextPlayer(updated);
-  }
-
-  return updated;
+  const ids = TURN_GAMES.has(session.gameId) && next.players[next.currentPlayerIndex]
+    ? [next.players[next.currentPlayerIndex].id]
+    : next.players.map(p => p.id);
+  next.twist = pickTwist(session.gameId, levelFor(next.director, ids), newRound, session.twist?.id);
+  return drawPrompt(next);
 }
 
 export function nextLetter(session: GameSession): GameSession {
@@ -455,8 +399,11 @@ export function nextLetter(session: GameSession): GameSession {
 export function nextCategory(session: GameSession): GameSession {
   if (!session.alphabetState) return session;
   const s = session.alphabetState;
-  const diff = getDifficultyKey(session.settings.difficulty);
-  const cat = getRandomCategory(s.usedCategoryIds, diff);
+  const cat = getRandomCategory(
+    s.usedCategoryIds,
+    tierForLevel(levelFor(session.director, session.players.map(p => p.id))),
+    session.seenMap,
+  );
   return {
     ...session,
     alphabetState: {
@@ -494,7 +441,7 @@ export function getTotalScore(session: GameSession): number {
   return Object.values(session.scores).reduce((sum, s) => sum + s, 0);
 }
 
-export function getHostLine(type: 'roundStart' | 'correct' | 'skip' | 'gameEnd' | 'nextPlayer', name?: string, n?: number): string {
+export function getHostLine(type: 'roundStart' | 'correct' | 'skip' | 'gameEnd' | 'nextPlayer' | 'next' | 'roundEnd', name?: string, n?: number): string {
   const lines: Record<string, string[]> = {
     roundStart: [
       `Round ${n}. No pressure. Except there absolutely is.`,
@@ -521,6 +468,8 @@ export function getHostLine(type: 'roundStart' | 'correct' | 'skip' | 'gameEnd' 
       "And that's the game! Not bad at all.",
       'Done! Someone call a trophy company.',
     ],
+    next: ['Next one!', "Here's another.", 'Fresh one coming up.', 'Ready? Here we go.'],
+    roundEnd: ['Round done. Nicely played.', "That's the round!", 'Round complete. Breathe.', 'And… time.'],
     nextPlayer: [
       `${name}, you're up. No pressure.`,
       `The spotlight is yours, ${name}.`,

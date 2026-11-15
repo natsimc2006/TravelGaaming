@@ -10,7 +10,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AnimatedPressable from '@/components/AnimatedPressable';
+import GameCard from '@/components/GameCard';
+import Mascot from '@/components/Mascot';
 import { GAME_COLORS } from '@/data/gameColors';
 import { GAMES, type GameMeta, type GameSetting, type EnergyLevel } from '@/data/games';
 import { useColors } from '@/hooks/useColors';
@@ -20,12 +21,6 @@ type EnergyFilter = EnergyLevel | 'all';
 type PlayersFilter = 'any' | 'solo' | 'duo' | 'group';
 type HostFilter = 'any' | 'app' | 'reader';
 type SortMode = 'best' | 'quickest' | 'newest' | 'popular';
-
-const ENERGY_META: Record<string, { label: string; emoji: string }> = {
-  Calm: { label: 'Calm', emoji: '😴' },
-  Medium: { label: 'Thinky', emoji: '🤔' },
-  Chaotic: { label: 'Lively', emoji: '🤪' },
-};
 
 function Pill({
   label,
@@ -60,7 +55,7 @@ function Pill({
       })}
     >
       <Text style={{
-        fontFamily: 'Inter_600SemiBold',
+        fontFamily: 'Nunito_700Bold',
         fontSize: small ? 12 : 13,
         color: textColor,
       }}>
@@ -92,142 +87,11 @@ function SortPill({
       })}
     >
       <Text style={{
-        fontFamily: selected ? 'Inter_700Bold' : 'Inter_500Medium',
+        fontFamily: selected ? 'Fredoka_600SemiBold' : 'Nunito_600SemiBold',
         fontSize: 13,
         color: selected ? colors.background : colors.mutedForeground,
       }}>{label}</Text>
     </Pressable>
-  );
-}
-
-function AllGameCard({ game }: { game: GameMeta }) {
-  const colors = useColors();
-  const gameColor = GAME_COLORS[game.colorKey as keyof typeof GAME_COLORS] ?? colors.primary;
-  const energy = ENERGY_META[game.energyLevel];
-
-  const getSoftColor = (key: string) => {
-    const colorMap: Record<string, string> = {
-      alphabet: colors.gameSoftAlphabet,
-      whatAmI: colors.gameSoftWhatAmI,
-      categoryDash: colors.gameSoftCategoryDash,
-      forbiddenWord: colors.gameSoftForbiddenWord,
-      wouldYouRather: colors.gameSoftWouldYouRather,
-      rapidFire: colors.gameSoftRapidFire,
-      guessTheSound: colors.gameSoftGuessTheSound,
-      thisOrThat: colors.gameSoftThisOrThat,
-      riddles: colors.gameSoftRiddles,
-    };
-    return colorMap[key] || colors.muted;
-  };
-
-  const softColor = getSoftColor(game.colorKey);
-
-  return (
-    <AnimatedPressable
-      onPress={() => router.push({ pathname: '/setup', params: { gameId: game.id } })}
-      style={[styles.cardShadow, {
-        shadowColor: colors.navy,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.09,
-        shadowRadius: 20,
-        elevation: 5,
-        borderRadius: 26,
-        marginBottom: 2,
-      }]}
-      scaleDown={0.97}
-    >
-      <LinearGradient
-        colors={['#FFFFFF', '#FDFAF7']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={[styles.card, {
-          borderRadius: 26,
-          borderWidth: 1,
-          borderColor: colors.border,
-          overflow: 'hidden',
-        }]}
-      >
-        {/* Top highlight */}
-        <View style={styles.topHighlight} />
-
-        <View style={styles.cardInner}>
-          {/* Header row */}
-          <View style={styles.headerRow}>
-            <View style={[styles.iconTile, { backgroundColor: gameColor }]}>
-              <Feather name={game.iconName as any} size={22} color="#FFFFFF" />
-            </View>
-            <View style={styles.headerRight}>
-              <View style={styles.headerRightTop}>
-                <Text style={[styles.gameName, { color: colors.foreground }]}>{game.name}</Text>
-                <View style={[styles.energyBadge, { backgroundColor: softColor }]}>
-                  <Text style={[styles.energyBadgeText, { color: gameColor }]}>
-                    {energy.emoji} {energy.label}
-                  </Text>
-                </View>
-              </View>
-              {game.soloSupported && (
-                <View style={[styles.soloBadge, { backgroundColor: softColor }]}>
-                  <Text style={[styles.soloBadgeText, { color: gameColor }]}>Solo ✓</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Description */}
-          <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
-            {game.description}
-          </Text>
-
-          {/* Meta row */}
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <Feather name="clock" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{game.estimatedRoundLength}</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Feather name="users" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                {game.minPlayers === game.maxPlayers ? `${game.minPlayers}` : `${game.minPlayers}–${game.maxPlayers}`} players
-              </Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Feather name="user" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>Ages {game.ageRange}</Text>
-            </View>
-          </View>
-
-          {/* Badges row — tinted with game soft colour */}
-          <View style={styles.badgeRow}>
-            <View style={[styles.hostBadge, { backgroundColor: softColor }]}>
-              <Feather
-                name={game.hostType === 'App hosts' ? 'smartphone' : 'mic'}
-                size={12}
-                color={gameColor}
-              />
-              <Text style={[styles.hostBadgeText, { color: gameColor }]}>{game.hostType}</Text>
-            </View>
-            {game.settings.slice(0, 2).map((s) => (
-              <View key={s} style={[styles.settingBadge, { backgroundColor: softColor }]}>
-                <Text style={[styles.settingBadgeText, { color: gameColor }]}>{s}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Action row — gradient play pill */}
-          <View style={styles.actionRow}>
-            <LinearGradient
-              colors={[colors.primaryMid, colors.primaryDark]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.playBtn}
-            >
-              <Text style={styles.playBtnText}>Play now</Text>
-              <Feather name="arrow-right" size={14} color="#FFF" />
-            </LinearGradient>
-          </View>
-        </View>
-      </LinearGradient>
-    </AnimatedPressable>
   );
 }
 
@@ -319,18 +183,18 @@ export default function GamesScreen() {
           {/* Row 1: Situation */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             <Pill label="All situations" selected={situation === 'all'} onPress={() => setSituation('all')} small />
-            <Pill label="🚗 Car" selected={situation === 'Car'} onPress={() => setSituation('Car')} color={colors.primary} small />
-            <Pill label="🍽 Dinner" selected={situation === 'Dinner'} onPress={() => setSituation('Dinner')} color={colors.primary} small />
-            <Pill label="⏳ Waiting" selected={situation === 'Waiting'} onPress={() => setSituation('Waiting')} color={colors.primary} small />
-            <Pill label="😴 Bedtime" selected={situation === 'Bedtime'} onPress={() => setSituation('Bedtime')} color={colors.primary} small />
+            <Pill label="Car" selected={situation === 'Car'} onPress={() => setSituation('Car')} color={colors.primary} small />
+            <Pill label="Dinner" selected={situation === 'Dinner'} onPress={() => setSituation('Dinner')} color={colors.primary} small />
+            <Pill label="Waiting" selected={situation === 'Waiting'} onPress={() => setSituation('Waiting')} color={colors.primary} small />
+            <Pill label="Bedtime" selected={situation === 'Bedtime'} onPress={() => setSituation('Bedtime')} color={colors.primary} small />
           </ScrollView>
 
           {/* Row 2: Energy + Players + Host */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             <Pill label="Any vibe" selected={energy === 'all'} onPress={() => setEnergy('all')} small />
-            <Pill label="😴 Calm" selected={energy === 'Calm'} onPress={() => setEnergy('Calm')} color={colors.secondary} small />
-            <Pill label="🤔 Thinky" selected={energy === 'Medium'} onPress={() => setEnergy('Medium')} color={colors.secondary} small />
-            <Pill label="🤪 Lively" selected={energy === 'Chaotic'} onPress={() => setEnergy('Chaotic')} color={colors.secondary} small />
+            <Pill label="Calm" selected={energy === 'Calm'} onPress={() => setEnergy('Calm')} color={colors.secondary} small />
+            <Pill label="Thinky" selected={energy === 'Medium'} onPress={() => setEnergy('Medium')} color={colors.secondary} small />
+            <Pill label="Lively" selected={energy === 'Chaotic'} onPress={() => setEnergy('Chaotic')} color={colors.secondary} small />
             <View style={styles.divider} />
             <Pill label="Solo ok" selected={players === 'solo'} onPress={() => setPlayers(v => v === 'solo' ? 'any' : 'solo')} color={colors.gameCategoryDash} small />
             <Pill label="2 players" selected={players === 'duo'} onPress={() => setPlayers(v => v === 'duo' ? 'any' : 'duo')} color={colors.gameCategoryDash} small />
@@ -349,7 +213,7 @@ export default function GamesScreen() {
         >
           {sorted.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={{ fontSize: 48 }}>🤷</Text>
+              <Mascot size={96} mood="think" />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No perfect match.</Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
                 Family life remains unreasonable.
@@ -370,7 +234,7 @@ export default function GamesScreen() {
                   </Pressable>
                 )}
               </View>
-              {sorted.map(g => <AllGameCard key={g.id} game={g} />)}
+              {sorted.map(g => <GameCard key={g.id} game={g} />)}
             </>
           )}
         </ScrollView>
@@ -393,8 +257,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginTop: 2,
   },
-  headerTitle: { fontFamily: 'Inter_700Bold', fontSize: 28, letterSpacing: -0.3 },
-  headerSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 2 },
+  headerTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, letterSpacing: -0.3 },
+  headerSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 2 },
 
   sortBar: { borderBottomWidth: 1, paddingBottom: 2 },
   sortRow: {
@@ -422,8 +286,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  resultCount: { fontFamily: 'Inter_500Medium', fontSize: 13 },
-  clearLink: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  resultCount: { fontFamily: 'Nunito_600SemiBold', fontSize: 13 },
+  clearLink: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
 
   cardShadow: {},
   card: { overflow: 'hidden' },
@@ -465,7 +329,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   gameName: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 18,
     letterSpacing: -0.2,
   },
@@ -475,7 +339,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   energyBadgeText: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Nunito_600SemiBold',
     fontSize: 11,
   },
   soloBadge: {
@@ -484,28 +348,28 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   soloBadgeText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 11,
   },
 
   description: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     lineHeight: 19,
   },
 
   metaRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontFamily: 'Inter_500Medium', fontSize: 12 },
+  metaText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12 },
 
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   hostBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100,
   },
-  hostBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
+  hostBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
   settingBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
-  settingBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
+  settingBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
 
   actionRow: {
     flexDirection: 'row',
@@ -516,11 +380,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 100,
   },
-  playBtnText: { fontFamily: 'Inter_700Bold', fontSize: 14, color: '#FFF' },
+  playBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, color: '#FFF' },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 10 },
-  emptyTitle: { fontFamily: 'Inter_700Bold', fontSize: 22, marginTop: 8 },
-  emptyText: { fontFamily: 'Inter_400Regular', fontSize: 15, textAlign: 'center' },
+  emptyTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, marginTop: 8 },
+  emptyText: { fontFamily: 'Nunito_400Regular', fontSize: 15, textAlign: 'center' },
   showAllBtn: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, marginTop: 8 },
-  showAllBtnText: { fontFamily: 'Inter_700Bold', fontSize: 16, color: '#FFF' },
+  showAllBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: '#FFF' },
 });

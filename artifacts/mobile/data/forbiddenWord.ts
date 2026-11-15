@@ -1,3 +1,4 @@
+import { filterByTier } from '@/utils/director';
 export interface ForbiddenWordCard {
   id: string;
   targetWord: string;
@@ -48,6 +49,14 @@ export const FORBIDDEN_WORD_CARDS: ForbiddenWordCard[] = [
   { id: 'fw38', targetWord: 'Chopsticks', forbiddenWords: ['eat', 'Chinese', 'food', 'utensil', 'sticks'], difficulty: 'medium' },
   { id: 'fw39', targetWord: 'Compass', forbiddenWords: ['north', 'direction', 'needle', 'navigate', 'south'], difficulty: 'medium' },
   { id: 'fw40', targetWord: 'Marshmallow', forbiddenWords: ['soft', 'white', 'sweet', 'roast', 'squishy'], difficulty: 'easy' },
+  { id: 'fw90', targetWord: 'Parachute', forbiddenWords: ['jump', 'plane', 'sky', 'fall', 'land'], difficulty: 'hard' },
+  { id: 'fw91', targetWord: 'Passport', forbiddenWords: ['travel', 'country', 'border', 'stamp', 'airport'], difficulty: 'hard' },
+  { id: 'fw92', targetWord: 'Skyscraper', forbiddenWords: ['tall', 'building', 'city', 'floors', 'high'], difficulty: 'hard' },
+  { id: 'fw93', targetWord: 'Detective', forbiddenWords: ['crime', 'clue', 'mystery', 'solve', 'police'], difficulty: 'hard' },
+  { id: 'fw94', targetWord: 'Boomerang', forbiddenWords: ['throw', 'Australia', 'return', 'back', 'curved'], difficulty: 'hard' },
+  { id: 'fw95', targetWord: 'Hibernate', forbiddenWords: ['bear', 'winter', 'sleep', 'cave', 'months'], difficulty: 'hard' },
+  { id: 'fw96', targetWord: 'Glacier', forbiddenWords: ['ice', 'cold', 'mountain', 'melt', 'slow'], difficulty: 'hard' },
+  { id: 'fw97', targetWord: 'Orchestra', forbiddenWords: ['music', 'conductor', 'violin', 'instruments', 'concert'], difficulty: 'hard' },
 ];
 
 export function getRandomForbiddenCard(
@@ -55,14 +64,7 @@ export function getRandomForbiddenCard(
   difficulty?: 'easy' | 'medium' | 'hard',
   seenMap?: import('@/utils/contentMemory').SeenMap,
 ): ForbiddenWordCard {
-  let pool = FORBIDDEN_WORD_CARDS.filter(c => !usedIds.includes(c.id));
-  if (difficulty === 'easy') {
-    const easy = pool.filter(c => c.difficulty === 'easy');
-    if (easy.length > 0) pool = easy;
-  } else if (difficulty === 'hard') {
-    const hard = pool.filter(c => c.difficulty === 'medium' || c.difficulty === 'hard');
-    if (hard.length > 0) pool = hard;
-  }
+  let pool = filterByTier(FORBIDDEN_WORD_CARDS.filter(c => !usedIds.includes(c.id)), difficulty);
   if (pool.length === 0) pool = FORBIDDEN_WORD_CARDS;
   if (seenMap) {
     const { selectFreshPrompt } = require('@/utils/freshPrompt');
