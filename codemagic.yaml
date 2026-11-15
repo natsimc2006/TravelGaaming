@@ -27,7 +27,9 @@ workflows:
           npx expo prebuild --platform ios --no-install
           cd ios && pod install
       - name: Set up code signing
-        script: xcode-project use-profiles
+        script: |
+          cd artifacts/mobile
+          xcode-project use-profiles --project ios/GameHost.xcodeproj
       - name: Build IPA
         script: |
           cd artifacts/mobile
