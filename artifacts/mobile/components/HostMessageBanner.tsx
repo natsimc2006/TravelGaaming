@@ -53,10 +53,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     marginHorizontal: 16,
+    marginTop: 12,
     marginBottom: 4,
   },
   text: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Nunito_600SemiBold',
     fontSize: 14,
     fontStyle: 'italic',
     lineHeight: 20,

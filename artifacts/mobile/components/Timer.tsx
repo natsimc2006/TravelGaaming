@@ -53,8 +53,8 @@ export default function Timer({ seconds, running, onEnd, size = 'md' }: TimerPro
     pct > 0.25 ? colors.timerWarning :
     colors.timerDanger;
 
-  const fontSizes: Record<string, number> = { sm: 20, md: 32, lg: 48 };
-  const sizes: Record<string, number> = { sm: 56, md: 80, lg: 100 };
+  const fontSizes: Record<string, number> = { sm: 18, md: 26, lg: 40 };
+  const sizes: Record<string, number> = { sm: 60, md: 92, lg: 120 };
   const strokeW: Record<string, number> = { sm: 4, md: 5, lg: 6 };
 
   const mins = Math.floor(remaining / 60);
@@ -78,7 +78,7 @@ export default function Timer({ seconds, running, onEnd, size = 'md' }: TimerPro
         },
       ]}
     >
-      <Text style={[styles.text, { color: timerColor, fontSize: fontSizes[size] }]}>
+      <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.text, { color: timerColor, fontSize: fontSizes[size], maxWidth: sizes[size] - 20 }]}>
         {displayTime}
       </Text>
     </Animated.View>
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     textAlign: 'center',
   },
 });

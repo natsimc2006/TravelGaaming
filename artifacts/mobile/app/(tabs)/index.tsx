@@ -11,7 +11,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ChunkyButton from '@/components/ChunkyButton';
 import GameCard from '@/components/GameCard';
+import Mascot from '@/components/Mascot';
 import { GAMES, type GameMeta, type GameSetting, type EnergyLevel } from '@/data/games';
 import { useColors } from '@/hooks/useColors';
 import { loadRecentGames } from '@/utils/storage';
@@ -33,28 +35,33 @@ const SECTIONS: {
   label: string;
   icon: string;
   micro: string;
+  short: string;
   filter: (g: GameMeta) => boolean;
 }[] = [
   {
     label: 'Perfect for the car',
+    short: 'Car',
     icon: 'navigation',
     micro: 'Minimal props. Maximum distraction.',
     filter: g => g.settings.includes('Car' as GameSetting),
   },
   {
     label: 'Dinner table games',
+    short: 'Dinner',
     icon: 'coffee',
     micro: 'For when everyone is technically still at the table.',
     filter: g => g.settings.includes('Dinner' as GameSetting),
   },
   {
     label: 'Waiting room games',
+    short: 'Waiting',
     icon: 'clock',
     micro: 'Because queues build character. Apparently.',
     filter: g => g.settings.includes('Waiting' as GameSetting),
   },
   {
     label: 'Wind-down games',
+    short: 'Wind-down',
     icon: 'moon',
     micro: 'Still fun. Just less feral.',
     filter: g => g.energyLevel === ('Calm' as EnergyLevel),
@@ -62,10 +69,10 @@ const SECTIONS: {
 ];
 
 const MOODS = [
-  { label: '😴 Calm', value: 'Calm', color: '#35BDB2', line: 'Good choice. Peaceful chaos incoming.' },
-  { label: '😄 Fun', value: 'Fun', color: '#FF6B3D', line: 'Fun mode: engaged. Hold on.' },
-  { label: '⚡ Focused', value: 'Medium', color: '#F7B731', line: 'The thinking caps are on.' },
-  { label: '🤪 Chaos', value: 'Chaotic', color: '#8B6EF6', line: "Manageable chaos. Probably." },
+  { label: 'Calm', value: 'Calm', color: '#35BDB2', line: 'Good choice. Peaceful chaos incoming.' },
+  { label: 'Fun', value: 'Fun', color: '#FF6B3D', line: 'Fun mode: engaged. Hold on.' },
+  { label: 'Focused', value: 'Medium', color: '#F7B731', line: 'The thinking caps are on.' },
+  { label: 'Chaos', value: 'Chaotic', color: '#8B6EF6', line: "Manageable chaos. Probably." },
 ];
 
 function NewPromptsTag() {
@@ -88,9 +95,9 @@ function NewPromptsTag() {
 }
 
 const newPromptStyles = StyleSheet.create({
-  line: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+  line: { fontFamily: 'Nunito_400Regular', fontSize: 13 },
   pill: { borderRadius: 100, paddingHorizontal: 12, paddingVertical: 5 },
-  pillText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
+  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
 });
 
 function RotatingSubtitle() {
@@ -203,11 +210,11 @@ const freshnessCardStyles = StyleSheet.create({
   card: { padding: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconTile: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
-  sub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17 },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17 },
   badge: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 7, paddingHorizontal: 11, minWidth: 48 },
-  badgeNum: { fontFamily: 'Inter_700Bold', fontSize: 16 },
-  badgeLabel: { fontFamily: 'Inter_500Medium', fontSize: 10 },
+  badgeNum: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
+  badgeLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 10 },
 });
 
 function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
@@ -256,7 +263,7 @@ function HorizontalGameRow({ games }: { games: GameMeta[] }) {
       decelerationRate="fast"
     >
       {games.map(g => (
-        <View key={g.id} style={{ width: 252, marginRight: 16 }}>
+        <View key={g.id} style={{ width: 260, marginRight: 16 }}>
           <GameCard game={g} />
         </View>
       ))}
@@ -340,6 +347,7 @@ export default function HomeScreen() {
     loadFamilyStats().then(setFamilyStats);
   }, []);
 
+  const [sectionIdx, setSectionIdx] = useState(0);
   const recentGames = recentGameIds
     .map(id => GAMES.find(g => g.id === id))
     .filter(Boolean) as GameMeta[];
@@ -356,10 +364,11 @@ export default function HomeScreen() {
       {/* Open integrated header — no card box */}
       <View style={styles.header}>
         <View style={styles.logoRow}>
-          <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
-            <Feather name="star" size={24} color="#FFF" />
+          <Mascot size={64} mood="cheer" />
+          <View>
+            <Text style={[styles.appName, { color: colors.foreground }]}>Game Host</Text>
+            <Text style={[styles.tagline, { color: colors.primary }]}>Pip runs the game. You just play.</Text>
           </View>
-          <Text style={[styles.appName, { color: colors.foreground }]}>Game Host</Text>
         </View>
         <RotatingSubtitle />
         <NewPromptsTag />
@@ -367,29 +376,14 @@ export default function HomeScreen() {
 
       {/* CTAs */}
       <View style={styles.ctas}>
-        <Pressable
+        <ChunkyButton
+          label="Start a Game"
+          size="lg"
+          color={colors.primary}
+          deep={colors.primaryDark}
+          left={<Feather name="play" size={20} color="#FFF" />}
           onPress={() => router.push('/games')}
-          style={({ pressed }) => ({
-            transform: [{ scale: pressed ? 0.97 : 1 }],
-            opacity: pressed ? 0.94 : 1,
-            borderRadius: 20,
-            shadowColor: colors.primary,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.38,
-            shadowRadius: 16,
-            elevation: 8,
-          })}
-        >
-          <LinearGradient
-            colors={[colors.primaryMid, colors.primaryDark]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.startBtn}
-          >
-            <Feather name="play-circle" size={20} color="#FFF" />
-            <Text style={styles.startBtnText}>Start a Game</Text>
-          </LinearGradient>
-        </Pressable>
+        />
         <QuickPlayButton />
       </View>
 
@@ -412,21 +406,26 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Category sections */}
-      {SECTIONS.map(section => {
-        const games = GAMES.filter(section.filter);
-        if (games.length === 0) return null;
-        return (
-          <View key={section.label} style={styles.section}>
-            <SectionHeader
-              label={section.label}
-              micro={section.micro}
-              onPress={() => router.push('/games')}
-            />
-            <HorizontalGameRow games={games} />
-          </View>
-        );
-      })}
+      {/* Where are you? — one row, switchable, instead of four repeats */}
+      <View style={styles.section}>
+        <SectionHeader label="Where are you?" micro={SECTIONS[sectionIdx].micro} onPress={() => router.push('/games')} />
+        <View style={styles.whereRow}>
+          {SECTIONS.map((sec, i) => {
+            const on = i === sectionIdx;
+            return (
+              <Pressable
+                key={sec.label}
+                onPress={() => setSectionIdx(i)}
+                style={[styles.wherePill, { backgroundColor: on ? colors.navy : colors.card, borderColor: on ? colors.navy : colors.border }]}
+              >
+                <Feather name={sec.icon as any} size={14} color={on ? '#FFF' : colors.mutedForeground} />
+                <Text style={[styles.wherePillText, { color: on ? '#FFF' : colors.mutedForeground }]}>{sec.short}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <HorizontalGameRow games={GAMES.filter(SECTIONS[sectionIdx].filter)} />
+      </View>
 
       {/* Packs teaser */}
       <Pressable
@@ -490,11 +489,15 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: 20, gap: 28 },
 
   header: { gap: 10 },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  tagline: { fontFamily: 'Nunito_700Bold', fontSize: 13, marginTop: -2 },
+  whereRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  wherePill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, borderWidth: 1.5 },
+  wherePillText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
   logoIcon: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  appName: { fontFamily: 'Inter_700Bold', fontSize: 32, letterSpacing: -0.5 },
+  appName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 32, letterSpacing: -0.5 },
   subtitle: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Nunito_400Regular',
     fontSize: 15,
     lineHeight: 22,
   },
@@ -508,7 +511,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 19,
   },
-  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF', letterSpacing: 0.1 },
+  startBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: '#FFF', letterSpacing: 0.1 },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -523,19 +526,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  saveBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 16 },
+  saveBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
 
   statsCard: { padding: 18, gap: 14 },
   statsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statsIconTile: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  statsTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  statsTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
   statsRow: { flexDirection: 'row', gap: 16 },
   statItem: { flex: 1, gap: 3 },
-  statValue: { fontFamily: 'Inter_700Bold', fontSize: 20 },
-  statLabel: { fontFamily: 'Inter_400Regular', fontSize: 12 },
+  statValue: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20 },
+  statLabel: { fontFamily: 'Nunito_400Regular', fontSize: 12 },
 
   moodSection: { gap: 10 },
-  moodTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  moodTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
   moodRow: {
     flexDirection: 'row',
     gap: 8,
@@ -543,22 +546,22 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   moodPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100 },
-  moodPillText: { fontFamily: 'Inter_500Medium', fontSize: 13 },
-  moodLine: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+  moodPillText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13 },
+  moodLine: { fontFamily: 'Nunito_400Regular', fontSize: 13 },
 
   section: { gap: 12 },
   sectionHeader: { gap: 4 },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionAccent: { width: 3, height: 20, borderRadius: 2 },
-  sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 19, letterSpacing: -0.1 },
-  seeAll: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
-  micro: { fontFamily: 'Inter_400Regular', fontSize: 13, paddingLeft: 11 },
+  sectionTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 19, letterSpacing: -0.1 },
+  seeAll: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  micro: { fontFamily: 'Nunito_400Regular', fontSize: 13, paddingLeft: 11 },
   hRow: { paddingBottom: 4, paddingRight: 4 },
 
   packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   packIconTile: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  packTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
-  packSub: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2 },
-  viewAllText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  packTitle: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  packSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 2 },
+  viewAllText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
 });

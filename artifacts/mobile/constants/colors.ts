@@ -1,51 +1,51 @@
 const colors = {
   light: {
-    text: '#1C1F2E',
-    tint: '#D95F2B',
+    text: '#2A2350',
+    tint: '#F26B38',
 
     // Backgrounds
-    background: '#FAF8F5',      // warm off-white — less clinical than pure white
-    foreground: '#1C1F2E',      // deep charcoal-navy for headings
+    background: '#FFF8EC',      // warm cream
+    foreground: '#2A2350',      // deep indigo ink
 
     card: '#FFFFFF',
-    cardForeground: '#1C1F2E',
+    cardForeground: '#2A2350',
 
     // Primary — richer coral-amber
-    primary: '#D95F2B',
+    primary: '#F26B38',
     primaryForeground: '#FFFFFF',
-    primaryDark: '#C24E1E',
-    primaryMid: '#E06830',      // midpoint for gradients
-    primarySoft: '#FCEADE',
+    primaryDark: '#C94E1F',
+    primaryMid: '#F57D4D',      // midpoint for gradients
+    primarySoft: '#FFE6D8',
 
     // Secondary — teal
-    secondary: '#2DAAA0',
+    secondary: '#18A39A',
     secondaryForeground: '#FFFFFF',
-    secondaryDark: '#1E8F86',
-    secondarySoft: '#DAF4F2',
+    secondaryDark: '#0F7C75',
+    secondarySoft: '#D6F3F0',
 
-    accent: '#FFF0CC',
-    accentForeground: '#1C1F2E',
+    accent: '#FFEBB8',
+    accentForeground: '#2A2350',
 
     // Surfaces
-    muted: '#F0EBE3',           // warm tinted surface
-    mutedForeground: '#6B6477', // readable muted text
-    surfaceWarm: '#F5EFE6',
-    surfaceTint: '#EDE6DC',
+    muted: '#F4EBDD',           // warm tinted surface
+    mutedForeground: '#6A6388', // readable muted text
+    surfaceWarm: '#FBF1DF',
+    surfaceTint: '#F1E5D0',
 
     // Borders
-    border: '#E8DFD5',          // warm, not grey
+    border: '#EADFCB',          // warm, not grey
     borderMedium: '#D4C9BC',
     borderStrong: '#C2B5A5',
-    input: '#E8DFD5',
+    input: '#EADFCB',
 
     // Semantic
-    navy: '#1C1F2E',
+    navy: '#2A2350',
     destructive: '#EF3F3F',
     destructiveForeground: '#FFFFFF',
     success: '#17B883',
     warning: '#F7B731',
 
-    shadow: 'rgba(28, 31, 46, 0.09)',
+    shadow: 'rgba(42, 35, 80, 0.12)',
 
     // Soft accent aliases
     softOrange: '#FCEADE',
@@ -66,7 +66,7 @@ const colors = {
     rose: '#E8325A',
     amber: '#E8A820',
 
-    premiumInk: '#1C1F2E',
+    premiumInk: '#2A2350',
     premiumLilac: '#7C5CDB',
     premiumBlue: '#3568F0',
     premiumGreen: '#15A876',
@@ -74,26 +74,26 @@ const colors = {
     premiumAmber: '#E8A820',
 
     // Game icon tile colours — vivid, used only on 48–52px tiles
-    gameAlphabet: '#D95F2B',    // coral-amber (matches new primary)
-    gameWhatAmI: '#2DAAA0',     // teal
-    gameCategoryDash: '#7C5CDB', // violet
-    gameForbiddenWord: '#E8A820', // amber
-    gameWouldYouRather: '#E8325A', // rose
-    gameRapidFire: '#15A876',   // emerald
-    gameGuessTheSound: '#3568F0', // royal blue
-    gameThisOrThat: '#3568F0',  // royal blue
-    gameRiddles: '#7C5CDB',     // violet
+    gameAlphabet: '#F26B38',
+    gameWhatAmI: '#18A39A',
+    gameCategoryDash: '#7A5AF0',
+    gameForbiddenWord: '#E3A008',
+    gameWouldYouRather: '#E8457E',
+    gameRapidFire: '#2DB872',
+    gameGuessTheSound: '#2F7DF0',
+    gameThisOrThat: '#12A9D8',
+    gameRiddles: '#A24CC8',
 
     // Soft tones — lightly tinted chip backgrounds
-    gameSoftAlphabet: '#FCEADE',
-    gameSoftWhatAmI: '#DAF4F2',
-    gameSoftCategoryDash: '#EAE5FF',
-    gameSoftForbiddenWord: '#FFF5CC',
-    gameSoftWouldYouRather: '#FFE0E8',
-    gameSoftRapidFire: '#D0F5EA',
-    gameSoftGuessTheSound: '#DAE7FF',
-    gameSoftThisOrThat: '#DAE7FF',
-    gameSoftRiddles: '#EAE5FF',
+    gameSoftAlphabet: '#FFE6D8',
+    gameSoftWhatAmI: '#D6F3F0',
+    gameSoftCategoryDash: '#E8E1FF',
+    gameSoftForbiddenWord: '#FFF0C2',
+    gameSoftWouldYouRather: '#FFDEEA',
+    gameSoftRapidFire: '#D4F5E4',
+    gameSoftGuessTheSound: '#DBE9FF',
+    gameSoftThisOrThat: '#D3F1FA',
+    gameSoftRiddles: '#F1DFFA',
 
     // Situation colour tokens
     car: '#3568F0',
@@ -102,7 +102,7 @@ const colors = {
     bedtime: '#7C5CDB',
 
     // Timer states
-    timerNormal: '#2DAAA0',
+    timerNormal: '#18A39A',
     timerWarning: '#E8A820',
     timerDanger: '#EF3F3F',
   },

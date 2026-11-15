@@ -494,7 +494,7 @@ export function getTotalScore(session: GameSession): number {
   return Object.values(session.scores).reduce((sum, s) => sum + s, 0);
 }
 
-export function getHostLine(type: 'roundStart' | 'correct' | 'skip' | 'gameEnd' | 'nextPlayer', name?: string, n?: number): string {
+export function getHostLine(type: 'roundStart' | 'correct' | 'skip' | 'gameEnd' | 'nextPlayer' | 'next' | 'roundEnd', name?: string, n?: number): string {
   const lines: Record<string, string[]> = {
     roundStart: [
       `Round ${n}. No pressure. Except there absolutely is.`,
@@ -521,6 +521,8 @@ export function getHostLine(type: 'roundStart' | 'correct' | 'skip' | 'gameEnd' 
       "And that's the game! Not bad at all.",
       'Done! Someone call a trophy company.',
     ],
+    next: ['Next one!', "Here's another.", 'Fresh one coming up.', 'Ready? Here we go.'],
+    roundEnd: ['Round done. Nicely played.', "That's the round!", 'Round complete. Breathe.', 'And… time.'],
     nextPlayer: [
       `${name}, you're up. No pressure.`,
       `The spotlight is yours, ${name}.`,

@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Keyboard,
   Modal,
@@ -33,6 +34,8 @@ import {
 } from '@/utils/voiceHost';
 import { checkSoundAnswer } from '@/data/guessTheSound';
 import { checkRiddleAnswer } from '@/data/riddles';
+import { darken } from '@/utils/colorUtil';
+import ChunkyButton from '@/components/ChunkyButton';
 
 function getGameColor(gameId: string) {
   const map: Record<string, keyof typeof GAME_COLORS> = {
@@ -64,18 +67,18 @@ function ActionBtn({
   textColor?: string;
   size?: 'sm' | 'md' | 'lg';
 }) {
-  const pv = size === 'lg' ? 20 : size === 'sm' ? 9 : 14;
-  const fs = size === 'lg' ? 18 : size === 'sm' ? 12 : 15;
   const tc = textColor ?? '#FFF';
   return (
-    <AnimatedPressable
+    <ChunkyButton
+      label={label}
       onPress={onPress}
-      style={[styles.actionBtn, { backgroundColor: color, paddingVertical: pv, borderRadius: 20 }]}
-      scaleDown={0.95}
-    >
-      {icon && <Feather name={icon as any} size={fs} color={tc} />}
-      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: fs, color: tc }}>{label}</Text>
-    </AnimatedPressable>
+      color={color}
+      deep={darken(color, 0.25)}
+      textColor={tc}
+      size={size}
+      style={{ flex: 1, minWidth: 0 }}
+      left={icon ? <Feather name={icon as any} size={size === 'lg' ? 20 : 16} color={tc} /> : undefined}
+    />
   );
 }
 
@@ -260,43 +263,34 @@ export default function PlayScreen() {
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
 
         {/* Header */}
-        <View style={[
-          styles.topBar,
-          {
-            backgroundColor: colors.card,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-            paddingTop: 12,
-            paddingBottom: 12,
-          },
-        ]}>
-          <View style={[styles.topBarAccent, { backgroundColor: gameColor }]} />
+        <View style={[styles.topBar, { backgroundColor: gameColor, paddingTop: 12, paddingBottom: 14 }]}>
           <View style={styles.topLeft}>
-            <Text style={[styles.gameName, { color: colors.foreground }]} numberOfLines={1}>{session.gameName}</Text>
-            <Text style={[styles.roundText, { color: colors.mutedForeground }]}>Round {session.round} of {session.totalRounds}</Text>
+            <Text style={styles.gameName} numberOfLines={1}>{session.gameName}</Text>
+            <View style={styles.pipRow}>
+              {Array.from({ length: Math.min(session.totalRounds, 20) }, (_, i) => (
+                <View
+                  key={i}
+                  style={[styles.pip, { backgroundColor: i < session.round ? '#FFFFFF' : 'rgba(255,255,255,0.35)', flex: 1 }]}
+                />
+              ))}
+            </View>
+            <Text style={styles.roundText}>Round {session.round} of {session.totalRounds}</Text>
           </View>
           <View style={styles.topRight}>
-            {/* Voice toggle */}
             <Pressable
               onPress={() => {
                 if (voiceEnabled) stopHostVoice();
                 setVoiceEnabled(v => !v);
               }}
-              style={[styles.headerIconBtn, { backgroundColor: colors.muted }]}
+              style={styles.headerIconBtn}
             >
-              <Text style={{ fontSize: 15 }}>{voiceEnabled ? '🔊' : '🔇'}</Text>
+              <Feather name={voiceEnabled ? 'volume-2' : 'volume-x'} size={18} color="#FFF" />
             </Pressable>
-            <Pressable
-              onPress={() => setShowScores(s => !s)}
-              style={[styles.headerIconBtn, { backgroundColor: colors.muted }]}
-            >
-              <Feather name="bar-chart-2" size={17} color={colors.mutedForeground} />
+            <Pressable onPress={() => setShowScores(s => !s)} style={styles.headerIconBtn}>
+              <Feather name="award" size={18} color="#FFF" />
             </Pressable>
-            <Pressable
-              onPress={handleExitGame}
-              style={[styles.headerIconBtn, { backgroundColor: colors.muted }]}
-            >
-              <Feather name="x" size={17} color={colors.mutedForeground} />
+            <Pressable onPress={handleExitGame} style={styles.headerIconBtn}>
+              <Feather name="x" size={18} color="#FFF" />
             </Pressable>
           </View>
         </View>
@@ -589,11 +583,11 @@ const exitStyles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
   },
-  title: { fontFamily: 'Inter_700Bold', fontSize: 20, textAlign: 'center' },
-  sub: { fontFamily: 'Inter_400Regular', fontSize: 14, textAlign: 'center' },
+  title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, textAlign: 'center' },
+  sub: { fontFamily: 'Nunito_400Regular', fontSize: 14, textAlign: 'center' },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn: { paddingVertical: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  btnText: { fontFamily: 'Inter_700Bold', fontSize: 15 },
+  btnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15 },
 });
 
 /* ─── Sub-components ─── */
@@ -606,8 +600,10 @@ function PlayerTurnCard({ player, color }: { player: { name: string }; color: st
   }, [player.name]);
   return (
     <Animated.View style={[styles.playerTurnCard, { backgroundColor: color + '14', borderRadius: 16, transform: [{ scale: bounce }] }]}>
-      <Text style={{ fontSize: 20 }}>👤</Text>
-      <Text style={[styles.playerTurnText, { color }]}>{player.name}, you're up</Text>
+      <View style={[styles.avatar, { backgroundColor: color }]}>
+        <Text style={styles.avatarText}>{(player.name.trim()[0] ?? '?').toUpperCase()}</Text>
+      </View>
+      <Text style={[styles.playerTurnText, { color: darken(color, 0.15) }]}>{player.name}, you're up!</Text>
     </Animated.View>
   );
 }
@@ -633,8 +629,10 @@ function TimerRow({ timerKey, timerSeconds, timerRunning, onToggle, onEnd, color
 function BigLetterCard({ letter, color }: { letter: string; color: string }) {
   return (
     <PromptFade triggerKey={letter}>
-      <View style={[styles.bigLetterBox, { backgroundColor: color, borderRadius: 24 }]}>
-        <Text style={styles.bigLetter}>{letter}</Text>
+      <View style={{ backgroundColor: darken(color, 0.25), borderRadius: 32, paddingBottom: 8, alignSelf: 'center' }}>
+        <View style={[styles.bigLetterBox, { backgroundColor: color, borderRadius: 32 }]}>
+          <Text style={styles.bigLetter}>{letter}</Text>
+        </View>
       </View>
     </PromptFade>
   );
@@ -665,10 +663,10 @@ function ScoreTapGrid({ session, currentPlayer, color, onScore }: any) {
               style={[styles.scoreTapCard, { backgroundColor: isCurrent ? color : colors.muted, borderRadius: 14, flex: 1 }]}
               scaleDown={0.93}
             >
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 26, color: isCurrent ? '#FFF' : colors.foreground }}>
+              <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 26, color: isCurrent ? '#FFF' : colors.foreground }}>
                 {session.scores[p.id] ?? 0}
               </Text>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: isCurrent ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
+              <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: isCurrent ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
                 {p.name}
               </Text>
             </AnimatedPressable>
@@ -702,11 +700,9 @@ function FreshPromptButton({ loading, error, onPress }: { loading: boolean; erro
         transform: [{ scale: pressed ? 0.96 : 1 }],
       })}
     >
-      <Text style={{ fontSize: 15 }}>
-        {loading ? '⏳' : error ? '😓' : '✨'}
-      </Text>
+      <Feather name={loading ? 'loader' : error ? 'alert-circle' : 'refresh-cw'} size={14} color={error ? colors.destructive : colors.secondary} />
       <Text style={{
-        fontFamily: 'Inter_600SemiBold',
+        fontFamily: 'Nunito_700Bold',
         fontSize: 13,
         color: error ? colors.destructive : colors.secondary,
       }}>
@@ -724,7 +720,7 @@ function SoloStreakBadge({ streak, best, color }: { streak: number; best: number
       {streak > 0 && (
         <View style={[soloStyles.streakBadge, { backgroundColor: color }]}>
           <Text style={soloStyles.streakText}>
-            {streak >= 3 ? '🔥' : '⚡'} {streak} in a row{streak >= 5 ? '!' : ''}
+            {streak} in a row{streak >= 5 ? '!' : ''}
           </Text>
         </View>
       )}
@@ -740,15 +736,15 @@ function SoloStreakBadge({ streak, best, color }: { streak: number; best: number
 const soloStyles = StyleSheet.create({
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
   streakBadge: { borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8 },
-  streakText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: '#FFF' },
+  streakText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: '#FFF' },
   bestBadge: { borderRadius: 100, paddingHorizontal: 12, paddingVertical: 8 },
-  bestText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  bestText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
 });
 
-const FRESHNESS_CONFIG: Record<NonNullable<FreshnessTag>, { emoji: string; label: string; bg: string; text: string }> = {
-  new:       { emoji: '🆕', label: 'New for you',        bg: '#10B981', text: '#FFF' },
-  returning: { emoji: '🔁', label: 'Back again',         bg: '#6366F1', text: '#FFF' },
-  favourite: { emoji: '🔥', label: 'Family favourite',   bg: '#F59E0B', text: '#FFF' },
+const FRESHNESS_CONFIG: Record<NonNullable<FreshnessTag>, { label: string; bg: string; text: string }> = {
+  new:       { label: 'New for you',        bg: '#2DB872', text: '#FFF' },
+  returning: { label: 'Back again',         bg: '#7A5AF0', text: '#FFF' },
+  favourite: { label: 'Family favourite',   bg: '#E3A008', text: '#FFF' },
 };
 
 function FreshnessBadge({ tag }: { tag: NonNullable<FreshnessTag> }) {
@@ -763,7 +759,7 @@ function FreshnessBadge({ tag }: { tag: NonNullable<FreshnessTag> }) {
   }, [tag]);
   return (
     <Animated.View style={[freshStyles.badge, { backgroundColor: cfg.bg, transform: [{ scale }], opacity }]}>
-      <Text style={freshStyles.badgeText}>{cfg.emoji} {cfg.label}</Text>
+      <Text style={freshStyles.badgeText}>{cfg.label}</Text>
     </Animated.View>
   );
 }
@@ -775,7 +771,7 @@ const freshStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 7,
   },
-  badgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#FFF' },
+  badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#FFF' },
 });
 
 function AlphabetGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning, timerKey, onTimerToggle, onTimerEnd, onScore, onNextLetter, onNewCategory, onNextRound, currentPlayer }: any) {
@@ -937,7 +933,7 @@ function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAn
                 opacity: isLatest ? 1 : 0.65,
               }]}>
                 <Text style={[styles.clueNum, { color: gameColor }]}>Clue {i + 1}</Text>
-                <Text style={[styles.clueText, { color: colors.foreground, fontFamily: isLatest ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                <Text style={[styles.clueText, { color: colors.foreground, fontFamily: isLatest ? 'Nunito_700Bold' : 'Nunito_400Regular' }]}>
                   {s.currentClues[i]}
                 </Text>
               </View>
@@ -1000,7 +996,7 @@ function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAn
           <Pressable style={[styles.modalCard, { backgroundColor: colors.card, borderRadius: 24 }]} onPress={e => e.stopPropagation()}>
             {peekPhase === 'confirm' ? (
               <>
-                <Text style={{ fontSize: 36, textAlign: 'center' }}>🔍</Text>
+                <Feather name="eye" size={34} color={colors.mutedForeground} style={{ alignSelf: 'center' }} />
                 <Text style={[styles.modalTitle, { color: colors.foreground }]}>Peek at the answer?</Text>
                 <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
                   This won't end the round. Don't let the others see.
@@ -1064,7 +1060,7 @@ function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAn
               <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>I Give Up</Text>
             </Pressable>
             <Pressable onPress={() => setPeekPhase('confirm')} style={[styles.secondaryBtn, { borderColor: colors.border }]}>
-              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>🔍 Peek Answer</Text>
+              <Text style={[styles.secondaryBtnText, { color: colors.mutedForeground }]}>Peek Answer</Text>
             </Pressable>
           </View>
         </>
@@ -1133,7 +1129,7 @@ function ForbiddenWordGame({ session, gameColor, voiceKey, voiceEnabled, timerRu
           {s.forbiddenWords.map((w: string, i: number) => (
             <View key={i} style={[styles.forbiddenRow, { borderBottomWidth: i < 4 ? 1 : 0, borderBottomColor: colors.border }]}>
               <View style={[styles.forbiddenDot, { backgroundColor: colors.destructive + '20' }]}>
-                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: colors.destructive }}>✕</Text>
+                <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 11, color: colors.destructive }}>✕</Text>
               </View>
               <Text style={[styles.forbiddenWord, { color: colors.destructive }]}>{w}</Text>
             </View>
@@ -1226,17 +1222,17 @@ function WouldYouRatherGame({ session, gameColor, onNext, onSelectOption, curren
 
 const wyrStyles = StyleSheet.create({
   modeBadge: { paddingHorizontal: 16, paddingVertical: 6, marginBottom: 6 },
-  modeText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
-  question: { fontFamily: 'Inter_700Bold', fontSize: 22, textAlign: 'center', marginBottom: 16 },
+  modeText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  question: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, textAlign: 'center', marginBottom: 16 },
   optionsCol: { gap: 0 },
   optionBtn: { padding: 22, gap: 6, minHeight: 90, justifyContent: 'center' },
-  optionLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
-  optionText: { fontFamily: 'Inter_700Bold', fontSize: 18, lineHeight: 24 },
+  optionLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
+  optionText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, lineHeight: 24 },
   orDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   orLine: { flex: 1, height: 1 },
-  orText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  orText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
   whyCard: { padding: 16 },
-  whyText: { fontFamily: 'Inter_500Medium', fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  whyText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, textAlign: 'center', lineHeight: 22 },
 });
 
 /* ─── Rapid Fire ─── */
@@ -1278,10 +1274,10 @@ function RapidFireGame({ session, gameColor, timerRunning, timerKey, onTimerTogg
                 style={[styles.scoreTapCard, { backgroundColor: p.id === currentPlayer?.id ? gameColor : colors.muted, borderRadius: 14, flex: 1 }]}
                 scaleDown={0.93}
               >
-                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 26, color: p.id === currentPlayer?.id ? '#FFF' : colors.foreground }}>
+                <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 26, color: p.id === currentPlayer?.id ? '#FFF' : colors.foreground }}>
                   {s.playerAnswerCount[p.id] ?? 0}
                 </Text>
-                <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: p.id === currentPlayer?.id ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
+                <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: p.id === currentPlayer?.id ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
                   {p.name}
                 </Text>
               </AnimatedPressable>
@@ -1297,12 +1293,12 @@ function RapidFireGame({ session, gameColor, timerRunning, timerKey, onTimerTogg
 
 const rfStyles = StyleSheet.create({
   promptCard: { padding: 28, alignItems: 'center', gap: 10 },
-  promptHint: { fontFamily: 'Inter_500Medium', fontSize: 12, color: '#FFFFFFAA' },
-  promptText: { fontFamily: 'Inter_700Bold', fontSize: 28, color: '#FFF', textAlign: 'center', lineHeight: 34 },
-  promptSub: { fontFamily: 'Inter_400Regular', fontSize: 13, color: '#FFFFFFCC' },
+  promptHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: '#FFFFFFAA' },
+  promptText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: '#FFF', textAlign: 'center', lineHeight: 34 },
+  promptSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: '#FFFFFFCC' },
   soloTally: { alignItems: 'center', gap: 8 },
-  tallyLabel: { fontFamily: 'Inter_500Medium', fontSize: 14 },
-  tallyCount: { fontFamily: 'Inter_700Bold', fontSize: 72, lineHeight: 80 },
+  tallyLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
+  tallyCount: { fontFamily: 'Fredoka_600SemiBold', fontSize: 72, lineHeight: 80 },
 });
 
 /* ─── Guess the Sound ─── */
@@ -1392,8 +1388,8 @@ function GuessSoundGame({ session, gameColor, onCorrect, onSkip, currentPlayer }
 
 const gsStyles = StyleSheet.create({
   soundCard: { padding: 28, alignItems: 'center', gap: 14 },
-  soundHint: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#FFFFFFAA' },
-  soundText: { fontFamily: 'Inter_700Bold', fontSize: 44, color: '#FFF', textAlign: 'center', lineHeight: 52 },
+  soundHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: '#FFFFFFAA' },
+  soundText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 44, color: '#FFF', textAlign: 'center', lineHeight: 52 },
 });
 
 /* ─── This or That ─── */
@@ -1472,13 +1468,13 @@ function ThisOrThatGame({ session, gameColor, onSelectOption, onNext, currentPla
 
 const totStyles = StyleSheet.create({
   promptRow: { alignItems: 'center', marginBottom: 8 },
-  promptLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  promptLabel: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
   optionsRow: { flexDirection: 'row', alignItems: 'stretch', gap: 10, minHeight: 140 },
   totBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 18, height: '100%' },
-  totText: { fontFamily: 'Inter_700Bold', fontSize: 18, textAlign: 'center', lineHeight: 24 },
+  totText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, textAlign: 'center', lineHeight: 24 },
   vsDivider: { alignItems: 'center', justifyContent: 'center', width: 36 },
-  vsText: { fontFamily: 'Inter_700Bold', fontSize: 14 },
-  skipText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, paddingVertical: 8 },
+  vsText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14 },
+  skipText: { fontFamily: 'Nunito_700Bold', fontSize: 14, paddingVertical: 8 },
 });
 
 /* ─── Riddles ─── */
@@ -1572,8 +1568,8 @@ function RiddlesGame({ session, gameColor, onCorrect, onSkip, currentPlayer }: a
 
 const rdStyles = StyleSheet.create({
   riddleCard: { padding: 24, gap: 12 },
-  riddleLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.2 },
-  riddleText: { fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 28 },
+  riddleLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.2 },
+  riddleText: { fontFamily: 'Nunito_700Bold', fontSize: 20, lineHeight: 28 },
 });
 
 const styles = StyleSheet.create({
@@ -1585,7 +1581,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     overflow: 'hidden',
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
   },
+  pipRow: { flexDirection: 'row', gap: 3, marginTop: 6, marginBottom: 4, maxWidth: 220 },
+  pip: { height: 5, borderRadius: 3 },
   topBarAccent: {
     position: 'absolute',
     left: 0,
@@ -1593,14 +1593,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 4,
   },
-  topLeft: { gap: 2, flex: 1, paddingLeft: 10 },
-  gameName: { fontFamily: 'Inter_700Bold', fontSize: 18 },
-  roundText: { fontFamily: 'Inter_400Regular', fontSize: 12 },
+  topLeft: { gap: 2, flex: 1, paddingLeft: 4 },
+  gameName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, color: '#FFF' },
+  roundText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.85)' },
   topRight: { flexDirection: 'row', gap: 8 },
   headerIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1615,13 +1616,13 @@ const styles = StyleSheet.create({
   },
   gameBlock: { gap: 18 },
   centeredSection: { alignItems: 'center', gap: 12 },
-  sectionLabel: { fontFamily: 'Inter_500Medium', fontSize: 13, textAlign: 'center' },
+  sectionLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, textAlign: 'center' },
   categoryCard: { padding: 20, alignItems: 'center', gap: 6 },
-  categoryHint: { fontFamily: 'Inter_500Medium', fontSize: 12 },
-  categoryName: { fontFamily: 'Inter_700Bold', fontSize: 28, textAlign: 'center' },
+  categoryHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 12 },
+  categoryName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, textAlign: 'center' },
   bigLetterBox: {
-    width: 130,
-    height: 130,
+    width: 140,
+    height: 140,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -1630,7 +1631,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
-  bigLetter: { fontFamily: 'Inter_700Bold', fontSize: 80, color: '#FFF' },
+  bigLetter: { fontFamily: 'Fredoka_600SemiBold', fontSize: 80, color: '#FFF' },
   timerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1644,7 +1645,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
-  timerToggleText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  timerToggleText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
   scoreTapGrid: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   scoreTapCard: { minWidth: 70, padding: 14, alignItems: 'center', gap: 4 },
   actionRow: { flexDirection: 'row', gap: 10 },
@@ -1663,14 +1664,16 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 14,
   },
-  playerTurnText: { fontFamily: 'Inter_700Bold', fontSize: 18 },
+  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: '#FFF' },
+  playerTurnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18 },
   pointsBanner: { padding: 16, alignItems: 'center', gap: 4 },
-  pointsBannerText: { fontFamily: 'Inter_700Bold', fontSize: 20, color: '#FFF' },
-  pointsBannerSub: { fontFamily: 'Inter_400Regular', fontSize: 13, color: '#FFFFFFCC' },
+  pointsBannerText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: '#FFF' },
+  pointsBannerSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: '#FFFFFFCC' },
   cluesList: { gap: 8 },
   clueCard: { padding: 14, gap: 4 },
-  clueNum: { fontFamily: 'Inter_600SemiBold', fontSize: 11 },
-  clueText: { fontSize: 16, lineHeight: 22 },
+  clueNum: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
+  clueText: { fontFamily: 'Nunito_600SemiBold', fontSize: 17, lineHeight: 24 },
   categoriesCard: { overflow: 'hidden' },
   catRow: {
     flexDirection: 'row',
@@ -1680,14 +1683,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   catNum: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  catNumText: { fontFamily: 'Inter_700Bold', fontSize: 12, color: '#FFF' },
-  catText: { fontFamily: 'Inter_500Medium', fontSize: 16, flex: 1 },
+  catNumText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 12, color: '#FFF' },
+  catText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, flex: 1 },
   targetCard: { padding: 28, alignItems: 'center', gap: 10 },
-  targetHint: { fontFamily: 'Inter_500Medium', fontSize: 12, color: '#FFFFFFAA' },
-  targetWord: { fontFamily: 'Inter_700Bold', fontSize: 48, color: '#FFF', textAlign: 'center', letterSpacing: -0.5 },
-  targetNote: { fontFamily: 'Inter_400Regular', fontSize: 11, color: '#FFFFFFAA' },
+  targetHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: '#FFFFFFAA' },
+  targetWord: { fontFamily: 'Fredoka_600SemiBold', fontSize: 48, color: '#FFF', textAlign: 'center', letterSpacing: -0.5 },
+  targetNote: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: '#FFFFFFAA' },
   forbiddenCard: { overflow: 'hidden' },
-  forbiddenHeader: { fontFamily: 'Inter_700Bold', fontSize: 14, padding: 14, paddingBottom: 10 },
+  forbiddenHeader: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, padding: 14, paddingBottom: 10 },
   forbiddenRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1696,7 +1699,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   forbiddenDot: { width: 24, height: 24, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
-  forbiddenWord: { fontFamily: 'Inter_600SemiBold', fontSize: 18 },
+  forbiddenWord: { fontFamily: 'Nunito_700Bold', fontSize: 18 },
 
   // What Am I – guess panel
   guessPanel: {
@@ -1704,11 +1707,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   guessPanelTitle: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 17,
   },
   guessInput: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Nunito_400Regular',
     fontSize: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1716,7 +1719,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   guessResultText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 14,
   },
   guessBtnRow: {
@@ -1730,7 +1733,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   guessBtnText: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 15,
   },
 
@@ -1741,11 +1744,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   answerRevealLabel: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Nunito_600SemiBold',
     fontSize: 12,
   },
   answerRevealText: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 26,
   },
 
@@ -1762,7 +1765,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   secondaryBtnText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 13,
   },
 
@@ -1786,23 +1789,23 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   modalTitle: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 20,
     textAlign: 'center',
   },
   modalSub: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Nunito_400Regular',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },
   modalHint: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Nunito_600SemiBold',
     fontSize: 12,
     textAlign: 'center',
   },
   modalAnswer: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 36,
     textAlign: 'center',
     letterSpacing: -0.3,
@@ -1821,7 +1824,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalBtnText: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 15,
   },
 });

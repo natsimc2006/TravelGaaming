@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AnimatedPressable from '@/components/AnimatedPressable';
-import { GAME_COLORS } from '@/data/gameColors';
+import ChunkyButton from '@/components/ChunkyButton';
+import { GameTile } from '@/components/GameGlyph';
+import { GAME_COLORS, GAME_COLORS_DEEP } from '@/data/gameColors';
 import { GAMES } from '@/data/games';
 import { useGame } from '@/context/GameContext';
 import { useColors } from '@/hooks/useColors';
@@ -23,21 +25,21 @@ function genId() {
 }
 
 const ROUND_OPTIONS = [
-  { value: 'quick' as const, label: 'Quick', sub: '2–3 minutes', emoji: '⚡' },
-  { value: 'normal' as const, label: 'Normal', sub: '5–8 minutes', emoji: '🎯' },
-  { value: 'long' as const, label: 'Long', sub: 'For brave families', emoji: '🏔' },
+  { value: 'quick' as const, label: 'Quick', sub: '2–3 minutes', icon: 'zap' },
+  { value: 'normal' as const, label: 'Normal', sub: '5–8 minutes', icon: 'target' },
+  { value: 'long' as const, label: 'Long', sub: 'For brave families', icon: 'flag' },
 ];
 
 const DIFF_OPTIONS = [
-  { value: 'easy' as const, label: 'Easy', sub: 'Little legends', emoji: '🌟' },
-  { value: 'mixed' as const, label: 'Mixed', sub: 'Everyone in', emoji: '🎉' },
-  { value: 'spicy' as const, label: 'Spicy', sub: 'Still family-safe', emoji: '🌶' },
+  { value: 'easy' as const, label: 'Easy', sub: 'Little legends', icon: 'smile' },
+  { value: 'mixed' as const, label: 'Mixed', sub: 'Everyone in', icon: 'users' },
+  { value: 'spicy' as const, label: 'Spicy', sub: 'Still family-safe', icon: 'trending-up' },
 ];
 
 const AGE_OPTIONS = [
-  { value: 'easy' as const, label: 'Ages 4–7', sub: 'Young ones', emoji: '🐣' },
-  { value: 'mixed' as const, label: 'Mixed ages', sub: 'All welcome', emoji: '👨‍👩‍👧‍👦' },
-  { value: 'all' as const, label: 'Ages 10+', sub: 'No hints given', emoji: '🧠' },
+  { value: 'easy' as const, label: 'Ages 4–7', sub: 'Young ones', icon: 'sun' },
+  { value: 'mixed' as const, label: 'Mixed ages', sub: 'All welcome', icon: 'users' },
+  { value: 'all' as const, label: 'Ages 10+', sub: 'No hints given', icon: 'cpu' },
 ];
 
 function LargeOptionCard<T extends string>({
@@ -46,7 +48,7 @@ function LargeOptionCard<T extends string>({
   onPress,
   color,
 }: {
-  opt: { value: T; label: string; sub: string; emoji: string };
+  opt: { value: T; label: string; sub: string; icon: string };
   selected: boolean;
   onPress: () => void;
   color: string;
@@ -71,7 +73,7 @@ function LargeOptionCard<T extends string>({
           <Feather name="check" size={14} color={color} />
         </View>
       )}
-      <Text style={{ fontSize: 22 }}>{opt.emoji}</Text>
+      <Feather name={opt.icon as any} size={22} color={selected ? color : colors.mutedForeground} />
       <Text style={[styles.optLabel, { color: selected ? color : colors.foreground }]}>{opt.label}</Text>
       <Text style={[styles.optSub, { color: colors.mutedForeground }]}>{opt.sub}</Text>
     </AnimatedPressable>
@@ -121,8 +123,8 @@ function PlayStyleToggle({
       <Text style={[styles.cardTitle, { color: colors.foreground }]}>Play style</Text>
       <View style={styles.toggleRow}>
         {([
-          { value: 'turns' as PlayStyle, label: 'Take turns', sub: 'Rotate players each round', emoji: '🔄' },
-          { value: 'free' as PlayStyle, label: 'Free play', sub: 'Anyone can answer', emoji: '🌀' },
+          { value: 'turns' as PlayStyle, label: 'Take turns', sub: 'Rotate players each round', icon: 'repeat' },
+          { value: 'free' as PlayStyle, label: 'Free play', sub: 'Anyone can answer', icon: 'shuffle' },
         ] as const).map(opt => (
           <AnimatedPressable
             key={opt.value}
@@ -138,7 +140,7 @@ function PlayStyleToggle({
             ]}
             scaleDown={0.96}
           >
-            <Text style={{ fontSize: 22 }}>{opt.emoji}</Text>
+            <Feather name={opt.icon as any} size={22} color={value === opt.value ? color : colors.mutedForeground} />
             <Text style={[styles.optLabel, { color: value === opt.value ? color : colors.foreground }]}>{opt.label}</Text>
             <Text style={[styles.optSub, { color: colors.mutedForeground }]}>{opt.sub}</Text>
           </AnimatedPressable>
@@ -230,7 +232,7 @@ export default function SetupScreen() {
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { position: 'absolute', top: insets.top + 10, left: 16 }]}>
             <Feather name="arrow-left" size={22} color={colors.foreground} />
           </Pressable>
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 16, textAlign: 'center' }]}>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Nunito_400Regular', fontSize: 16, textAlign: 'center' }]}>
             Give me a second{'\n'}picking something good…
           </Text>
         </View>
@@ -265,9 +267,7 @@ export default function SetupScreen() {
         >
           {/* Game banner */}
           <View style={[styles.gameBanner, { backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border }]}>
-            <View style={[styles.bannerIcon, { backgroundColor: gameColor }]}>
-              <Feather name={game.iconName as any} size={22} color="#FFF" />
-            </View>
+            <GameTile gameKey={game.colorKey} size={50} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.bannerName, { color: gameColor }]}>{game.name}</Text>
               <Text style={[styles.bannerMeta, { color: colors.mutedForeground }]}>
@@ -279,7 +279,7 @@ export default function SetupScreen() {
           {/* Solo banner */}
           {isSolo && (
             <View style={[styles.soloBanner, { backgroundColor: gameColor + '14', borderRadius: 16 }]}>
-              <Text style={{ fontSize: 28 }}>🎯</Text>
+              <Feather name="target" size={28} color={gameColor} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.soloTitle, { color: gameColor }]}>Solo Challenge Mode</Text>
                 <Text style={[styles.soloSub, { color: colors.mutedForeground }]}>
@@ -400,15 +400,15 @@ export default function SetupScreen() {
 
           <HowToPlay game={game} color={gameColor} />
 
-          <AnimatedPressable
+          <ChunkyButton
+            label={isSolo ? 'Start Solo Challenge' : 'Start Hosting'}
+            size="lg"
+            color={gameColor}
+            deep={game ? GAME_COLORS_DEEP[game.colorKey] : colors.primaryDark}
+            left={<Feather name="play" size={20} color="#FFF" />}
             onPress={() => doStart(roundLength, difficulty)}
-            style={[styles.startBtn, { backgroundColor: gameColor }]}
-          >
-            <Feather name="play-circle" size={22} color="#FFF" />
-            <Text style={styles.startBtnText}>
-              {isSolo ? 'Start Solo Challenge' : 'Start Hosting'}
-            </Text>
-          </AnimatedPressable>
+            style={{ marginTop: 4 }}
+          />
         </ScrollView>
       </View>
     </>
@@ -425,29 +425,29 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  headerTitle: { fontFamily: 'Inter_700Bold', fontSize: 20, letterSpacing: -0.3 },
-  headerSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
+  headerTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, letterSpacing: -0.3 },
+  headerSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
   container: { padding: 16, gap: 14 },
   gameBanner: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   bannerIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  bannerName: { fontFamily: 'Inter_700Bold', fontSize: 18 },
-  bannerMeta: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 2 },
+  bannerName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18 },
+  bannerMeta: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 2 },
   soloBanner: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 14 },
-  soloTitle: { fontFamily: 'Inter_700Bold', fontSize: 15 },
-  soloSub: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
+  soloTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15 },
+  soloSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
   card: { padding: 16, gap: 14 },
-  cardTitle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
+  cardTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
   countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
   countBtn: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  countNum: { fontFamily: 'Inter_700Bold', fontSize: 44, minWidth: 52, textAlign: 'center' },
-  soloHint: { fontFamily: 'Inter_400Regular', fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+  countNum: { fontFamily: 'Fredoka_600SemiBold', fontSize: 44, minWidth: 52, textAlign: 'center' },
+  soloHint: { fontFamily: 'Nunito_400Regular', fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
   playerChips: { gap: 8 },
   playerChip: { flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
   playerNum: { width: 40, height: 48, alignItems: 'center', justifyContent: 'center' },
-  playerNumText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: '#FFF' },
+  playerNumText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: '#FFF' },
   playerInput: {
     flex: 1,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Nunito_400Regular',
     fontSize: 15,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -460,14 +460,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     gap: 6,
   },
-  optLabel: { fontFamily: 'Inter_700Bold', fontSize: 14, textAlign: 'center' },
-  optSub: { fontFamily: 'Inter_400Regular', fontSize: 11, textAlign: 'center', lineHeight: 15 },
+  optLabel: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, textAlign: 'center' },
+  optSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, textAlign: 'center', lineHeight: 15 },
   toggleRow: { flexDirection: 'row', gap: 10 },
   toggleCard: { flex: 1, alignItems: 'center', paddingVertical: 14, paddingHorizontal: 6, gap: 6 },
   howToCard: { padding: 16, gap: 10 },
   howToRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  howToTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 15, flex: 1 },
-  howToText: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 21 },
+  howToTitle: { fontFamily: 'Nunito_700Bold', fontSize: 15, flex: 1 },
+  howToText: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 21 },
   startBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -482,5 +482,5 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginTop: 4,
   },
-  startBtnText: { fontFamily: 'Inter_700Bold', fontSize: 20, color: '#FFF' },
+  startBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: '#FFF' },
 });

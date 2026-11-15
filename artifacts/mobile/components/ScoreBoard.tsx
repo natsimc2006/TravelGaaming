@@ -84,7 +84,7 @@ export default function ScoreBoard({
                 style={[
                   styles.name,
                   { color: colors.foreground },
-                  isCurrent && { fontFamily: 'Inter_700Bold', color: accentColor },
+                  isCurrent && { fontFamily: 'Fredoka_600SemiBold', color: accentColor },
                 ]}
                 numberOfLines={1}
               >
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankText: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 12,
   },
   nameRow: {
@@ -136,18 +136,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   name: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Nunito_600SemiBold',
     fontSize: 16,
     flex: 1,
   },
   score: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 20,
     minWidth: 40,
     textAlign: 'right',
   },
   pts: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Nunito_400Regular',
     fontSize: 12,
   },
   youBadge: {
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   youLabel: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 9,
     color: '#FFF',
     letterSpacing: 0.5,
@@ -179,12 +179,12 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   compactName: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Nunito_600SemiBold',
     fontSize: 12,
     maxWidth: 60,
   },
   compactScore: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Fredoka_600SemiBold',
     fontSize: 14,
   },
 });

@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   text: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 13,
   },
 });

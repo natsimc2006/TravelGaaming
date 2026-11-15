@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AnimatedPressable from '@/components/AnimatedPressable';
+import Mascot from '@/components/Mascot';
 import { GAME_COLORS } from '@/data/gameColors';
 import { useGame } from '@/context/GameContext';
 import { useColors } from '@/hooks/useColors';
@@ -66,8 +67,8 @@ function StatChip({ label, value, color }: { label: string; value: string; color
 
 const statStyles = StyleSheet.create({
   chip: { flex: 1, alignItems: 'center', padding: 14, borderRadius: 14, gap: 4 },
-  value: { fontFamily: 'Inter_700Bold', fontSize: 24 },
-  label: { fontFamily: 'Inter_500Medium', fontSize: 12, textAlign: 'center' },
+  value: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24 },
+  label: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, textAlign: 'center' },
 });
 
 export default function EndScreen() {
@@ -136,7 +137,7 @@ export default function EndScreen() {
         {/* Trophy / Solo icon */}
         <Animated.View style={[styles.trophySection, { opacity: trophyOpacity }]}>
           <Animated.View style={[styles.trophyCircle, { backgroundColor: gameColor, transform: [{ scale: trophyScale }] }]}>
-            <Text style={{ fontSize: 52 }}>{isSolo ? '🎯' : '🏆'}</Text>
+            <Mascot size={104} mood="cheer" />
           </Animated.View>
           <Text style={[styles.endTitle, { color: colors.foreground }]}>{endTitle}</Text>
 
@@ -199,11 +200,11 @@ export default function EndScreen() {
                   >
                     <View style={[styles.rankBubble, { backgroundColor: isWinner ? gameColor : colors.muted }]}>
                       <Text style={[styles.rankText, { color: isWinner ? '#FFF' : colors.mutedForeground }]}>
-                        {isWinner ? '🏆' : `${i + 1}`}
+                        {isWinner ? <Feather name="award" size={14} color="#FFF" /> : `${i + 1}`}
                       </Text>
                     </View>
                     <Text
-                      style={[styles.scoreRowName, { color: colors.foreground, fontFamily: isWinner ? 'Inter_700Bold' : 'Inter_500Medium' }]}
+                      style={[styles.scoreRowName, { color: colors.foreground, fontFamily: isWinner ? 'Fredoka_600SemiBold' : 'Nunito_600SemiBold' }]}
                       numberOfLines={1}
                     >
                       {p.name}
@@ -276,30 +277,30 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2, shadowRadius: 20, elevation: 8, marginBottom: 4,
   },
-  endTitle: { fontFamily: 'Inter_700Bold', fontSize: 22, textAlign: 'center', letterSpacing: -0.3 },
-  winnerName: { fontFamily: 'Inter_700Bold', fontSize: 30, textAlign: 'center' },
-  winnerScore: { fontFamily: 'Inter_500Medium', fontSize: 16 },
-  performanceMsg: { fontFamily: 'Inter_400Regular', fontSize: 16, fontStyle: 'italic', textAlign: 'center', lineHeight: 22 },
+  endTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, textAlign: 'center', letterSpacing: -0.3 },
+  winnerName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 30, textAlign: 'center' },
+  winnerScore: { fontFamily: 'Nunito_600SemiBold', fontSize: 16 },
+  performanceMsg: { fontFamily: 'Nunito_400Regular', fontSize: 16, fontStyle: 'italic', textAlign: 'center', lineHeight: 22 },
   statRow: { flexDirection: 'row', gap: 10 },
   recapBox: { paddingHorizontal: 20, paddingVertical: 16 },
-  recapText: { fontFamily: 'Inter_500Medium', fontSize: 15, textAlign: 'center', fontStyle: 'italic', lineHeight: 22 },
+  recapText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, textAlign: 'center', fontStyle: 'italic', lineHeight: 22 },
   scoreSection: { padding: 18, gap: 14 },
-  scoreSectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 18 },
+  scoreSectionTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18 },
   scoreRows: { gap: 4 },
   scoreRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingVertical: 10, paddingHorizontal: 10,
   },
   rankBubble: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  rankText: { fontFamily: 'Inter_700Bold', fontSize: 13 },
+  rankText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 13 },
   scoreRowName: { flex: 1, fontSize: 17 },
-  scoreRowPoints: { fontFamily: 'Inter_700Bold', fontSize: 22 },
-  ptsLabel: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+  scoreRowPoints: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22 },
+  ptsLabel: { fontFamily: 'Nunito_400Regular', fontSize: 13 },
   soloDetailCard: { padding: 18, gap: 14 },
   soloStatGrid: { flexDirection: 'row', gap: 8 },
   soloStat: { flex: 1, alignItems: 'center', gap: 4 },
-  soloStatVal: { fontFamily: 'Inter_700Bold', fontSize: 26 },
-  soloStatLabel: { fontFamily: 'Inter_500Medium', fontSize: 12 },
+  soloStatVal: { fontFamily: 'Fredoka_600SemiBold', fontSize: 26 },
+  soloStatLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 12 },
   actions: { gap: 12, paddingTop: 4 },
   btn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -309,9 +310,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2, shadowRadius: 12, elevation: 5,
   },
-  btnPrimaryText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF' },
+  btnPrimaryText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: '#FFF' },
   btnSecondary: { borderWidth: 1.5 },
-  btnSecondaryText: { fontFamily: 'Inter_700Bold', fontSize: 17 },
+  btnSecondaryText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17 },
   backHome: { alignItems: 'center', paddingVertical: 10 },
-  backHomeText: { fontFamily: 'Inter_600SemiBold', fontSize: 15 },
+  backHomeText: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
 });
