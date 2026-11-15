@@ -25,7 +25,15 @@ workflows:
           cd artifacts/mobile
           node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('app.json'));c.expo.ios.buildNumber=process.env.BUILD_NUMBER;fs.writeFileSync('app.json',JSON.stringify(c,null,2))"
           npx expo prebuild --platform ios --no-install
+          echo "Bundle ID right after prebuild:"
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" ios/GameHost.xcodeproj/project.pbxproj
           cd ios && pod install
+          echo "Bundle ID after pod install:"
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" GameHost.xcodeproj/project.pbxproj
+          # Safety net: make sure the app target uses our real bundle ID, never the template placeholder.
+          sed -i '' 's/org\.name\.GameHost/com.natsimc.gamehost/g' GameHost.xcodeproj/project.pbxproj
+          echo "Bundle ID after fix:"
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" GameHost.xcodeproj/project.pbxproj
       - name: Set up code signing
         script: |
           cd artifacts/mobile
