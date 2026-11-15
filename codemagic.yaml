@@ -23,7 +23,21 @@ workflows:
       - name: Generate native iOS project (Expo prebuild)
         script: |
           cd artifacts/mobile
-          node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('app.json'));c.expo.ios.buildNumber=process.env.BUILD_NUMBER;fs.writeFileSync('app.json',JSON.stringify(c,null,2))"
+          # Build number must be higher than anything already uploaded to App Store Connect.
+          # 1) Ask App Store Connect for the latest TestFlight build number and add 1.
+          # 2) If that lookup fails for any reason, fall back to a timestamp (always increasing).
+          APP_ID=$(app-store-connect apps list --bundle-id-identifier com.natsimc.gamehost --strict-match-identifier --json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])" 2>/dev/null || true)
+          LATEST=""
+          if [ -n "$APP_ID" ]; then
+            LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null | tail -n 1 | tr -dc '0-9' || true)
+          fi
+          if [ -n "$LATEST" ]; then
+            NEW_BUILD_NUMBER=$((LATEST + 1))
+          else
+            NEW_BUILD_NUMBER=$(date -u +%y%m%d%H%M)
+          fi
+          echo "App ID: ${APP_ID:-unknown} | latest TestFlight build: ${LATEST:-unknown} | using build number: $NEW_BUILD_NUMBER"
+          NEW_BUILD_NUMBER=$NEW_BUILD_NUMBER node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('app.json'));c.expo.ios.buildNumber=String(process.env.NEW_BUILD_NUMBER);fs.writeFileSync('app.json',JSON.stringify(c,null,2))"
           npx expo prebuild --platform ios --no-install
           echo "Bundle ID right after prebuild:"
           grep -n "PRODUCT_BUNDLE_IDENTIFIER" ios/GameHost.xcodeproj/project.pbxproj
