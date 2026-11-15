@@ -7,16 +7,17 @@ import ChunkyButton from '@/components/ChunkyButton';
 import { GameTile } from '@/components/GameGlyph';
 import { GAME_COLORS, GAME_COLORS_DEEP } from '@/data/gameColors';
 import type { GameMeta } from '@/data/games';
+import { VIBE_LABEL } from '@/data/taxonomy';
 import { useColors } from '@/hooks/useColors';
 
 interface GameCardProps {
   game: GameMeta;
   compact?: boolean;
+  /** Dense row for long lists (All Games). */
+  variant?: 'card' | 'list';
 }
 
-const ENERGY_LABEL: Record<string, string> = { Calm: 'Chill', Medium: 'Thinky', Chaotic: 'Silly' };
-
-export default function GameCard({ game, compact = false }: GameCardProps) {
+export default function GameCard({ game, compact = false, variant = 'card' }: GameCardProps) {
   const colors = useColors();
   const key = game.colorKey as keyof typeof GAME_COLORS;
   const gameColor = GAME_COLORS[key] ?? colors.primary;
@@ -29,7 +30,7 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
     return (
       <AnimatedPressable
         onPress={handlePress}
-        style={[styles.compactCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        style={[styles.compactCard, { backgroundColor: colors.card, shadowColor: colors.navy }]}
       >
         <GameTile gameKey={key} size={46} />
         <View style={{ flex: 1 }}>
@@ -43,17 +44,43 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
     );
   }
 
+  if (variant === 'list') {
+    return (
+      <AnimatedPressable
+        onPress={handlePress}
+        scaleDown={0.98}
+        style={[styles.listCard, { backgroundColor: colors.card, shadowColor: colors.navy }]}
+      >
+        <View style={[styles.listTileWrap, { backgroundColor: soft }]}>
+          <GameTile gameKey={key} size={48} />
+        </View>
+        <View style={{ flex: 1, gap: 3 }}>
+          <Text style={[styles.listName, { color: colors.foreground }]} numberOfLines={1}>{game.name}</Text>
+          <Text style={[styles.listMeta, { color: deep }]} numberOfLines={1}>
+            {VIBE_LABEL[game.energyLevel]} · Ages {game.ageRange} · {game.estimatedRoundLength}
+          </Text>
+          <Text style={[styles.listDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+            {game.description}
+          </Text>
+        </View>
+        <View style={[styles.listPlay, { backgroundColor: gameColor }]}>
+          <Feather name="play" size={16} color="#FFF" />
+        </View>
+      </AnimatedPressable>
+    );
+  }
+
   return (
     <AnimatedPressable
       onPress={handlePress}
       scaleDown={0.97}
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.navy }]}
+      style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.navy }]}
     >
       <View style={[styles.band, { backgroundColor: soft }]}>
         <GameTile gameKey={key} size={58} />
         <View style={[styles.energy, { backgroundColor: colors.card }]}>
           <View style={[styles.dot, { backgroundColor: gameColor }]} />
-          <Text style={[styles.energyText, { color: deep }]}>{ENERGY_LABEL[game.energyLevel]}</Text>
+          <Text style={[styles.energyText, { color: deep }]}>{VIBE_LABEL[game.energyLevel]}</Text>
         </View>
       </View>
       <View style={styles.body}>
@@ -75,10 +102,12 @@ export default function GameCard({ game, compact = false }: GameCardProps) {
 const styles = StyleSheet.create({
   card: {
     borderRadius: 26,
-    borderWidth: 1.5,
     overflow: 'hidden',
+    // overflow:hidden clips iOS shadows, so keep a faint ink hairline for edge definition
+    borderWidth: 1,
+    borderColor: 'rgba(42, 35, 80, 0.07)',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 18,
     elevation: 4,
   },
@@ -91,7 +120,16 @@ const styles = StyleSheet.create({
   meta: { fontFamily: 'Nunito_700Bold', fontSize: 12.5 },
   description: { fontFamily: 'Nunito_400Regular', fontSize: 13.5, lineHeight: 19, marginTop: 4, minHeight: 38 },
   cta: { alignItems: 'flex-start', marginTop: 12 },
-  compactCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 14, marginBottom: 10, borderRadius: 20, borderWidth: 1.5 },
+  compactCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 14, marginBottom: 10, borderRadius: 20, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   compactName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17 },
   compactMeta: { fontFamily: 'Nunito_600SemiBold', fontSize: 12.5, marginTop: 2 },
+  listCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, paddingRight: 14, borderRadius: 22,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2,
+  },
+  listTileWrap: { borderRadius: 18, padding: 6 },
+  listName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17, letterSpacing: -0.1 },
+  listMeta: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
+  listDesc: { fontFamily: 'Nunito_400Regular', fontSize: 13, lineHeight: 18 },
+  listPlay: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
 });

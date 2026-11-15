@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AnimatedPressable from '@/components/AnimatedPressable';
 import Mascot from '@/components/Mascot';
+import StatusBarScrim from '@/components/StatusBarScrim';
 import { GAME_COLORS } from '@/data/gameColors';
 import { useGame } from '@/context/GameContext';
 import { useColors } from '@/hooks/useColors';
@@ -282,6 +283,7 @@ export default function EndScreen() {
           </Pressable>
         </Animated.View>
       </ScrollView>
+      <StatusBarScrim />
     </>
   );
 }

@@ -1,9 +1,7 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,82 +10,32 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ChunkyButton from '@/components/ChunkyButton';
+import FadeScrollRow from '@/components/FadeScrollRow';
+import FilterChip from '@/components/FilterChip';
 import GameCard from '@/components/GameCard';
+import StatusBarScrim from '@/components/StatusBarScrim';
 import Mascot from '@/components/Mascot';
 import { GAMES, type GameMeta, type GameSetting, type EnergyLevel } from '@/data/games';
+import { SITUATIONS, VIBES, VIBE_LABEL } from '@/data/taxonomy';
 import { useColors } from '@/hooks/useColors';
 import { loadRecentGames } from '@/utils/storage';
 import { loadFamilyStats, type FamilyStats } from '@/utils/progression';
 import { getNewThisWeekCount } from '@/data/contentRelease';
-import { getLocalPromptStats } from '@/utils/aiPromptEngine';
 import { getSeenMap } from '@/utils/contentMemory';
 
-const SUBTITLES = [
-  "Ready to rescue the next 'I'm bored' moment?",
-  "Press play. We'll run the brain.",
-  'Car trip about to get competitive.',
-  'Family games, hosted for you.',
-  'Rules handled. Fun unlocked.',
-  'No screen required. Just this one.',
-];
-
-const SECTIONS: {
-  label: string;
-  icon: string;
-  micro: string;
-  short: string;
-  filter: (g: GameMeta) => boolean;
-}[] = [
-  {
-    label: 'Perfect for the car',
-    short: 'Car',
-    icon: 'navigation',
-    micro: 'Minimal props. Maximum distraction.',
-    filter: g => g.settings.includes('Car' as GameSetting),
-  },
-  {
-    label: 'Dinner table games',
-    short: 'Dinner',
-    icon: 'coffee',
-    micro: 'For when everyone is technically still at the table.',
-    filter: g => g.settings.includes('Dinner' as GameSetting),
-  },
-  {
-    label: 'Waiting room games',
-    short: 'Waiting',
-    icon: 'clock',
-    micro: 'Because queues build character. Apparently.',
-    filter: g => g.settings.includes('Waiting' as GameSetting),
-  },
-  {
-    label: 'Wind-down games',
-    short: 'Wind-down',
-    icon: 'moon',
-    micro: 'Still fun. Just less feral.',
-    filter: g => g.energyLevel === ('Calm' as EnergyLevel),
-  },
-];
-
-const MOODS = [
-  { label: 'Calm', value: 'Calm', color: '#35BDB2', line: 'Good choice. Peaceful chaos incoming.' },
-  { label: 'Fun', value: 'Fun', color: '#FF6B3D', line: 'Fun mode: engaged. Hold on.' },
-  { label: 'Focused', value: 'Medium', color: '#F7B731', line: 'The thinking caps are on.' },
-  { label: 'Chaos', value: 'Chaotic', color: '#8B6EF6', line: "Manageable chaos. Probably." },
-];
+const VIBE_LINES: Record<string, string> = {
+  Calm: 'Good choice. Peaceful chaos incoming.',
+  Medium: 'The thinking caps are on.',
+  Chaotic: 'Manageable chaos. Probably.',
+};
 
 function NewPromptsTag() {
   const colors = useColors();
   const count = getNewThisWeekCount();
-  if (count === 0) {
-    return (
-      <Text style={[newPromptStyles.line, { color: colors.mutedForeground }]}>
-        New prompts added regularly
-      </Text>
-    );
-  }
+  if (count === 0) return null;
   return (
     <View style={[newPromptStyles.pill, { backgroundColor: colors.primarySoft }]}>
-      <Text style={[newPromptStyles.pillText, { color: colors.primary }]}>
+      <Text style={[newPromptStyles.pillText, { color: colors.primaryText }]}>
         {count} new prompts this week
       </Text>
     </View>
@@ -95,126 +43,8 @@ function NewPromptsTag() {
 }
 
 const newPromptStyles = StyleSheet.create({
-  line: { fontFamily: 'Nunito_400Regular', fontSize: 13 },
-  pill: { borderRadius: 100, paddingHorizontal: 12, paddingVertical: 5 },
+  pill: { alignSelf: 'flex-start', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 5 },
   pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
-});
-
-function RotatingSubtitle() {
-  const colors = useColors();
-  const [index, setIndex] = useState(0);
-  const opacity = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
-        setIndex(i => (i + 1) % SUBTITLES.length);
-        Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-      });
-    }, 3200);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <Animated.Text style={[styles.subtitle, { color: colors.mutedForeground, opacity }]}>
-      {SUBTITLES[index]}
-    </Animated.Text>
-  );
-}
-
-function MoodStrip() {
-  const colors = useColors();
-  const [selected, setSelected] = useState<string | null>(null);
-  const selectedMood = MOODS.find(m => m.value === selected);
-
-  return (
-    <View style={styles.moodSection}>
-      <Text style={[styles.moodTitle, { color: colors.foreground }]}>What's the mood?</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.moodRow}
-      >
-        {MOODS.map(m => {
-          const isSelected = selected === m.value;
-          return (
-            <Pressable
-              key={m.value}
-              onPress={() => setSelected(v => v === m.value ? null : m.value)}
-              style={({ pressed }) => [
-                styles.moodPill,
-                {
-                  backgroundColor: isSelected ? colors.navy : colors.card,
-                  borderColor: isSelected ? colors.navy : colors.border,
-                  borderWidth: 1.5,
-                  opacity: pressed ? 0.82 : 1,
-                  transform: [{ scale: pressed ? 0.96 : 1 }],
-                },
-              ]}
-            >
-              <Text style={[styles.moodPillText, { color: isSelected ? '#FFF' : colors.mutedForeground }]}>
-                {m.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-      {selectedMood && (
-        <Text style={[styles.moodLine, { color: colors.mutedForeground }]}>
-          {selectedMood.line}
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function FreshnessCard() {
-  const colors = useColors();
-  const stats = getLocalPromptStats();
-  return (
-    <Pressable
-      onPress={() => router.push('/games')}
-      style={({ pressed }) => [
-        freshnessCardStyles.card,
-        {
-          backgroundColor: colors.card,
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: colors.border,
-          opacity: pressed ? 0.88 : 1,
-          overflow: 'hidden',
-        },
-      ]}
-    >
-      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: colors.secondary, borderTopLeftRadius: 20, borderBottomLeftRadius: 20 }} />
-      <View style={freshnessCardStyles.row}>
-        <View style={[freshnessCardStyles.iconTile, { backgroundColor: colors.secondarySoft }]}>
-          <Feather name="refresh-cw" size={16} color={colors.secondary} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[freshnessCardStyles.title, { color: colors.foreground }]}>Fresh prompts</Text>
-          <Text style={[freshnessCardStyles.sub, { color: colors.mutedForeground }]}>
-            New ideas mixed in so games stay varied.
-          </Text>
-        </View>
-        <View style={[freshnessCardStyles.badge, { backgroundColor: colors.muted }]}>
-          <Text style={[freshnessCardStyles.badgeNum, { color: colors.foreground }]}>{stats.total}</Text>
-          <Text style={[freshnessCardStyles.badgeLabel, { color: colors.mutedForeground }]}>ready</Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
-const freshnessCardStyles = StyleSheet.create({
-  card: { padding: 14 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconTile: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
-  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17 },
-  badge: { alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 7, paddingHorizontal: 11, minWidth: 48 },
-  badgeNum: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
-  badgeLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 10 },
 });
 
 function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
@@ -222,7 +52,7 @@ function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
   if (stats.totalGamesPlayed === 0) return null;
 
   return (
-    <View style={[styles.statsCard, { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border }]}>
+    <View style={[styles.statsCard, { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy }]}>
       <View style={styles.statsHeader}>
         <View style={[styles.statsIconTile, { backgroundColor: colors.primarySoft }]}>
           <Feather name="bar-chart-2" size={16} color={colors.primary} />
@@ -255,11 +85,10 @@ function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
 
 function HorizontalGameRow({ games }: { games: GameMeta[] }) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
+    <FadeScrollRow
+      style={styles.hRowBleed}
       contentContainerStyle={styles.hRow}
-      snapToInterval={268}
+      snapToInterval={276}
       decelerationRate="fast"
     >
       {games.map(g => (
@@ -267,7 +96,7 @@ function HorizontalGameRow({ games }: { games: GameMeta[] }) {
           <GameCard game={g} />
         </View>
       ))}
-    </ScrollView>
+    </FadeScrollRow>
   );
 }
 
@@ -322,16 +151,22 @@ function QuickPlayButton() {
         styles.saveBtn,
         {
           backgroundColor: colors.card,
-          borderColor: colors.border,
+          shadowColor: colors.navy,
           transform: [{ scale: pressed ? 0.97 : 1 }],
           opacity: loading ? 0.8 : 1,
         },
       ]}
     >
-      <Feather name="zap" size={17} color={colors.primary} />
-      <Text style={[styles.saveBtnText, { color: colors.foreground }]}>
-        {loading ? 'Finding something fresh…' : 'Save the Moment'}
-      </Text>
+      <View style={[styles.saveIcon, { backgroundColor: colors.primarySoft }]}>
+        <Feather name="zap" size={16} color={colors.primaryText} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.saveBtnText, { color: colors.foreground }]}>
+          {loading ? 'Finding something fresh…' : 'Save the Moment'}
+        </Text>
+        <Text style={[styles.saveBtnSub, { color: colors.mutedForeground }]}>Pip picks a game for you, instantly</Text>
+      </View>
+      <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
     </Pressable>
   );
 }
@@ -347,12 +182,18 @@ export default function HomeScreen() {
     loadFamilyStats().then(setFamilyStats);
   }, []);
 
-  const [sectionIdx, setSectionIdx] = useState(0);
+  const [situation, setSituation] = useState<GameSetting>('Car');
+  const [vibe, setVibe] = useState<EnergyLevel | null>(null);
   const recentGames = recentGameIds
     .map(id => GAMES.find(g => g.id === id))
     .filter(Boolean) as GameMeta[];
+  const situationMeta = SITUATIONS.find(s => s.value === situation)!;
+  const pickedGames = GAMES.filter(
+    g => g.settings.includes(situation) && (!vibe || g.energyLevel === vibe),
+  );
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
@@ -361,20 +202,19 @@ export default function HomeScreen() {
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Open integrated header — no card box */}
+      {/* Header — one clear tagline */}
       <View style={styles.header}>
         <View style={styles.logoRow}>
           <Mascot size={64} mood="cheer" />
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.appName, { color: colors.foreground }]}>Game Host</Text>
-            <Text style={[styles.tagline, { color: colors.primary }]}>Pip runs the game. You just play.</Text>
+            <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Pip runs the game. You just play.</Text>
           </View>
         </View>
-        <RotatingSubtitle />
         <NewPromptsTag />
       </View>
 
-      {/* CTAs */}
+      {/* CTAs — one primary, one clearly secondary */}
       <View style={styles.ctas}>
         <ChunkyButton
           label="Start a Game"
@@ -387,14 +227,8 @@ export default function HomeScreen() {
         <QuickPlayButton />
       </View>
 
-      {/* Freshness signal */}
-      <FreshnessCard />
-
       {/* Family Stats */}
       {familyStats && <FamilyStatsCard stats={familyStats} />}
-
-      {/* Mood strip */}
-      <MoodStrip />
 
       {/* Recent */}
       {recentGames.length > 0 && (
@@ -406,25 +240,45 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Where are you? — one row, switchable, instead of four repeats */}
+      {/* Where are you? + vibe — same names as All Games */}
       <View style={styles.section}>
-        <SectionHeader label="Where are you?" micro={SECTIONS[sectionIdx].micro} onPress={() => router.push('/games')} />
-        <View style={styles.whereRow}>
-          {SECTIONS.map((sec, i) => {
-            const on = i === sectionIdx;
-            return (
-              <Pressable
-                key={sec.label}
-                onPress={() => setSectionIdx(i)}
-                style={[styles.wherePill, { backgroundColor: on ? colors.navy : colors.card, borderColor: on ? colors.navy : colors.border }]}
-              >
-                <Feather name={sec.icon as any} size={14} color={on ? '#FFF' : colors.mutedForeground} />
-                <Text style={[styles.wherePillText, { color: on ? '#FFF' : colors.mutedForeground }]}>{sec.short}</Text>
-              </Pressable>
-            );
-          })}
+        <SectionHeader label="Where are you?" micro={situationMeta.micro} onPress={() => router.push('/games')} />
+        <View style={styles.chipWrap}>
+          {SITUATIONS.map(sit => (
+            <FilterChip
+              key={sit.value}
+              label={sit.label}
+              icon={sit.icon as any}
+              selected={situation === sit.value}
+              onPress={() => setSituation(sit.value)}
+            />
+          ))}
         </View>
-        <HorizontalGameRow games={GAMES.filter(SECTIONS[sectionIdx].filter)} />
+        <View style={styles.vibeRow}>
+          <Text style={[styles.vibeLabel, { color: colors.mutedForeground }]}>Vibe</Text>
+          {VIBES.map(v => (
+            <FilterChip
+              key={v.value}
+              size="sm"
+              label={v.label}
+              selected={vibe === v.value}
+              onPress={() => setVibe(cur => (cur === v.value ? null : v.value))}
+            />
+          ))}
+        </View>
+        {vibe && (
+          <Text style={[styles.moodLine, { color: colors.mutedForeground }]}>{VIBE_LINES[vibe]}</Text>
+        )}
+        {pickedGames.length > 0 ? (
+          <HorizontalGameRow games={pickedGames} />
+        ) : (
+          <Pressable onPress={() => setVibe(null)} style={[styles.emptyRow, { backgroundColor: colors.muted }]}>
+            <Text style={[styles.emptyRowText, { color: colors.mutedForeground }]}>
+              Nothing {VIBE_LABEL[vibe!].toLowerCase()} for {situationMeta.label.toLowerCase()} yet.{' '}
+              <Text style={{ color: colors.primaryText }}>Show all vibes</Text>
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* Packs teaser */}
@@ -432,7 +286,7 @@ export default function HomeScreen() {
         onPress={() => router.push('/packs')}
         style={({ pressed }) => [
           styles.packTeaser,
-          { backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
+          { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy, opacity: pressed ? 0.85 : 1 },
         ]}
       >
         <View style={[styles.packIconTile, { backgroundColor: colors.primarySoft }]}>
@@ -452,9 +306,11 @@ export default function HomeScreen() {
         onPress={() => router.push('/games')}
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, alignItems: 'center', paddingVertical: 8 })}
       >
-        <Text style={[styles.viewAllText, { color: colors.primary }]}>View all games →</Text>
+        <Text style={[styles.viewAllText, { color: colors.primaryText }]}>View all games →</Text>
       </Pressable>
     </ScrollView>
+    <StatusBarScrim />
+    </View>
   );
 }
 
@@ -477,7 +333,7 @@ function SectionHeader({
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{label}</Text>
         </View>
         {onPress && (
-          <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
+          <Text style={[styles.seeAll, { color: colors.primaryText }]}>See all</Text>
         )}
       </View>
       <Text style={[styles.micro, { color: colors.mutedForeground }]}>{micro}</Text>
@@ -490,10 +346,12 @@ const styles = StyleSheet.create({
 
   header: { gap: 10 },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  tagline: { fontFamily: 'Nunito_700Bold', fontSize: 13, marginTop: -2 },
-  whereRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  wherePill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, borderWidth: 1.5 },
-  wherePillText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  tagline: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: -2 },
+  chipWrap: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  vibeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  vibeLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, marginRight: 4 },
+  emptyRow: { borderRadius: 18, padding: 18 },
+  emptyRowText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20 },
   logoIcon: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   appName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 32, letterSpacing: -0.5 },
   subtitle: {
@@ -518,17 +376,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     borderRadius: 20,
-    paddingVertical: 15,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
     elevation: 2,
   },
-  saveBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
+  saveIcon: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  saveBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
+  saveBtnSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 1 },
 
-  statsCard: { padding: 18, gap: 14 },
+  statsCard: { padding: 18, gap: 14, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   statsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statsIconTile: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   statsTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
@@ -537,16 +396,6 @@ const styles = StyleSheet.create({
   statValue: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20 },
   statLabel: { fontFamily: 'Nunito_400Regular', fontSize: 12 },
 
-  moodSection: { gap: 10 },
-  moodTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
-  moodRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingBottom: 4,
-    paddingRight: 20,
-  },
-  moodPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100 },
-  moodPillText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13 },
   moodLine: { fontFamily: 'Nunito_400Regular', fontSize: 13 },
 
   section: { gap: 12 },
@@ -557,9 +406,10 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 19, letterSpacing: -0.1 },
   seeAll: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
   micro: { fontFamily: 'Nunito_400Regular', fontSize: 13, paddingLeft: 11 },
-  hRow: { paddingBottom: 4, paddingRight: 4 },
+  hRowBleed: { marginHorizontal: -20 },
+  hRow: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 18 },
 
-  packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+  packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   packIconTile: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   packTitle: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
   packSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 2 },
