@@ -39,22 +39,27 @@ workflows:
           echo "NEW_BUILD_NUMBER=$NEW_BUILD_NUMBER" >> $CM_ENV
           NEW_BUILD_NUMBER=$NEW_BUILD_NUMBER node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('app.json'));c.expo.ios.buildNumber=String(process.env.NEW_BUILD_NUMBER);fs.writeFileSync('app.json',JSON.stringify(c,null,2))"
           npx expo prebuild --platform ios --no-install
+          # Expo names the Xcode project after the app name (e.g. "Gimme a Game" -> GimmeaGame),
+          # so look it up instead of hard-coding it. Later steps read IOS_NAME from the environment.
+          IOS_NAME=$(basename "$(ls -d ios/*.xcodeproj | head -n 1)" .xcodeproj)
+          echo "Xcode project name: $IOS_NAME"
+          echo "IOS_NAME=$IOS_NAME" >> $CM_ENV
           echo "Bundle ID right after prebuild:"
-          grep -n "PRODUCT_BUNDLE_IDENTIFIER" ios/GameHost.xcodeproj/project.pbxproj
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" "ios/$IOS_NAME.xcodeproj/project.pbxproj"
           cd ios && pod install
           echo "Bundle ID after pod install:"
-          grep -n "PRODUCT_BUNDLE_IDENTIFIER" GameHost.xcodeproj/project.pbxproj
+          grep -n "PRODUCT_BUNDLE_IDENTIFIER" "$IOS_NAME.xcodeproj/project.pbxproj"
           cd ..
           # Safety net: make sure the generated project has our bundle ID and app icon.
           node scripts/ci-fix-ios.js
           # Belt and braces: write the build number straight into the native project too.
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD_NUMBER" ios/GameHost/Info.plist
-          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = $NEW_BUILD_NUMBER;/g" ios/GameHost.xcodeproj/project.pbxproj
-          echo "CFBundleVersion in Info.plist: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' ios/GameHost/Info.plist)"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD_NUMBER" "ios/$IOS_NAME/Info.plist"
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = $NEW_BUILD_NUMBER;/g" "ios/$IOS_NAME.xcodeproj/project.pbxproj"
+          echo "CFBundleVersion in Info.plist: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "ios/$IOS_NAME/Info.plist")"
       - name: Set up code signing
         script: |
           cd artifacts/mobile
-          xcode-project use-profiles --project ios/GameHost.xcodeproj
+          xcode-project use-profiles --project "ios/$IOS_NAME.xcodeproj"
       - name: Check signing (diagnostic)
         ignore_failure: true
         script: |
@@ -77,13 +82,13 @@ workflows:
           done
           echo
           echo "=== Project signing settings after use-profiles ==="
-          grep -nE "CODE_SIGN_STYLE|PROVISIONING_PROFILE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER" artifacts/mobile/ios/GameHost.xcodeproj/project.pbxproj
+          grep -nE "CODE_SIGN_STYLE|PROVISIONING_PROFILE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER" "artifacts/mobile/ios/$IOS_NAME.xcodeproj/project.pbxproj"
       - name: Build IPA
         script: |
           cd artifacts/mobile
           xcode-project build-ipa \
-            --workspace "ios/GameHost.xcworkspace" \
-            --scheme "GameHost"
+            --workspace "ios/$IOS_NAME.xcworkspace" \
+            --scheme "$IOS_NAME"
           # Show the build number actually baked into the IPA before it's uploaded.
           IPA=$(ls build/ios/ipa/*.ipa | head -n 1)
           rm -rf /tmp/ipa_check && mkdir -p /tmp/ipa_check && unzip -q "$IPA" -d /tmp/ipa_check
