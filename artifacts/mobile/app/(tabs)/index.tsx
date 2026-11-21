@@ -2,20 +2,26 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AnimatedPressable from '@/components/AnimatedPressable';
 import ChunkyButton from '@/components/ChunkyButton';
-import FadeScrollRow from '@/components/FadeScrollRow';
 import FilterChip from '@/components/FilterChip';
 import GameCard from '@/components/GameCard';
+import { GameTile } from '@/components/GameGlyph';
 import StatusBarScrim from '@/components/StatusBarScrim';
 import Mascot from '@/components/Mascot';
+import { FadeInUp } from '@/components/Motion';
+import Sticker, { useBob } from '@/components/Sticker';
 import { GAMES, type GameMeta, type GameSetting, type EnergyLevel } from '@/data/games';
+import type { GameColorKey } from '@/data/gameColors';
 import { SITUATIONS, VIBES, VIBE_LABEL } from '@/data/taxonomy';
 import { useColors } from '@/hooks/useColors';
 import { loadRecentGames } from '@/utils/storage';
@@ -44,7 +50,7 @@ function NewPromptsTag() {
 
 const newPromptStyles = StyleSheet.create({
   pill: { alignSelf: 'flex-start', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 5 },
-  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
+  pillText: { fontFamily: 'DMSans_700Bold', fontSize: 12 },
 });
 
 function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
@@ -83,20 +89,25 @@ function FamilyStatsCard({ stats }: { stats: FamilyStats }) {
   );
 }
 
-function HorizontalGameRow({ games }: { games: GameMeta[] }) {
+/** Games for the chosen situation as a sticker sheet. Re-mounts (and re-animates) when the situation changes. */
+function StickerGrid({ games }: { games: GameMeta[] }) {
+  const colors = useColors();
+  const { width } = useWindowDimensions();
+  const cellW = Math.floor((width - 40) / 3);
   return (
-    <FadeScrollRow
-      style={styles.hRowBleed}
-      contentContainerStyle={styles.hRow}
-      snapToInterval={276}
-      decelerationRate="fast"
-    >
-      {games.map(g => (
-        <View key={g.id} style={{ width: 260, marginRight: 16 }}>
-          <GameCard game={g} />
-        </View>
+    <View style={styles.stickerGrid}>
+      {games.slice(0, 6).map((g, i) => (
+        <AnimatedPressable
+          key={g.id}
+          onPress={() => router.push({ pathname: '/setup', params: { gameId: g.id } })}
+          scaleDown={0.92}
+          style={[styles.stickerCell, { width: cellW }]}
+        >
+          <GameTile gameKey={g.colorKey as GameColorKey} size={88} delay={60 + i * 70} />
+          <Text style={[styles.stickerName, { color: colors.foreground }]} numberOfLines={2}>{g.name}</Text>
+        </AnimatedPressable>
       ))}
-    </FadeScrollRow>
+    </View>
   );
 }
 
@@ -119,7 +130,7 @@ function QuickPlayButton() {
       getSeenMap(),
     ]);
 
-    await new Promise(r => setTimeout(r, 900));
+    await new Promise(r => setTimeout(r, 600));
 
     const lastPlayedId = recent[0];
     const candidates = GAMES.filter(g => g.id !== lastPlayedId);
@@ -144,30 +155,17 @@ function QuickPlayButton() {
   };
 
   return (
-    <Pressable
-      onPress={handleQuickPlay}
-      disabled={loading}
-      style={({ pressed }) => [
-        styles.saveBtn,
-        {
-          backgroundColor: colors.card,
-          shadowColor: colors.navy,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
-          opacity: loading ? 0.8 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.saveIcon, { backgroundColor: colors.primarySoft }]}>
-        <Feather name="zap" size={16} color={colors.primaryText} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.saveBtnText, { color: colors.foreground }]}>
-          {loading ? 'Finding something fresh…' : 'Save the Moment'}
-        </Text>
-        <Text style={[styles.saveBtnSub, { color: colors.mutedForeground }]}>Pip picks a game for you, instantly</Text>
-      </View>
-      <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-    </Pressable>
+    <View style={{ gap: 6 }}>
+      <ChunkyButton
+        label={loading ? 'Pip is picking…' : 'Gimme a game!'}
+        size="lg"
+        color={colors.primary}
+        deep={colors.primaryDark}
+        onPress={handleQuickPlay}
+        disabled={loading}
+      />
+      <Text style={[styles.dockNote, { color: colors.mutedForeground }]}>Pip picks one for wherever you are</Text>
+    </View>
   );
 }
 
@@ -192,69 +190,64 @@ export default function HomeScreen() {
     g => g.settings.includes(situation) && (!vibe || g.energyLevel === vibe),
   );
 
+  const pipBob = useBob(3, 1500);
+  const { width } = useWindowDimensions();
+  const optionW = Math.floor((width - 40 - 40 - 8) / 2);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[
-        styles.container,
-        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 90 },
-      ]}
+      contentContainerStyle={[styles.container, { paddingTop: insets.top + 18, paddingBottom: 24 }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header — one clear tagline */}
-      <View style={styles.header}>
-        <View style={styles.logoRow}>
-          <Mascot size={64} mood="cheer" />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.appName, { color: colors.foreground }]}>Game Host</Text>
-            <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Pip runs the game. You just play.</Text>
-          </View>
+      {/* Header */}
+      <FadeInUp style={styles.header}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[styles.appName, { color: colors.foreground }]}>Gimme a Game</Text>
+          <Text style={[styles.tagline, { color: colors.primary }]}>For bored kids and busy parents.</Text>
+          <NewPromptsTag />
         </View>
-        <NewPromptsTag />
-      </View>
+        <Animated.View style={pipBob}>
+          <Sticker size={70} fill={colors.sunshineSoft} tilt={6} delay={250}>
+            <Mascot size={52} mood="cheer" />
+          </Sticker>
+        </Animated.View>
+      </FadeInUp>
 
-      {/* CTAs — one primary, one clearly secondary */}
-      <View style={styles.ctas}>
-        <ChunkyButton
-          label="Start a Game"
-          size="lg"
-          color={colors.primary}
-          deep={colors.primaryDark}
-          left={<Feather name="play" size={20} color="#FFF" />}
-          onPress={() => router.push('/games')}
-        />
-        <QuickPlayButton />
-      </View>
-
-      {/* Family Stats */}
-      {familyStats && <FamilyStatsCard stats={familyStats} />}
-
-      {/* Recent */}
-      {recentGames.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader label="Recently Played" micro="Back for more? Good taste." />
-          {recentGames.slice(0, 2).map(g => (
-            <GameCard key={g.id} game={g} compact />
-          ))}
+      {/* Where's the family today? */}
+      <FadeInUp delay={80} style={[styles.heroCard, { backgroundColor: colors.primary }]}>
+        <View style={[styles.heroStamp, { borderColor: colors.sunshine }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Feather name={situationMeta.icon as any} size={20} color={colors.sunshine} />
         </View>
-      )}
+        <Text style={styles.heroKicker}>WHERE ARE WE?</Text>
+        <Text style={styles.heroTitle}>Where's the family today?</Text>
+        <View style={styles.heroGrid}>
+          {SITUATIONS.map(sit => {
+            const on = situation === sit.value;
+            return (
+              <AnimatedPressable
+                key={sit.value}
+                onPress={() => setSituation(sit.value)}
+                scaleDown={0.94}
+                style={[styles.heroOption, { width: optionW, backgroundColor: on ? colors.sunshine : 'rgba(255,255,255,0.14)' }]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+              >
+                <Text style={[styles.heroOptionText, { color: on ? colors.foreground : '#FFFFFF' }]}>{sit.homeLabel}</Text>
+              </AnimatedPressable>
+            );
+          })}
+        </View>
+      </FadeInUp>
 
-      {/* Where are you? + vibe — same names as All Games */}
-      <View style={styles.section}>
-        <SectionHeader label="Where are you?" micro={situationMeta.micro} onPress={() => router.push('/games')} />
-        <View style={styles.chipWrap}>
-          {SITUATIONS.map(sit => (
-            <FilterChip
-              key={sit.value}
-              size="sm"
-              stretch
-              label={sit.label}
-              icon={sit.icon as any}
-              selected={situation === sit.value}
-              onPress={() => setSituation(sit.value)}
-            />
-          ))}
+      {/* Games for this situation */}
+      <FadeInUp delay={160} style={styles.section}>
+        <View style={styles.sectionRow}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{situationMeta.goodFor}</Text>
+          <Pressable onPress={() => router.push('/games')} hitSlop={10}>
+            <Text style={[styles.seeAll, { color: colors.primaryText }]}>See all 9</Text>
+          </Pressable>
         </View>
         <View style={styles.vibeRow}>
           <Text style={[styles.vibeLabel, { color: colors.mutedForeground }]}>Vibe</Text>
@@ -268,11 +261,9 @@ export default function HomeScreen() {
             />
           ))}
         </View>
-        {vibe && (
-          <Text style={[styles.moodLine, { color: colors.mutedForeground }]}>{VIBE_LINES[vibe]}</Text>
-        )}
+        {vibe && <Text style={[styles.pipNote, { color: colors.primary }]}>{VIBE_LINES[vibe]}</Text>}
         {pickedGames.length > 0 ? (
-          <HorizontalGameRow games={pickedGames} />
+          <StickerGrid key={`${situation}-${vibe ?? 'any'}`} games={pickedGames} />
         ) : (
           <Pressable onPress={() => setVibe(null)} style={[styles.emptyRow, { backgroundColor: colors.muted }]}>
             <Text style={[styles.emptyRowText, { color: colors.mutedForeground }]}>
@@ -281,7 +272,20 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         )}
-      </View>
+      </FadeInUp>
+
+      {/* Recent */}
+      {recentGames.length > 0 && (
+        <FadeInUp delay={240} style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Played lately</Text>
+          {recentGames.slice(0, 2).map(g => (
+            <GameCard key={g.id} game={g} compact />
+          ))}
+        </FadeInUp>
+      )}
+
+      {/* Family Stats */}
+      {familyStats && <FamilyStatsCard stats={familyStats} />}
 
       {/* Packs teaser */}
       <Pressable
@@ -291,73 +295,60 @@ export default function HomeScreen() {
           { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy, opacity: pressed ? 0.85 : 1 },
         ]}
       >
-        <View style={[styles.packIconTile, { backgroundColor: colors.primarySoft }]}>
-          <Feather name="gift" size={18} color={colors.primary} />
+        <View style={[styles.packIconTile, { backgroundColor: colors.coralSoft }]}>
+          <Feather name="gift" size={18} color={colors.coral} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.packTitle, { color: colors.foreground }]}>More Games on the Way</Text>
+          <Text style={[styles.packTitle, { color: colors.foreground }]}>More games on the way</Text>
           <Text style={[styles.packSub, { color: colors.mutedForeground }]}>
-            Road Trip, Bedtime, Big Family packs coming soon
+            Road Trip, Bedtime and Big Family packs coming soon
           </Text>
         </View>
         <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
       </Pressable>
-
-      {/* View all games */}
-      <Pressable
-        onPress={() => router.push('/games')}
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, alignItems: 'center', paddingVertical: 8 })}
-      >
-        <Text style={[styles.viewAllText, { color: colors.primaryText }]}>View all games →</Text>
-      </Pressable>
     </ScrollView>
+
+    {/* The app's main action is always in reach */}
+    <View style={[styles.dock, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 12) + 4 }]}>
+      <QuickPlayButton />
+    </View>
     <StatusBarScrim />
     </View>
   );
 }
 
-function SectionHeader({
-  label,
-  micro,
-  onPress,
-}: {
-  label: string;
-  micro: string;
-  onPress?: () => void;
-}) {
-  const colors = useColors();
-  return (
-    <Pressable onPress={onPress} style={styles.sectionHeader}>
-      <View style={styles.sectionHeaderLeft}>
-        <View style={styles.sectionTitleRow}>
-          {/* Decorative accent mark */}
-          <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{label}</Text>
-        </View>
-        {onPress && (
-          <Text style={[styles.seeAll, { color: colors.primaryText }]}>See all</Text>
-        )}
-      </View>
-      <Text style={[styles.micro, { color: colors.mutedForeground }]}>{micro}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 20, gap: 28 },
+  container: { paddingHorizontal: 20, gap: 26 },
 
-  header: { gap: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  tagline: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: -2 },
+  tagline: { fontFamily: 'Caveat_600SemiBold', fontSize: 23, transform: [{ rotate: '-1.5deg' }], marginLeft: 2 },
+  pipNote: { fontFamily: 'Caveat_600SemiBold', fontSize: 20 },
+  dockNote: { fontFamily: 'Caveat_600SemiBold', fontSize: 18, textAlign: 'center' },
+  dock: { paddingHorizontal: 20, paddingTop: 10 },
+  heroCard: { borderRadius: 24, padding: 20, gap: 12, overflow: 'hidden' },
+  heroStamp: {
+    position: 'absolute', top: 16, right: 16, width: 50, height: 58, borderRadius: 8,
+    borderWidth: 2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '5deg' }],
+  },
+  heroKicker: { fontFamily: 'DMSans_700Bold', fontSize: 12, letterSpacing: 2, color: '#CBE3EE' },
+  heroTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 28, lineHeight: 30, color: '#FFFFFF', maxWidth: 240, letterSpacing: -0.5 },
+  heroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  heroOption: { borderRadius: 14, paddingVertical: 13, alignItems: 'center' },
+  heroOptionText: { fontFamily: 'DMSans_700Bold', fontSize: 15 },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  stickerGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 18, marginTop: 6 },
+  stickerCell: { alignItems: 'center', gap: 10 },
+  stickerName: { fontFamily: 'DMSans_700Bold', fontSize: 14, textAlign: 'center', lineHeight: 18, paddingHorizontal: 4 },
   chipWrap: { flexDirection: 'row', gap: 6 },
   vibeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  vibeLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, marginRight: 4 },
+  vibeLabel: { fontFamily: 'DMSans_700Bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, marginRight: 4 },
   emptyRow: { borderRadius: 18, padding: 18 },
-  emptyRowText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20 },
+  emptyRowText: { fontFamily: 'DMSans_500Medium', fontSize: 14, lineHeight: 20 },
   logoIcon: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  appName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 32, letterSpacing: -0.5 },
+  appName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 34, letterSpacing: -1, lineHeight: 38 },
   subtitle: {
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'DMSans_400Regular',
     fontSize: 15,
     lineHeight: 22,
   },
@@ -371,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 19,
   },
-  startBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: '#FFF', letterSpacing: 0.1 },
+  startBtnText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18, color: '#FFF', letterSpacing: 0.1 },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -386,34 +377,34 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   saveIcon: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  saveBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
-  saveBtnSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 1 },
+  saveBtnText: { fontFamily: 'DMSans_700Bold', fontSize: 15 },
+  saveBtnSub: { fontFamily: 'DMSans_400Regular', fontSize: 12, marginTop: 1 },
 
   statsCard: { padding: 18, gap: 14, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   statsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statsIconTile: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  statsTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
+  statsTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 16 },
   statsRow: { flexDirection: 'row', gap: 16 },
   statItem: { flex: 1, gap: 3 },
-  statValue: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20 },
-  statLabel: { fontFamily: 'Nunito_400Regular', fontSize: 12 },
+  statValue: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 20 },
+  statLabel: { fontFamily: 'DMSans_400Regular', fontSize: 12 },
 
-  moodLine: { fontFamily: 'Nunito_400Regular', fontSize: 13 },
+  moodLine: { fontFamily: 'DMSans_400Regular', fontSize: 13 },
 
   section: { gap: 12 },
   sectionHeader: { gap: 4 },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionAccent: { width: 3, height: 20, borderRadius: 2 },
-  sectionTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 19, letterSpacing: -0.1 },
-  seeAll: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
-  micro: { fontFamily: 'Nunito_400Regular', fontSize: 13, paddingLeft: 11 },
+  sectionTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 22, letterSpacing: -0.4 },
+  seeAll: { fontFamily: 'DMSans_700Bold', fontSize: 13 },
+  micro: { fontFamily: 'DMSans_400Regular', fontSize: 13, paddingLeft: 11 },
   hRowBleed: { marginHorizontal: -20 },
   hRow: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 18 },
 
   packTeaser: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
   packIconTile: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  packTitle: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
-  packSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 2 },
-  viewAllText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  packTitle: { fontFamily: 'DMSans_700Bold', fontSize: 14 },
+  packSub: { fontFamily: 'DMSans_400Regular', fontSize: 12, marginTop: 2 },
+  viewAllText: { fontFamily: 'DMSans_700Bold', fontSize: 14 },
 });

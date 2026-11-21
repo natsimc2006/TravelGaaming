@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 interface Props {
   label: string;
@@ -22,13 +23,20 @@ export default function ChunkyButton({
 }: Props) {
   const s = SIZES[size];
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={style}>
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => { if (!disabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
+      disabled={disabled}
+      style={style}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       {({ pressed }) => (
-        <View style={{ backgroundColor: disabled ? '#CFC7D9' : deep, borderRadius: 18, paddingBottom: pressed ? 1 : 5, marginTop: pressed ? 4 : 0 }}>
+        <View style={{ backgroundColor: disabled ? '#D8CDBA' : deep, borderRadius: 18, paddingBottom: pressed ? 1 : 5, marginTop: pressed ? 4 : 0 }}>
           <View
             style={[
               styles.face,
-              { backgroundColor: disabled ? '#E3DDEA' : color, paddingVertical: s.v, paddingHorizontal: s.h },
+              { backgroundColor: disabled ? '#ECE6DC' : color, paddingVertical: s.v, paddingHorizontal: s.h },
             ]}
           >
             {left}
@@ -43,5 +51,5 @@ export default function ChunkyButton({
 
 const styles = StyleSheet.create({
   face: { borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  label: { fontFamily: 'Fredoka_600SemiBold', letterSpacing: 0.2 },
+  label: { fontFamily: 'BricolageGrotesque_800ExtraBold', letterSpacing: 0.2 },
 });

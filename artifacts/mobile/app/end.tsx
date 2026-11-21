@@ -11,7 +11,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AnimatedPressable from '@/components/AnimatedPressable';
+import ChunkyButton from '@/components/ChunkyButton';
 import Mascot from '@/components/Mascot';
+import { FadeInUp, Stamp, useCountUp } from '@/components/Motion';
+import Sticker from '@/components/Sticker';
 import StatusBarScrim from '@/components/StatusBarScrim';
 import { GAME_COLORS } from '@/data/gameColors';
 import { useGame } from '@/context/GameContext';
@@ -69,9 +72,16 @@ function StatChip({ label, value, color }: { label: string; value: string; color
 
 const statStyles = StyleSheet.create({
   chip: { flex: 1, alignItems: 'center', padding: 14, borderRadius: 14, gap: 4 },
-  value: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24 },
-  label: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, textAlign: 'center' },
+  value: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 24 },
+  label: { fontFamily: 'DMSans_500Medium', fontSize: 12, textAlign: 'center' },
 });
+
+const AVATAR_TONES = ['#D45A3E', '#1D5C78', '#2F8C7E', '#B5832A', '#123E52', '#A9432C'];
+
+function CountUp({ value, delay, style }: { value: number; delay: number; style: any }) {
+  const shown = useCountUp(value, 700, delay);
+  return <Text style={style}>{shown}</Text>;
+}
 
 export default function EndScreen() {
   const colors = useColors();
@@ -136,90 +146,71 @@ export default function EndScreen() {
         contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Trophy / Solo icon */}
-        <Animated.View style={[styles.trophySection, { opacity: trophyOpacity }]}>
-          <Animated.View style={[styles.trophyCircle, { backgroundColor: gameColor, transform: [{ scale: trophyScale }] }]}>
-            <Mascot size={104} mood="cheer" />
-          </Animated.View>
-          <Text style={[styles.endTitle, { color: colors.foreground }]}>{endTitle}</Text>
-
-          {isSolo ? (
-            <>
-              <Text style={[styles.winnerName, { color: gameColor }]}>
-                {soloScore} <Text style={{ fontSize: 18 }}>pts</Text>
-              </Text>
-              <Text style={[styles.performanceMsg, { color: colors.mutedForeground }]}>{performanceMsg}</Text>
-            </>
-          ) : (
-            <>
-              <Text style={[styles.winnerName, { color: gameColor }]}>
-                {isTie
-                  ? `${winners.map(w => w.name).join(' & ')} tie!`
-                  : `${winners[0].name} wins!`}
-              </Text>
-              {maxScore > 0 && (
-                <Text style={[styles.winnerScore, { color: colors.mutedForeground }]}>
-                  {isTie ? `${maxScore} pts each` : `${maxScore} points`}
-                </Text>
+        {isSolo ? (
+          <>
+            {/* Solo: Pip cheers your score */}
+            <Animated.View style={[styles.trophySection, { opacity: trophyOpacity }]}>
+              <Animated.View style={{ transform: [{ scale: trophyScale }] }}>
+                <Sticker size={120} fill={colors.sunshineSoft} tilt={-4}>
+                  <Mascot size={92} mood="cheer" />
+                </Sticker>
+              </Animated.View>
+              <Text style={[styles.endTitle, { color: colors.foreground }]}>{endTitle}</Text>
+              <CountUp value={soloScore} delay={300} style={[styles.winnerName, { color: colors.primary }]} />
+              <Text style={[styles.pipNote, { color: colors.primary, textAlign: 'center' }]}>{performanceMsg}</Text>
+            </Animated.View>
+            <Animated.View style={[styles.statRow, { opacity: contentOpacity }]}>
+              <StatChip label="Score" value={`${soloScore}`} color={colors.primary} />
+              <StatChip label="Rounds" value={`${session.round}`} color={colors.primary} />
+              {soloBestStreak > 0 && (
+                <StatChip label="Best streak" value={`${soloBestStreak}`} color={colors.primary} />
               )}
-            </>
-          )}
-        </Animated.View>
+            </Animated.View>
+          </>
+        ) : (
+          <>
+            {/* Group: results on a postcard, winner stamped on */}
+            <FadeInUp>
+              <Text style={[styles.kicker, { color: colors.mutedForeground }]}>
+                {session.gameName.toUpperCase()} · {session.round} ROUNDS
+              </Text>
+              <Text style={[styles.wrapTitle, { color: colors.foreground }]}>{endTitle}</Text>
+            </FadeInUp>
 
-        {/* Solo stat chips */}
-        {isSolo && (
-          <Animated.View style={[styles.statRow, { opacity: contentOpacity }]}>
-            <StatChip label="Score" value={`${soloScore}`} color={gameColor} />
-            <StatChip label="Rounds" value={`${session.round}`} color={gameColor} />
-            {soloBestStreak > 0 && (
-              <StatChip label="Best streak" value={`${soloBestStreak}`} color={gameColor} />
-            )}
-          </Animated.View>
-        )}
-
-        {/* Recap line */}
-        <Animated.View style={[styles.recapBox, { backgroundColor: gameColor + '14', borderRadius: 18, opacity: contentOpacity }]}>
-          <Text style={[styles.recapText, { color: gameColor }]}>
-            {isSolo ? performanceMsg : recapLine}
-          </Text>
-        </Animated.View>
-
-        {/* Scoreboard — group only */}
-        {!isSolo && (
-          <Animated.View style={[styles.scoreSection, { backgroundColor: colors.card, borderRadius: 20, opacity: contentOpacity }]}>
-            <Text style={[styles.scoreSectionTitle, { color: colors.foreground }]}>Final Scores</Text>
-            <View style={styles.scoreRows}>
+            <FadeInUp delay={120} style={[styles.postcard, { shadowColor: colors.navy }]}>
+              <Stamp delay={650} tilt={10} style={[styles.stamp, { borderColor: colors.coral }]}>
+                <Text style={[styles.stampLabel, { color: colors.coral }]}>{isTie ? "IT'S A" : 'WINNER'}</Text>
+                <Text style={[styles.stampName, { color: colors.coral }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {isTie ? 'TIE!' : winners[0].name}
+                </Text>
+              </Stamp>
+              <Text style={[styles.postcardGreeting, { color: colors.primary }]}>Greetings from round {session.round}!</Text>
               {sorted.map((p, i) => {
-                const isWinner = i === 0;
                 const score = session.scores[p.id] ?? 0;
                 return (
                   <View
                     key={p.id}
-                    style={[
-                      styles.scoreRow,
-                      { backgroundColor: isWinner ? gameColor + '12' : 'transparent', borderRadius: 14 },
-                    ]}
+                    style={[styles.postRow, { borderBottomWidth: i === sorted.length - 1 ? 0 : 1, borderBottomColor: colors.border }]}
                   >
-                    <View style={[styles.rankBubble, { backgroundColor: isWinner ? gameColor : colors.muted }]}>
-                      <Text style={[styles.rankText, { color: isWinner ? '#FFF' : colors.mutedForeground }]}>
-                        {isWinner ? <Feather name="award" size={14} color="#FFF" /> : `${i + 1}`}
-                      </Text>
+                    <Text style={[styles.postRank, { color: colors.coral }]}>{i + 1}</Text>
+                    <View style={[styles.avatar, { backgroundColor: AVATAR_TONES[i % AVATAR_TONES.length] }]}>
+                      <Text style={styles.avatarText}>{(p.name || '?').charAt(0).toUpperCase()}</Text>
                     </View>
-                    <Text
-                      style={[styles.scoreRowName, { color: colors.foreground, fontFamily: isWinner ? 'Fredoka_600SemiBold' : 'Nunito_600SemiBold' }]}
-                      numberOfLines={1}
-                    >
-                      {p.name}
-                    </Text>
-                    <Text style={[styles.scoreRowPoints, { color: isWinner ? gameColor : colors.foreground }]}>
-                      {score}
-                      <Text style={[styles.ptsLabel, { color: colors.mutedForeground }]}> pts</Text>
-                    </Text>
+                    <Text style={[styles.postName, { color: colors.foreground }]} numberOfLines={1}>{p.name}</Text>
+                    <CountUp value={score} delay={250 + i * 120} style={[styles.postScore, { color: colors.foreground }]} />
                   </View>
                 );
               })}
-            </View>
-          </Animated.View>
+            </FadeInUp>
+
+            {/* Pip's handwritten recap */}
+            <FadeInUp delay={300} style={styles.pipRecap}>
+              <Sticker size={56} fill={colors.sunshineSoft} tilt={-6} delay={900}>
+                <Mascot size={42} mood="cheer" />
+              </Sticker>
+              <Text style={[styles.pipNote, { color: colors.foreground, flex: 1 }]}>{recapLine}</Text>
+            </FadeInUp>
+          </>
         )}
 
         {/* Solo detailed card */}
@@ -253,7 +244,7 @@ export default function EndScreen() {
                 return acc;
               }, {}),
             ).map(([id, v]) => (
-              <Text key={id} style={{ fontFamily: 'Nunito_700Bold', fontSize: 15, color: gameColor }}>
+              <Text key={id} style={{ fontFamily: 'DMSans_700Bold', fontSize: 15, color: gameColor }}>
                 {session.director.levels[id] > 0 ? `${v.name} is now a ${LEVEL_NAMES[session.director.levels[id]]}` : v.name}
               </Text>
             ))}
@@ -262,24 +253,16 @@ export default function EndScreen() {
 
         {/* Actions */}
         <Animated.View style={[styles.actions, { opacity: contentOpacity }]}>
-          <AnimatedPressable
-            onPress={handlePlayAgain}
-            style={[styles.btn, styles.btnPrimary, { backgroundColor: gameColor }]}
-          >
-            <Feather name="rotate-ccw" size={18} color="#FFF" />
-            <Text style={styles.btnPrimaryText}>Play Again</Text>
-          </AnimatedPressable>
-
-          <AnimatedPressable
+          <ChunkyButton label="Play again" size="lg" color={colors.primary} deep={colors.primaryDark} onPress={handlePlayAgain} />
+          <ChunkyButton
+            label="Gimme a different game"
+            color={colors.sunshine}
+            deep={colors.sunshineDark}
+            textColor={colors.foreground}
             onPress={handleTryAnother}
-            style={[styles.btn, styles.btnSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <Feather name="grid" size={18} color={colors.foreground} />
-            <Text style={[styles.btnSecondaryText, { color: colors.foreground }]}>Try Another Game</Text>
-          </AnimatedPressable>
-
+          />
           <Pressable onPress={handleHome} style={styles.backHome}>
-            <Text style={[styles.backHomeText, { color: colors.mutedForeground }]}>Back Home</Text>
+            <Text style={[styles.backHomeText, { color: colors.primary }]}>Back home</Text>
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -297,30 +280,52 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2, shadowRadius: 20, elevation: 8, marginBottom: 4,
   },
-  endTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, textAlign: 'center', letterSpacing: -0.3 },
-  winnerName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 30, textAlign: 'center' },
-  winnerScore: { fontFamily: 'Nunito_600SemiBold', fontSize: 16 },
-  performanceMsg: { fontFamily: 'Nunito_400Regular', fontSize: 16, fontStyle: 'italic', textAlign: 'center', lineHeight: 22 },
+  endTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 22, textAlign: 'center', letterSpacing: -0.3 },
+  winnerName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 44, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  winnerScore: { fontFamily: 'DMSans_500Medium', fontSize: 16 },
+  performanceMsg: { fontFamily: 'DMSans_400Regular', fontSize: 16, fontStyle: 'italic', textAlign: 'center', lineHeight: 22 },
   statRow: { flexDirection: 'row', gap: 10 },
   recapBox: { paddingHorizontal: 20, paddingVertical: 16 },
-  recapText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, textAlign: 'center', fontStyle: 'italic', lineHeight: 22 },
+  recapText: { fontFamily: 'DMSans_500Medium', fontSize: 15, textAlign: 'center', fontStyle: 'italic', lineHeight: 22 },
+  kicker: { fontFamily: 'DMSans_700Bold', fontSize: 12, letterSpacing: 2 },
+  wrapTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 30, letterSpacing: -0.6, lineHeight: 34, marginTop: 2 },
+  postcard: {
+    backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 8,
+    transform: [{ rotate: '-1deg' }],
+    shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 4,
+  },
+  postcardGreeting: { fontFamily: 'Caveat_600SemiBold', fontSize: 26, marginBottom: 4, paddingRight: 90 },
+  stamp: {
+    position: 'absolute', top: -18, right: 12, zIndex: 2, width: 88, height: 88, borderRadius: 44,
+    borderWidth: 3, borderStyle: 'dashed', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
+  },
+  stampLabel: { fontFamily: 'DMSans_700Bold', fontSize: 10, letterSpacing: 1.5 },
+  stampName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 19, maxWidth: 74, textAlign: 'center' },
+  postRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
+  postRank: { fontFamily: 'Caveat_600SemiBold', fontSize: 26, width: 18, textAlign: 'center' },
+  avatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15, color: '#FFFFFF' },
+  postName: { flex: 1, fontFamily: 'DMSans_700Bold', fontSize: 17 },
+  postScore: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 24, fontVariant: ['tabular-nums'] },
+  pipRecap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pipNote: { fontFamily: 'Caveat_600SemiBold', fontSize: 21, lineHeight: 24 },
   scoreSection: { padding: 18, gap: 14 },
-  scoreSectionTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18 },
+  scoreSectionTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18 },
   scoreRows: { gap: 4 },
   scoreRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingVertical: 10, paddingHorizontal: 10,
   },
   rankBubble: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  rankText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 13 },
+  rankText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 13 },
   scoreRowName: { flex: 1, fontSize: 17 },
-  scoreRowPoints: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22 },
-  ptsLabel: { fontFamily: 'Nunito_400Regular', fontSize: 13 },
+  scoreRowPoints: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 22 },
+  ptsLabel: { fontFamily: 'DMSans_400Regular', fontSize: 13 },
   soloDetailCard: { padding: 18, gap: 14 },
   soloStatGrid: { flexDirection: 'row', gap: 8 },
   soloStat: { flex: 1, alignItems: 'center', gap: 4 },
-  soloStatVal: { fontFamily: 'Fredoka_600SemiBold', fontSize: 26 },
-  soloStatLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 12 },
+  soloStatVal: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 26 },
+  soloStatLabel: { fontFamily: 'DMSans_500Medium', fontSize: 12 },
   actions: { gap: 12, paddingTop: 4 },
   btn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -330,9 +335,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2, shadowRadius: 12, elevation: 5,
   },
-  btnPrimaryText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: '#FFF' },
+  btnPrimaryText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18, color: '#FFF' },
   btnSecondary: { borderWidth: 1.5 },
-  btnSecondaryText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17 },
+  btnSecondaryText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 17 },
   backHome: { alignItems: 'center', paddingVertical: 10 },
-  backHomeText: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
+  backHomeText: { fontFamily: 'DMSans_700Bold', fontSize: 15 },
 });

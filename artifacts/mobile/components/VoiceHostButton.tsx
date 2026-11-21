@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   text: {
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'DMSans_700Bold',
     fontSize: 13,
   },
 });

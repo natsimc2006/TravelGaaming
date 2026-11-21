@@ -7,13 +7,13 @@ import { ALL_PACKS } from '@/data/packs';
 import { useColors } from '@/hooks/useColors';
 
 const TAG_COLORS: Record<string, string> = {
-  car: '#FF6B3D',
-  dinner: '#4ECDC4',
-  calm: '#8B5CF6',
-  bedtime: '#6366F1',
-  long: '#F59E0B',
-  'all-ages': '#10B981',
-  waiting: '#F59E0B',
+  car: '#1D5C78',
+  dinner: '#2F8C7E',
+  calm: '#9ED3D6',
+  bedtime: '#123E52',
+  long: '#F2B84B',
+  'all-ages': '#D45A3E',
+  waiting: '#F2B84B',
 };
 
 export default function PacksScreen() {
@@ -31,7 +31,7 @@ export default function PacksScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerTitle, { color: colors.foreground }]}>Game Packs</Text>
             <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-              New content bundles, expanding the Game Host library.
+              New content bundles, expanding the Gimme a Game library.
             </Text>
           </View>
         </View>
@@ -139,27 +139,27 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  headerTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, letterSpacing: -0.3 },
-  headerSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
+  headerTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 22, letterSpacing: -0.3 },
+  headerSub: { fontFamily: 'DMSans_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
   list: { padding: 16, gap: 14 },
   card: { padding: 16, gap: 14 },
   cardHeader: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   packIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
-  packName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
+  packName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 16 },
   badge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 100 },
-  badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#FFF' },
-  packDesc: { fontFamily: 'Nunito_400Regular', fontSize: 13, lineHeight: 18 },
+  badgeText: { fontFamily: 'DMSans_700Bold', fontSize: 11, color: '#FFF' },
+  packDesc: { fontFamily: 'DMSans_400Regular', fontSize: 13, lineHeight: 18 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100 },
-  tagText: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
+  tagText: { fontFamily: 'DMSans_700Bold', fontSize: 11 },
   comingSoonCard: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 14 },
-  csTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15 },
-  csSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
+  csTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15 },
+  csSub: { fontFamily: 'DMSans_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
   futureCard: { padding: 18, gap: 14 },
-  futureTitle: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 1 },
+  futureTitle: { fontFamily: 'DMSans_700Bold', fontSize: 11, letterSpacing: 1 },
   futureList: { gap: 16 },
   futureItem: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  futureItemLabel: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
-  futureItemSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, marginTop: 2 },
+  futureItemLabel: { fontFamily: 'DMSans_700Bold', fontSize: 15 },
+  futureItemSub: { fontFamily: 'DMSans_400Regular', fontSize: 12, marginTop: 2 },
 });

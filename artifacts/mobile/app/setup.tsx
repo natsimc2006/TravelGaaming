@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AnimatedPressable from '@/components/AnimatedPressable';
 import ChunkyButton from '@/components/ChunkyButton';
 import { GameTile } from '@/components/GameGlyph';
+import { FadeInUp } from '@/components/Motion';
 import { GAME_COLORS, GAME_COLORS_DEEP } from '@/data/gameColors';
 import { GAMES } from '@/data/games';
 import { useGame } from '@/context/GameContext';
@@ -121,7 +122,7 @@ function PlayStyleToggle({
 }) {
   const colors = useColors();
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy }]}>
       <Text style={[styles.cardTitle, { color: colors.foreground }]}>Play style</Text>
       <View style={styles.toggleRow}>
         {([
@@ -235,7 +236,7 @@ export default function SetupScreen() {
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { position: 'absolute', top: insets.top + 10, left: 16 }]}>
             <Feather name="arrow-left" size={22} color={colors.foreground} />
           </Pressable>
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Nunito_400Regular', fontSize: 16, textAlign: 'center' }]}>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'DMSans_400Regular', fontSize: 16, textAlign: 'center' }]}>
             Give me a second{'\n'}picking something good…
           </Text>
         </View>
@@ -248,35 +249,26 @@ export default function SetupScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={22} color={colors.foreground} />
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.muted }]} accessibilityLabel="Back">
+            <Feather name="arrow-left" size={20} color={colors.foreground} />
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-              {isSolo ? 'Solo Challenge' : 'Before we unleash the fun…'}
-            </Text>
-            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-              {isSolo
-                ? 'Just you. The app will host your solo session.'
-                : 'A few tiny details so the app can host properly.'}
-            </Text>
-          </View>
         </View>
 
         <ScrollView
-          contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Game banner */}
-          <View style={[styles.gameBanner, { backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border }]}>
-            <GameTile gameKey={game.colorKey} size={50} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.bannerName, { color: gameColor }]}>{game.name}</Text>
+          {/* Game hero — big sticker slaps onto the page */}
+          <View style={styles.gameBanner}>
+            <GameTile gameKey={game.colorKey} size={92} delay={60} />
+            <FadeInUp delay={120} style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.bannerName, { color: colors.foreground }]}>{game.name}</Text>
+              <Text style={[styles.bannerHook, { color: colors.foreground }]}>{game.hook}</Text>
               <Text style={[styles.bannerMeta, { color: colors.mutedForeground }]}>
-                {game.estimatedRoundLength} · {game.hostType}
+                {isSolo ? 'Solo challenge' : game.estimatedRoundLength} · {game.hostType}
               </Text>
-            </View>
+            </FadeInUp>
           </View>
 
           {/* Solo banner */}
@@ -293,21 +285,21 @@ export default function SetupScreen() {
           )}
 
           {/* Players */}
-          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy }]}>
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>
               {isSolo ? "That's you." : "Who's playing?"}
             </Text>
             <View style={styles.countRow}>
               <Pressable
                 onPress={() => setPlayerCount(c => Math.max(1, c - 1))}
-                style={[styles.countBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}
+                style={[styles.countBtn, { backgroundColor: colors.muted }]}
               >
                 <Feather name="minus" size={20} color={colors.foreground} />
               </Pressable>
               <Text style={[styles.countNum, { color: gameColor }]}>{playerCount}</Text>
               <Pressable
                 onPress={() => setPlayerCount(c => Math.min(10, c + 1))}
-                style={[styles.countBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}
+                style={[styles.countBtn, { backgroundColor: colors.muted }]}
               >
                 <Feather name="plus" size={20} color={colors.foreground} />
               </Pressable>
@@ -324,10 +316,8 @@ export default function SetupScreen() {
                   style={[
                     styles.playerChip,
                     {
-                      backgroundColor: colors.card,
+                      backgroundColor: colors.muted,
                       borderRadius: 14,
-                      borderWidth: 1,
-                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -349,7 +339,7 @@ export default function SetupScreen() {
           </View>
 
           {/* Round length */}
-          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy }]}>
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>How long?</Text>
             <View style={styles.optRow}>
               {ROUND_OPTIONS.map(opt => (
@@ -365,7 +355,7 @@ export default function SetupScreen() {
           </View>
 
           {/* Age */}
-          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy }]}>
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>Who's in the mix?</Text>
             <View style={styles.optRow}>
               {AGE_OPTIONS.map(opt => (
@@ -381,9 +371,9 @@ export default function SetupScreen() {
           </View>
 
           {/* Difficulty */}
-          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18 }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 20, shadowColor: colors.navy }]}>
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>Where should we start?</Text>
-            <Text style={[styles.optSub, { color: colors.mutedForeground, textAlign: 'left', marginTop: -8 }]}>Pip adapts to each player as you go.</Text>
+            <Text style={[styles.pipNote, { color: colors.primary }]}>Pip adjusts as you go, so don't overthink it.</Text>
             <View style={styles.optRow}>
               {DIFF_OPTIONS.map(opt => (
                 <LargeOptionCard
@@ -404,16 +394,16 @@ export default function SetupScreen() {
 
           <HowToPlay game={game} color={gameColor} />
 
-          <ChunkyButton
-            label={isSolo ? 'Start Solo Challenge' : 'Start Hosting'}
-            size="lg"
-            color={gameColor}
-            deep={game ? GAME_COLORS_DEEP[game.colorKey] : colors.primaryDark}
-            left={<Feather name="play" size={20} color="#FFF" />}
-            onPress={() => doStart(roundLength, difficulty)}
-            style={{ marginTop: 4 }}
-          />
         </ScrollView>
+        <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 12) + 4, backgroundColor: colors.background }]}>
+          <ChunkyButton
+            label={isSolo ? 'Start my challenge' : "Let's play"}
+            size="lg"
+            color={colors.primary}
+            deep={colors.primaryDark}
+            onPress={() => doStart(roundLength, difficulty)}
+          />
+        </View>
       </View>
     </>
   );
@@ -424,53 +414,56 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
     gap: 10,
   },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  headerTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, letterSpacing: -0.3 },
-  headerSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
-  container: { padding: 16, gap: 14 },
-  gameBanner: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  dock: { paddingHorizontal: 20, paddingTop: 10 },
+  bannerHook: { fontFamily: 'DMSans_500Medium', fontSize: 15, lineHeight: 20 },
+  headerTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 20, letterSpacing: -0.3 },
+  headerSub: { fontFamily: 'DMSans_400Regular', fontSize: 13, marginTop: 3, lineHeight: 18 },
+  container: { paddingHorizontal: 20, paddingTop: 8, gap: 16 },
+  gameBanner: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 16 },
   bannerIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  bannerName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18 },
-  bannerMeta: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 2 },
+  bannerName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 28, letterSpacing: -0.6, lineHeight: 31 },
+  bannerMeta: { fontFamily: 'DMSans_400Regular', fontSize: 13, marginTop: 2 },
   soloBanner: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 14 },
-  soloTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15 },
-  soloSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
-  card: { padding: 16, gap: 14 },
-  cardTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16 },
+  soloTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15 },
+  soloSub: { fontFamily: 'DMSans_400Regular', fontSize: 13, marginTop: 4, lineHeight: 18 },
+  card: { padding: 16, gap: 14, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 2 },
+  cardTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18, letterSpacing: -0.3 },
   countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
   countBtn: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  countNum: { fontFamily: 'Fredoka_600SemiBold', fontSize: 44, minWidth: 52, textAlign: 'center' },
-  soloHint: { fontFamily: 'Nunito_400Regular', fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+  countNum: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 44, minWidth: 52, textAlign: 'center' },
+  soloHint: { fontFamily: 'DMSans_400Regular', fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
   playerChips: { gap: 8 },
   playerChip: { flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
   playerNum: { width: 40, height: 48, alignItems: 'center', justifyContent: 'center' },
-  playerNumText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: '#FFF' },
+  playerNumText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15, color: '#FFF' },
   playerInput: {
     flex: 1,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'DMSans_400Regular',
     fontSize: 15,
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
   optRow: { flexDirection: 'row', gap: 10 },
+  pipNote: { fontFamily: 'Caveat_600SemiBold', fontSize: 19, marginTop: -10 },
   optCard: {
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 6,
     gap: 6,
   },
-  optLabel: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, textAlign: 'center' },
-  optSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, textAlign: 'center', lineHeight: 15 },
+  optLabel: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 14, textAlign: 'center' },
+  optSub: { fontFamily: 'DMSans_400Regular', fontSize: 11, textAlign: 'center', lineHeight: 15 },
   toggleRow: { flexDirection: 'row', gap: 10 },
   toggleCard: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 6, gap: 6 },
   howToCard: { padding: 16, gap: 10 },
   howToRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  howToTitle: { fontFamily: 'Nunito_700Bold', fontSize: 15, flex: 1 },
-  howToText: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 21 },
+  howToTitle: { fontFamily: 'DMSans_700Bold', fontSize: 15, flex: 1 },
+  howToText: { fontFamily: 'DMSans_400Regular', fontSize: 14, lineHeight: 21 },
   startBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -485,5 +478,5 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginTop: 4,
   },
-  startBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: '#FFF' },
+  startBtnText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 20, color: '#FFF' },
 });

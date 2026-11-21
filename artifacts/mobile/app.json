@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Game Host",
+    "name": "Gimme a Game",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFF8F0"
+      "backgroundColor": "#FCFAF6"
     },
     "ios": {
       "supportsTablet": false,
