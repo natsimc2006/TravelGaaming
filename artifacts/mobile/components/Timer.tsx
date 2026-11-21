@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 
 interface TimerProps {
@@ -32,10 +33,13 @@ export default function Timer({ seconds, running, onEnd, size = 'md' }: TimerPro
         setRemaining(prev => {
           if (prev <= 1) {
             clearInterval(intervalRef.current!);
+            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
             onEnd?.();
             return 0;
           }
           if (prev <= 6) pulse();
+          // A light tick on the last three seconds — felt more than seen, handy in a moving car.
+          if (prev <= 4 && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
           return prev - 1;
         });
       }, 1000);
@@ -91,7 +95,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
 });

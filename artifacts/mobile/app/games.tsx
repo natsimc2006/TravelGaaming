@@ -133,14 +133,12 @@ export default function GamesScreen() {
 
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Back">
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.muted, borderRadius: 22 }]} accessibilityLabel="Back">
             <Feather name="arrow-left" size={22} color={colors.foreground} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>All Games</Text>
-            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-              Pick a game. We'll do the hosting.
-            </Text>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>All games</Text>
+            <Text style={[styles.headerSub, { color: colors.primary }]}>Pick one, Pip does the rest.</Text>
           </View>
         </View>
 
@@ -222,7 +220,7 @@ export default function GamesScreen() {
               </Pressable>
             </View>
           ) : (
-            sorted.map(g => <GameCard key={g.id} game={g} variant="list" />)
+            sorted.map((g, i) => <GameCard key={g.id} game={g} variant="list" index={i} />)
           )}
         </ScrollView>
       </View>
@@ -246,8 +244,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginTop: 2,
   },
-  headerTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, letterSpacing: -0.3 },
-  headerSub: { fontFamily: 'Nunito_400Regular', fontSize: 14, marginTop: 2 },
+  headerTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 30, letterSpacing: -0.6 },
+  headerSub: { fontFamily: 'Caveat_600SemiBold', fontSize: 21, marginTop: 0 },
 
   filterBlock: { borderBottomWidth: 1, paddingBottom: 6 },
   filterRow: {
@@ -267,25 +265,25 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   resultActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  resultCount: { fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
-  clearLink: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  resultCount: { fontFamily: 'DMSans_500Medium', fontSize: 14 },
+  clearLink: { fontFamily: 'DMSans_700Bold', fontSize: 14 },
   sortBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 100,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 1,
   },
-  sortBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  sortBtnText: { fontFamily: 'DMSans_700Bold', fontSize: 13 },
 
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(42, 35, 80, 0.35)', justifyContent: 'flex-end' },
   sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 16, paddingTop: 10, gap: 4 },
   sheetHandle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, marginBottom: 10 },
-  sheetTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, paddingHorizontal: 8, marginBottom: 6 },
+  sheetTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 20, paddingHorizontal: 8, marginBottom: 6 },
   sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 14, borderRadius: 16 },
-  sheetRowText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 16 },
+  sheetRowText: { flex: 1, fontFamily: 'DMSans_700Bold', fontSize: 16 },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 10 },
-  emptyTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, marginTop: 8 },
-  emptyText: { fontFamily: 'Nunito_400Regular', fontSize: 15, textAlign: 'center' },
+  emptyTitle: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 22, marginTop: 8 },
+  emptyText: { fontFamily: 'DMSans_400Regular', fontSize: 15, textAlign: 'center' },
   showAllBtn: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, marginTop: 8 },
-  showAllBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: '#FFF' },
+  showAllBtnText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 16, color: '#FFF' },
 });

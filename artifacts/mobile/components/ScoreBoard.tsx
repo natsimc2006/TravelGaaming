@@ -84,7 +84,7 @@ export default function ScoreBoard({
                 style={[
                   styles.name,
                   { color: colors.foreground },
-                  isCurrent && { fontFamily: 'Fredoka_600SemiBold', color: accentColor },
+                  isCurrent && { fontFamily: 'BricolageGrotesque_800ExtraBold', color: accentColor },
                 ]}
                 numberOfLines={1}
               >
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankText: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 12,
   },
   nameRow: {
@@ -136,18 +136,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   name: {
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: 'DMSans_500Medium',
     fontSize: 16,
     flex: 1,
   },
   score: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 20,
     minWidth: 40,
     textAlign: 'right',
   },
   pts: {
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'DMSans_400Regular',
     fontSize: 12,
   },
   youBadge: {
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   youLabel: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 9,
     color: '#FFF',
     letterSpacing: 0.5,
@@ -179,12 +179,12 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   compactName: {
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: 'DMSans_500Medium',
     fontSize: 12,
     maxWidth: 60,
   },
   compactScore: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 14,
   },
 });

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AnimatedPressable from '@/components/AnimatedPressable';
+import { DropIn } from '@/components/Motion';
 import HostMessageBanner from '@/components/HostMessageBanner';
 import ScoreBoard from '@/components/ScoreBoard';
 import Timer from '@/components/Timer';
@@ -288,18 +289,18 @@ export default function PlayScreen() {
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
 
         {/* Header */}
-        <View style={[styles.topBar, { backgroundColor: gameColor, paddingTop: 12, paddingBottom: 14 }]}>
+        <View style={[styles.topBar, { backgroundColor: colors.background, paddingTop: 10, paddingBottom: 10 }]}>
           <View style={styles.topLeft}>
-            <Text style={styles.gameName} numberOfLines={1}>{session.gameName}</Text>
+            <Text style={[styles.gameName, { color: colors.foreground }]} numberOfLines={1}>{session.gameName}</Text>
             <View style={styles.pipRow}>
               {Array.from({ length: Math.min(session.totalRounds, 20) }, (_, i) => (
                 <View
                   key={i}
-                  style={[styles.pip, { backgroundColor: i < session.round ? '#FFFFFF' : 'rgba(255,255,255,0.35)', flex: 1 }]}
+                  style={[styles.pip, { backgroundColor: i < session.round ? gameColor : colors.border, flex: 1 }]}
                 />
               ))}
             </View>
-            <Text style={styles.roundText}>Round {session.round} of {session.totalRounds}  ·  {LEVEL_NAMES[session.level]}</Text>
+            <Text style={[styles.roundText, { color: colors.mutedForeground }]}>Round {session.round} of {session.totalRounds}  ·  {LEVEL_NAMES[session.level]}</Text>
           </View>
           <View style={styles.topRight}>
             <Pressable
@@ -307,15 +308,16 @@ export default function PlayScreen() {
                 if (voiceEnabled) stopHostVoice();
                 setVoiceEnabled(v => !v);
               }}
-              style={styles.headerIconBtn}
+              style={[styles.headerIconBtn, { backgroundColor: colors.muted }]}
+              accessibilityLabel={voiceEnabled ? 'Mute Pip' : 'Unmute Pip'}
             >
-              <Feather name={voiceEnabled ? 'volume-2' : 'volume-x'} size={18} color="#FFF" />
+              <Feather name={voiceEnabled ? 'volume-2' : 'volume-x'} size={18} color={colors.foreground} />
             </Pressable>
-            <Pressable onPress={() => setShowScores(s => !s)} style={styles.headerIconBtn}>
-              <Feather name="award" size={18} color="#FFF" />
+            <Pressable onPress={() => setShowScores(s => !s)} style={[styles.headerIconBtn, { backgroundColor: colors.muted }]} accessibilityLabel="Scores">
+              <Feather name="award" size={18} color={colors.foreground} />
             </Pressable>
-            <Pressable onPress={handleExitGame} style={styles.headerIconBtn}>
-              <Feather name="x" size={18} color="#FFF" />
+            <Pressable onPress={handleExitGame} style={[styles.headerIconBtn, { backgroundColor: colors.muted }]} accessibilityLabel="End game">
+              <Feather name="x" size={18} color={colors.foreground} />
             </Pressable>
           </View>
         </View>
@@ -623,11 +625,11 @@ const exitStyles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
   },
-  title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, textAlign: 'center' },
-  sub: { fontFamily: 'Nunito_400Regular', fontSize: 14, textAlign: 'center' },
+  title: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 20, textAlign: 'center' },
+  sub: { fontFamily: 'DMSans_400Regular', fontSize: 14, textAlign: 'center' },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btn: { paddingVertical: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  btnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15 },
+  btnText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15 },
 });
 
 /* ─── Sub-components ─── */
@@ -673,16 +675,18 @@ function TimerRow({ timerKey, timerSeconds, timerRunning, onToggle, onEnd, color
   );
 }
 
+/** The round's letter on a number plate — drops in with a bounce each time the letter changes. */
 function BigLetterCard({ letter, color }: { letter: string; color: string }) {
+  const colors = useColors();
   return (
-    <PromptFade triggerKey={letter}>
-      <View style={{ backgroundColor: darken(color, 0.25), borderRadius: 32, paddingBottom: 8, alignSelf: 'center' }}>
-        <View style={[styles.bigLetterBox, { backgroundColor: color, borderRadius: 32 }]}>
-          <View pointerEvents="none" style={styles.bigLetterShine} />
-          <Text style={styles.bigLetter}>{letter}</Text>
+    <DropIn trigger={letter} tilt={-2} style={{ alignSelf: 'center' }}>
+      <View style={[styles.plateOuter, { shadowColor: colors.navy }]}>
+        <View style={[styles.plate, { borderColor: colors.foreground }]}>
+          <Text style={[styles.plateLabel, { color }]}>YOUR LETTER</Text>
+          <Text style={[styles.plateLetter, { color: colors.foreground }]}>· {letter} ·</Text>
         </View>
       </View>
-    </PromptFade>
+    </DropIn>
   );
 }
 
@@ -711,10 +715,10 @@ function ScoreTapGrid({ session, currentPlayer, color, onScore }: any) {
               style={[styles.scoreTapCard, { backgroundColor: isCurrent ? color : colors.muted, borderRadius: 14, flex: 1 }]}
               scaleDown={0.93}
             >
-              <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 26, color: isCurrent ? '#FFF' : colors.foreground }}>
+              <Text style={{ fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 26, color: isCurrent ? '#FFF' : colors.foreground }}>
                 {session.scores[p.id] ?? 0}
               </Text>
-              <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: isCurrent ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
+              <Text style={{ fontFamily: 'DMSans_500Medium', fontSize: 12, color: isCurrent ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
                 {p.name}
               </Text>
             </AnimatedPressable>
@@ -732,14 +736,14 @@ function TwistCard({ twist, color }: { twist: { title: string; rule: string; mul
       <View style={{ backgroundColor: colors.navy, borderRadius: 20, padding: 16, gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Feather name="zap" size={16} color="#FFD76A" />
-          <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 17, color: '#FFF', flex: 1 }}>Twist: {twist.title}</Text>
+          <Text style={{ fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 17, color: '#FFF', flex: 1 }}>Twist: {twist.title}</Text>
           {twist.multiplier > 1 && (
             <View style={{ backgroundColor: color, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 }}>
-              <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 13, color: '#FFF' }}>x{twist.multiplier} points</Text>
+              <Text style={{ fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 13, color: '#FFF' }}>x{twist.multiplier} points</Text>
             </View>
           )}
         </View>
-        <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 14.5, lineHeight: 20, color: 'rgba(255,255,255,0.88)' }}>{twist.rule}</Text>
+        <Text style={{ fontFamily: 'DMSans_500Medium', fontSize: 14.5, lineHeight: 20, color: 'rgba(255,255,255,0.88)' }}>{twist.rule}</Text>
       </View>
     </PromptFade>
   );
@@ -772,7 +776,7 @@ function FreshPromptButton({ loading, error, onPress }: { loading: boolean; erro
     >
       <Feather name={loading ? 'loader' : error ? 'alert-circle' : 'refresh-cw'} size={13} color={error ? colors.destructive : colors.mutedForeground} />
       <Text style={{
-        fontFamily: 'Nunito_700Bold',
+        fontFamily: 'DMSans_700Bold',
         fontSize: 13,
         color: error ? colors.destructive : colors.foreground,
       }}>
@@ -806,15 +810,15 @@ function SoloStreakBadge({ streak, best, color }: { streak: number; best: number
 const soloStyles = StyleSheet.create({
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
   streakBadge: { borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8 },
-  streakText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: '#FFF' },
+  streakText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15, color: '#FFF' },
   bestBadge: { borderRadius: 100, paddingHorizontal: 12, paddingVertical: 8 },
-  bestText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  bestText: { fontFamily: 'DMSans_700Bold', fontSize: 13 },
 });
 
 const FRESHNESS_CONFIG: Record<NonNullable<FreshnessTag>, { label: string; bg: string; text: string }> = {
-  new:       { label: 'New for you',        bg: '#2DB872', text: '#FFF' },
-  returning: { label: 'Back again',         bg: '#6B54D2', text: '#FFF' },
-  favourite: { label: 'Family favourite',   bg: '#E3A008', text: '#FFF' },
+  new:       { label: 'New for you',        bg: '#2F8C7E', text: '#FFF' },
+  returning: { label: 'Back again',         bg: '#1D5C78', text: '#FFF' },
+  favourite: { label: 'Family favourite',   bg: '#F2B84B', text: '#1B2A33' },
 };
 
 function FreshnessBadge({ tag }: { tag: NonNullable<FreshnessTag> }) {
@@ -840,7 +844,7 @@ const freshStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#FFF' },
+  badgeText: { fontFamily: 'DMSans_700Bold', fontSize: 13, color: '#FFF' },
 });
 
 function AlphabetGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning, timerKey, onTimerToggle, onTimerEnd, onScore, onNextLetter, onNewCategory, onNextRound, currentPlayer }: any) {
@@ -997,7 +1001,7 @@ function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAn
                 opacity: isLatest ? 1 : 0.65,
               }]}>
                 <Text style={[styles.clueNum, { color: gameColor }]}>Clue {i + 1}</Text>
-                <Text style={[styles.clueText, { color: colors.foreground, fontFamily: isLatest ? 'Nunito_700Bold' : 'Nunito_400Regular' }]}>
+                <Text style={[styles.clueText, { color: colors.foreground, fontFamily: isLatest ? 'DMSans_700Bold' : 'DMSans_400Regular' }]}>
                   {s.currentClues[i]}
                 </Text>
               </View>
@@ -1144,27 +1148,26 @@ function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAn
   );
 }
 
-function ClueCard({ index, text, color }: { index: number; text: string; color: string }) {
+/** One line in the notebook — slides in, numbered in Pip's handwriting. */
+function ClueCard({ index, text, last }: { index: number; text: string; color?: string; last?: boolean }) {
   const colors = useColors();
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.spring(enter, { toValue: 1, delay: index * 60, useNativeDriver: true, speed: 16, bounciness: 6 }).start();
+    Animated.spring(enter, { toValue: 1, delay: 120 + index * 70, useNativeDriver: true, speed: 16, bounciness: 6 }).start();
   }, []);
   return (
     <Animated.View
       style={[
-        styles.clueCardRow,
+        styles.clueRow,
         {
-          backgroundColor: colors.card,
-          shadowColor: colors.navy,
+          borderBottomWidth: last ? 0 : 1,
+          borderBottomColor: '#DCE7EF',
           opacity: enter,
-          transform: [{ translateX: enter.interpolate({ inputRange: [0, 1], outputRange: [-16, 0] }) }],
+          transform: [{ translateX: enter.interpolate({ inputRange: [0, 1], outputRange: [-18, 0] }) }],
         },
       ]}
     >
-      <View style={[styles.catNum, { backgroundColor: color, borderBottomColor: darken(color, 0.22) }]}>
-        <Text style={styles.catNumText}>{index + 1}</Text>
-      </View>
+      <Text style={[styles.notebookNum, { color: colors.coral }]}>{index + 1}</Text>
       <Text style={[styles.catText, { color: colors.foreground }]}>{text}</Text>
     </Animated.View>
   );
@@ -1176,13 +1179,14 @@ function CategoryDashGame({ session, gameColor, voiceKey, voiceEnabled, timerRun
   return (
     <View style={styles.gameBlock}>
       <View style={styles.centeredSection}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Name one for each category starting with…</Text>
         <BigLetterCard letter={s.currentLetter} color={gameColor} />
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Name one for each, starting with {s.currentLetter}</Text>
       </View>
       <PromptFade triggerKey={s.currentRoundId}>
-        <View style={styles.categoriesList}>
+        <View style={[styles.notebook, { shadowColor: colors.navy }]}>
+          <View style={styles.notebookMargin} />
           {s.currentCategories.map((cat: string, i: number) => (
-            <ClueCard key={`${s.currentRoundId}-${i}`} index={i} text={cat} color={gameColor} />
+            <ClueCard key={`${s.currentRoundId}-${i}`} index={i} text={cat} last={i === s.currentCategories.length - 1} />
           ))}
         </View>
       </PromptFade>
@@ -1213,7 +1217,7 @@ function ForbiddenWordGame({ session, gameColor, voiceKey, voiceEnabled, timerRu
           {s.forbiddenWords.map((w: string, i: number) => (
             <View key={i} style={[styles.forbiddenRow, { borderBottomWidth: i < 4 ? 1 : 0, borderBottomColor: colors.border }]}>
               <View style={[styles.forbiddenDot, { backgroundColor: colors.destructive + '20' }]}>
-                <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 11, color: colors.destructive }}>✕</Text>
+                <Text style={{ fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 11, color: colors.destructive }}>✕</Text>
               </View>
               <Text style={[styles.forbiddenWord, { color: colors.destructive }]}>{w}</Text>
             </View>
@@ -1305,17 +1309,17 @@ function WouldYouRatherGame({ session, gameColor, onNext, onSelectOption, curren
 
 const wyrStyles = StyleSheet.create({
   modeBadge: { paddingHorizontal: 16, paddingVertical: 6, marginBottom: 6 },
-  modeText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
-  question: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, textAlign: 'center', marginBottom: 16 },
+  modeText: { fontFamily: 'DMSans_700Bold', fontSize: 13 },
+  question: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 22, textAlign: 'center', marginBottom: 16 },
   optionsCol: { gap: 0 },
   optionBtn: { padding: 22, gap: 6, minHeight: 90, justifyContent: 'center' },
-  optionLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
-  optionText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, lineHeight: 24 },
+  optionLabel: { fontFamily: 'DMSans_700Bold', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
+  optionText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18, lineHeight: 24 },
   orDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   orLine: { flex: 1, height: 1 },
-  orText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  orText: { fontFamily: 'DMSans_700Bold', fontSize: 14 },
   whyCard: { padding: 16 },
-  whyText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  whyText: { fontFamily: 'DMSans_500Medium', fontSize: 15, textAlign: 'center', lineHeight: 22 },
 });
 
 /* ─── Rapid Fire ─── */
@@ -1356,10 +1360,10 @@ function RapidFireGame({ session, gameColor, timerRunning, timerKey, onTimerTogg
                 style={[styles.scoreTapCard, { backgroundColor: p.id === currentPlayer?.id ? gameColor : colors.muted, borderRadius: 14, flex: 1 }]}
                 scaleDown={0.93}
               >
-                <Text style={{ fontFamily: 'Fredoka_600SemiBold', fontSize: 26, color: p.id === currentPlayer?.id ? '#FFF' : colors.foreground }}>
+                <Text style={{ fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 26, color: p.id === currentPlayer?.id ? '#FFF' : colors.foreground }}>
                   {s.playerAnswerCount[p.id] ?? 0}
                 </Text>
-                <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: p.id === currentPlayer?.id ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
+                <Text style={{ fontFamily: 'DMSans_500Medium', fontSize: 12, color: p.id === currentPlayer?.id ? '#FFFFFFCC' : colors.mutedForeground }} numberOfLines={1}>
                   {p.name}
                 </Text>
               </AnimatedPressable>
@@ -1375,12 +1379,12 @@ function RapidFireGame({ session, gameColor, timerRunning, timerKey, onTimerTogg
 
 const rfStyles = StyleSheet.create({
   promptCard: { padding: 28, alignItems: 'center', gap: 10 },
-  promptHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: '#FFFFFFAA' },
-  promptText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: '#FFF', textAlign: 'center', lineHeight: 34 },
-  promptSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: '#FFFFFFCC' },
+  promptHint: { fontFamily: 'DMSans_500Medium', fontSize: 12, color: '#FFFFFFAA' },
+  promptText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 28, color: '#FFF', textAlign: 'center', lineHeight: 34 },
+  promptSub: { fontFamily: 'DMSans_400Regular', fontSize: 13, color: '#FFFFFFCC' },
   soloTally: { alignItems: 'center', gap: 8 },
-  tallyLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
-  tallyCount: { fontFamily: 'Fredoka_600SemiBold', fontSize: 72, lineHeight: 80 },
+  tallyLabel: { fontFamily: 'DMSans_500Medium', fontSize: 14 },
+  tallyCount: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 72, lineHeight: 80 },
 });
 
 /* ─── Guess the Sound ─── */
@@ -1470,8 +1474,8 @@ function GuessSoundGame({ session, gameColor, onCorrect, onSkip, currentPlayer }
 
 const gsStyles = StyleSheet.create({
   soundCard: { padding: 28, alignItems: 'center', gap: 14 },
-  soundHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: '#FFFFFFAA' },
-  soundText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 44, color: '#FFF', textAlign: 'center', lineHeight: 52 },
+  soundHint: { fontFamily: 'DMSans_500Medium', fontSize: 13, color: '#FFFFFFAA' },
+  soundText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 44, color: '#FFF', textAlign: 'center', lineHeight: 52 },
 });
 
 /* ─── This or That ─── */
@@ -1550,13 +1554,13 @@ function ThisOrThatGame({ session, gameColor, onSelectOption, onNext, currentPla
 
 const totStyles = StyleSheet.create({
   promptRow: { alignItems: 'center', marginBottom: 8 },
-  promptLabel: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  promptLabel: { fontFamily: 'DMSans_700Bold', fontSize: 14 },
   optionsRow: { flexDirection: 'row', alignItems: 'stretch', gap: 10, minHeight: 140 },
   totBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 18, height: '100%' },
-  totText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, textAlign: 'center', lineHeight: 24 },
+  totText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18, textAlign: 'center', lineHeight: 24 },
   vsDivider: { alignItems: 'center', justifyContent: 'center', width: 36 },
-  vsText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14 },
-  skipText: { fontFamily: 'Nunito_700Bold', fontSize: 14, paddingVertical: 8 },
+  vsText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 14 },
+  skipText: { fontFamily: 'DMSans_700Bold', fontSize: 14, paddingVertical: 8 },
 });
 
 /* ─── Riddles ─── */
@@ -1650,8 +1654,8 @@ function RiddlesGame({ session, gameColor, onCorrect, onSkip, currentPlayer }: a
 
 const rdStyles = StyleSheet.create({
   riddleCard: { padding: 24, gap: 12 },
-  riddleLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.2 },
-  riddleText: { fontFamily: 'Nunito_700Bold', fontSize: 20, lineHeight: 28 },
+  riddleLabel: { fontFamily: 'DMSans_700Bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.2 },
+  riddleText: { fontFamily: 'DMSans_700Bold', fontSize: 20, lineHeight: 28 },
 });
 
 const styles = StyleSheet.create({
@@ -1663,8 +1667,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     overflow: 'hidden',
-    borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26,
   },
   pipRow: { flexDirection: 'row', gap: 3, marginTop: 6, marginBottom: 4, maxWidth: 220 },
   pip: { height: 5, borderRadius: 3 },
@@ -1676,14 +1678,13 @@ const styles = StyleSheet.create({
     width: 4,
   },
   topLeft: { gap: 2, flex: 1, paddingLeft: 4 },
-  gameName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 22, color: '#FFF' },
-  roundText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.85)' },
+  gameName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 26, letterSpacing: -0.5 },
+  roundText: { fontFamily: 'DMSans_700Bold', fontSize: 13 },
   topRight: { flexDirection: 'row', gap: 8 },
   headerIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1698,10 +1699,20 @@ const styles = StyleSheet.create({
   },
   gameBlock: { gap: 18 },
   centeredSection: { alignItems: 'center', gap: 12 },
-  sectionLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, textAlign: 'center' },
+  sectionLabel: { fontFamily: 'DMSans_500Medium', fontSize: 13, textAlign: 'center' },
   categoryCard: { padding: 20, alignItems: 'center', gap: 6 },
-  categoryHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 12 },
-  categoryName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, textAlign: 'center' },
+  categoryHint: { fontFamily: 'DMSans_500Medium', fontSize: 12 },
+  categoryName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 28, textAlign: 'center' },
+  plateOuter: {
+    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 6,
+    shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.16, shadowRadius: 12, elevation: 5,
+  },
+  plate: {
+    borderWidth: 3, borderRadius: 11, width: 230, height: 118,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  plateLabel: { fontFamily: 'DMSans_700Bold', fontSize: 11, letterSpacing: 3 },
+  plateLetter: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 74, lineHeight: 80, letterSpacing: 4 },
   bigLetterBox: {
     width: 140,
     height: 140,
@@ -1713,7 +1724,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
-  bigLetter: { fontFamily: 'Fredoka_600SemiBold', fontSize: 80, color: '#FFF' },
+  bigLetter: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 80, color: '#FFF' },
   bigLetterShine: {
     position: 'absolute', top: 6, left: 6, right: 6, height: '45%',
     borderTopLeftRadius: 27, borderTopRightRadius: 27, borderBottomLeftRadius: 40, borderBottomRightRadius: 40,
@@ -1734,7 +1745,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderBottomWidth: 4,
   },
-  timerToggleText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17 },
+  timerToggleText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 17 },
   timerDock: {
     paddingTop: 12,
     paddingHorizontal: 16,
@@ -1770,16 +1781,24 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: '#FFF' },
-  playerTurnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18 },
+  avatarText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18, color: '#FFF' },
+  playerTurnText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18 },
   pointsBanner: { padding: 16, alignItems: 'center', gap: 4 },
-  pointsBannerText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: '#FFF' },
-  pointsBannerSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: '#FFFFFFCC' },
+  pointsBannerText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 20, color: '#FFF' },
+  pointsBannerSub: { fontFamily: 'DMSans_400Regular', fontSize: 13, color: '#FFFFFFCC' },
   cluesList: { gap: 8 },
   clueCard: { padding: 14, gap: 4 },
-  clueNum: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
-  clueText: { fontFamily: 'Nunito_600SemiBold', fontSize: 17, lineHeight: 24 },
+  clueNum: { fontFamily: 'DMSans_700Bold', fontSize: 11 },
+  clueText: { fontFamily: 'DMSans_500Medium', fontSize: 17, lineHeight: 24 },
   categoriesList: { gap: 10 },
+  notebook: {
+    backgroundColor: '#FFFFFF', borderRadius: 8, paddingLeft: 52, paddingRight: 16, paddingVertical: 6,
+    transform: [{ rotate: '0.5deg' }],
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 3,
+  },
+  notebookMargin: { position: 'absolute', left: 38, top: 0, bottom: 0, width: 1.5, backgroundColor: '#E8A08F' },
+  clueRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  notebookNum: { position: 'absolute', left: -38, width: 24, textAlign: 'center', fontFamily: 'Caveat_600SemiBold', fontSize: 26 },
   clueCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1793,14 +1812,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   catNum: { width: 32, height: 32, borderRadius: 10, borderBottomWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  catNumText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: '#FFF' },
-  catText: { fontFamily: 'Nunito_700Bold', fontSize: 17, flex: 1 },
+  catNumText: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15, color: '#FFF' },
+  catText: { fontFamily: 'DMSans_500Medium', fontSize: 17, flex: 1 },
   targetCard: { padding: 28, alignItems: 'center', gap: 10 },
-  targetHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: '#FFFFFFAA' },
-  targetWord: { fontFamily: 'Fredoka_600SemiBold', fontSize: 48, color: '#FFF', textAlign: 'center', letterSpacing: -0.5 },
-  targetNote: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: '#FFFFFFAA' },
+  targetHint: { fontFamily: 'DMSans_500Medium', fontSize: 12, color: '#FFFFFFAA' },
+  targetWord: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 48, color: '#FFF', textAlign: 'center', letterSpacing: -0.5 },
+  targetNote: { fontFamily: 'DMSans_400Regular', fontSize: 11, color: '#FFFFFFAA' },
   forbiddenCard: { overflow: 'hidden' },
-  forbiddenHeader: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, padding: 14, paddingBottom: 10 },
+  forbiddenHeader: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 14, padding: 14, paddingBottom: 10 },
   forbiddenRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1809,7 +1828,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   forbiddenDot: { width: 24, height: 24, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
-  forbiddenWord: { fontFamily: 'Nunito_700Bold', fontSize: 18 },
+  forbiddenWord: { fontFamily: 'DMSans_700Bold', fontSize: 18 },
 
   // What Am I – guess panel
   guessPanel: {
@@ -1817,11 +1836,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   guessPanelTitle: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 17,
   },
   guessInput: {
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'DMSans_400Regular',
     fontSize: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1829,7 +1848,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   guessResultText: {
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'DMSans_700Bold',
     fontSize: 14,
   },
   guessBtnRow: {
@@ -1843,7 +1862,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   guessBtnText: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 15,
   },
 
@@ -1854,11 +1873,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   answerRevealLabel: {
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: 'DMSans_500Medium',
     fontSize: 12,
   },
   answerRevealText: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 26,
   },
 
@@ -1875,7 +1894,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   secondaryBtnText: {
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'DMSans_700Bold',
     fontSize: 13,
   },
 
@@ -1899,23 +1918,23 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   modalTitle: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 20,
     textAlign: 'center',
   },
   modalSub: {
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'DMSans_400Regular',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },
   modalHint: {
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: 'DMSans_500Medium',
     fontSize: 12,
     textAlign: 'center',
   },
   modalAnswer: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 36,
     textAlign: 'center',
     letterSpacing: -0.3,
@@ -1934,7 +1953,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalBtnText: {
-    fontFamily: 'Fredoka_600SemiBold',
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
     fontSize: 15,
   },
 });

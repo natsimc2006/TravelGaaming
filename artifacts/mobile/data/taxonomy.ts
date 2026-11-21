@@ -11,11 +11,15 @@ export const SITUATIONS: {
   label: string;
   icon: string;
   micro: string;
+  /** Button label on the home "Where's the family today?" card. */
+  homeLabel: string;
+  /** Heading above the games that suit this situation. */
+  goodFor: string;
 }[] = [
-  { value: 'Car', label: 'Car', icon: 'navigation', micro: 'Minimal props. Maximum distraction.' },
-  { value: 'Dinner', label: 'Dinner', icon: 'coffee', micro: 'For when everyone is technically still at the table.' },
-  { value: 'Waiting', label: 'Waiting', icon: 'clock', micro: 'Because queues build character. Apparently.' },
-  { value: 'Bedtime', label: 'Bedtime', icon: 'moon', micro: 'Still fun. Just less feral.' },
+  { value: 'Car', label: 'Car', icon: 'navigation', micro: 'Minimal props. Maximum distraction.', homeLabel: 'In the car', goodFor: 'Good in the car' },
+  { value: 'Dinner', label: 'Dinner', icon: 'coffee', micro: 'For when everyone is technically still at the table.', homeLabel: 'At dinner', goodFor: 'Good at dinner' },
+  { value: 'Waiting', label: 'Waiting', icon: 'clock', micro: 'Because queues build character. Apparently.', homeLabel: 'Waiting around', goodFor: 'Good while waiting' },
+  { value: 'Bedtime', label: 'Bedtime', icon: 'moon', micro: 'Still fun. Just less feral.', homeLabel: 'Bedtime', goodFor: 'Good at bedtime' },
 ];
 
 export const VIBES: { value: EnergyLevel; label: string }[] = [

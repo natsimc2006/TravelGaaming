@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   text: {
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: 'DMSans_500Medium',
     fontSize: 14,
     fontStyle: 'italic',
     lineHeight: 20,

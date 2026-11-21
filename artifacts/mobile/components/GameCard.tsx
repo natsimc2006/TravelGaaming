@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import AnimatedPressable from '@/components/AnimatedPressable';
 import ChunkyButton from '@/components/ChunkyButton';
 import { GameTile } from '@/components/GameGlyph';
+import { FadeInUp } from '@/components/Motion';
 import { GAME_COLORS, GAME_COLORS_DEEP } from '@/data/gameColors';
 import type { GameMeta } from '@/data/games';
 import { VIBE_LABEL } from '@/data/taxonomy';
@@ -15,9 +16,11 @@ interface GameCardProps {
   compact?: boolean;
   /** Dense row for long lists (All Games). */
   variant?: 'card' | 'list';
+  /** Position in a list — staggers the entrance animation. */
+  index?: number;
 }
 
-export default function GameCard({ game, compact = false, variant = 'card' }: GameCardProps) {
+export default function GameCard({ game, compact = false, variant = 'card', index = 0 }: GameCardProps) {
   const colors = useColors();
   const key = game.colorKey as keyof typeof GAME_COLORS;
   const gameColor = GAME_COLORS[key] ?? colors.primary;
@@ -46,27 +49,25 @@ export default function GameCard({ game, compact = false, variant = 'card' }: Ga
 
   if (variant === 'list') {
     return (
-      <AnimatedPressable
-        onPress={handlePress}
-        scaleDown={0.98}
-        style={[styles.listCard, { backgroundColor: colors.card, shadowColor: colors.navy }]}
-      >
-        <View style={[styles.listTileWrap, { backgroundColor: soft }]}>
-          <GameTile gameKey={key} size={48} />
-        </View>
-        <View style={{ flex: 1, gap: 3 }}>
-          <Text style={[styles.listName, { color: colors.foreground }]} numberOfLines={1}>{game.name}</Text>
-          <Text style={[styles.listMeta, { color: deep }]} numberOfLines={1}>
-            {VIBE_LABEL[game.energyLevel]} · Ages {game.ageRange} · {game.estimatedRoundLength}
-          </Text>
-          <Text style={[styles.listDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
-            {game.hook}
-          </Text>
-        </View>
-        <View style={[styles.listPlay, { backgroundColor: gameColor }]}>
-          <Feather name="play" size={16} color="#FFF" />
-        </View>
-      </AnimatedPressable>
+      <FadeInUp delay={Math.min(index, 8) * 45}>
+        <AnimatedPressable
+          onPress={handlePress}
+          scaleDown={0.98}
+          style={[styles.listCard, { backgroundColor: colors.card, shadowColor: colors.navy }]}
+        >
+          <GameTile gameKey={key} size={58} delay={80 + Math.min(index, 8) * 45} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.listName, { color: colors.foreground }]} numberOfLines={1}>{game.name}</Text>
+            <Text style={[styles.listDesc, { color: colors.foreground }]} numberOfLines={1}>
+              {game.hook}
+            </Text>
+            <Text style={[styles.listMeta, { color: colors.mutedForeground }]} numberOfLines={1}>
+              {VIBE_LABEL[game.energyLevel]} · {game.ageRange} · {game.estimatedRoundLength}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+        </AnimatedPressable>
+      </FadeInUp>
     );
   }
 
@@ -114,22 +115,22 @@ const styles = StyleSheet.create({
   band: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   energy: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  energyText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
+  energyText: { fontFamily: 'DMSans_700Bold', fontSize: 12 },
   body: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 18, gap: 4 },
-  name: { fontFamily: 'Fredoka_600SemiBold', fontSize: 21, letterSpacing: -0.2 },
-  meta: { fontFamily: 'Nunito_700Bold', fontSize: 12.5 },
-  description: { fontFamily: 'Nunito_400Regular', fontSize: 13.5, lineHeight: 19, marginTop: 4, minHeight: 38 },
+  name: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 21, letterSpacing: -0.2 },
+  meta: { fontFamily: 'DMSans_700Bold', fontSize: 12.5 },
+  description: { fontFamily: 'DMSans_400Regular', fontSize: 13.5, lineHeight: 19, marginTop: 4, minHeight: 38 },
   cta: { alignItems: 'flex-start', marginTop: 12 },
   compactCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 14, marginBottom: 10, borderRadius: 20, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  compactName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17 },
-  compactMeta: { fontFamily: 'Nunito_600SemiBold', fontSize: 12.5, marginTop: 2 },
+  compactName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 17 },
+  compactMeta: { fontFamily: 'DMSans_500Medium', fontSize: 12.5, marginTop: 2 },
   listCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, paddingRight: 14, borderRadius: 22,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2,
   },
   listTileWrap: { borderRadius: 18, padding: 6 },
-  listName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17, letterSpacing: -0.1 },
-  listMeta: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
-  listDesc: { fontFamily: 'Nunito_400Regular', fontSize: 13, lineHeight: 18 },
+  listName: { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 18, letterSpacing: -0.2 },
+  listMeta: { fontFamily: 'DMSans_700Bold', fontSize: 12 },
+  listDesc: { fontFamily: 'DMSans_400Regular', fontSize: 14, lineHeight: 19 },
   listPlay: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
 });
