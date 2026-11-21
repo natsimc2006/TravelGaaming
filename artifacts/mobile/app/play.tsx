@@ -253,6 +253,35 @@ export default function PlayScreen() {
   const currentPlayer = session.players[session.currentPlayerIndex];
   const voiceKey = getVoiceGameKey(session.gameId);
 
+  // Timer games get their timer docked to the bottom of the screen so it's always reachable.
+  const stopTimer = () => setTimerRunning(false);
+  const timerDock: { seconds: number; onEnd: () => void } | null = (() => {
+    switch (session.gameId) {
+      case 'alphabet-showdown':
+        return session.alphabetState ? {
+          seconds: session.alphabetState.timerSeconds,
+          onEnd: () => { stopTimer(); showHostMsg('skip'); if (session.isSoloMode) breakStreak(); },
+        } : null;
+      case 'category-dash':
+        return session.categoryDashState ? {
+          seconds: session.categoryDashState.timerSeconds,
+          onEnd: () => { stopTimer(); showHostMsg('skip'); voice('roundEnd'); },
+        } : null;
+      case 'forbidden-word':
+        return session.forbiddenWordState ? {
+          seconds: session.forbiddenWordState.timerSeconds,
+          onEnd: () => { stopTimer(); showHostMsg('skip'); voice('roundEnd'); },
+        } : null;
+      case 'rapid-fire':
+        return session.rapidFireState ? {
+          seconds: session.rapidFireState.timerSeconds,
+          onEnd: () => { stopTimer(); showHostMsg('roundEnd'); voice('roundEnd'); },
+        } : null;
+      default:
+        return null;
+    }
+  })();
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -309,14 +338,14 @@ export default function PlayScreen() {
         {/* Game content */}
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: timerDock ? 24 : insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Freshness badge */}
-          {freshnessTag && <FreshnessBadge tag={freshnessTag} />}
-
-          {/* Fresh prompt button */}
-          <FreshPromptButton loading={false} error={false} onPress={handleFreshPrompt} />
+          {/* Freshness badge + swap prompt share one compact row */}
+          <View style={styles.promptMetaRow}>
+            {freshnessTag && <FreshnessBadge tag={freshnessTag} />}
+            <FreshPromptButton loading={false} error={false} onPress={handleFreshPrompt} />
+          </View>
 
           {session.twist && <TwistCard twist={session.twist} color={gameColor} />}
 
@@ -533,6 +562,19 @@ export default function PlayScreen() {
             />
           )}
         </ScrollView>
+
+        {timerDock && (
+          <View style={[styles.timerDock, { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, 12) + 4, shadowColor: colors.navy }]}>
+            <TimerRow
+              timerKey={timerKey}
+              timerSeconds={timerDock.seconds}
+              timerRunning={timerRunning}
+              onToggle={() => setTimerRunning(r => !r)}
+              onEnd={timerDock.onEnd}
+              color={gameColor}
+            />
+          </View>
+        )}
       </View>
 
       {/* Exit confirm overlay */}
@@ -610,13 +652,20 @@ function TimerRow({ timerKey, timerSeconds, timerRunning, onToggle, onEnd, color
   const colors = useColors();
   return (
     <View style={styles.timerRow}>
-      <Timer key={timerKey} seconds={timerSeconds} running={timerRunning} onEnd={onEnd} />
+      <Timer key={timerKey} seconds={timerSeconds} running={timerRunning} onEnd={onEnd} size="sm" />
       <Pressable
         onPress={onToggle}
-        style={[styles.timerToggle, { backgroundColor: timerRunning ? colors.destructive + '14' : color + '14', borderRadius: 14 }]}
+        style={({ pressed }) => [
+          styles.timerToggle,
+          {
+            backgroundColor: timerRunning ? colors.muted : color,
+            borderBottomColor: timerRunning ? colors.border : darken(color, 0.2),
+            transform: [{ translateY: pressed ? 2 : 0 }],
+          },
+        ]}
       >
-        <Feather name={timerRunning ? 'pause' : 'play'} size={18} color={timerRunning ? colors.destructive : color} />
-        <Text style={[styles.timerToggleText, { color: timerRunning ? colors.destructive : color }]}>
+        <Feather name={timerRunning ? 'pause' : 'play'} size={18} color={timerRunning ? colors.foreground : '#FFF'} />
+        <Text style={[styles.timerToggleText, { color: timerRunning ? colors.foreground : '#FFF' }]}>
           {timerRunning ? 'Pause' : 'Start timer'}
         </Text>
       </Pressable>
@@ -629,6 +678,7 @@ function BigLetterCard({ letter, color }: { letter: string; color: string }) {
     <PromptFade triggerKey={letter}>
       <View style={{ backgroundColor: darken(color, 0.25), borderRadius: 32, paddingBottom: 8, alignSelf: 'center' }}>
         <View style={[styles.bigLetterBox, { backgroundColor: color, borderRadius: 32 }]}>
+          <View pointerEvents="none" style={styles.bigLetterShine} />
           <Text style={styles.bigLetter}>{letter}</Text>
         </View>
       </View>
@@ -707,22 +757,24 @@ function FreshPromptButton({ loading, error, onPress }: { loading: boolean; erro
         justifyContent: 'center',
         gap: 6,
         alignSelf: 'center',
-        paddingHorizontal: 18,
-        paddingVertical: 9,
+        paddingHorizontal: 14,
+        paddingVertical: 7,
         borderRadius: 100,
-        backgroundColor: error ? colors.destructive + '18' : colors.softTeal,
-        borderWidth: 1.5,
-        borderColor: error ? colors.destructive + '40' : colors.secondary + '50',
+        backgroundColor: error ? colors.destructive + '18' : colors.card,
+        shadowColor: colors.navy,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 6,
+        elevation: 1,
         opacity: pressed || loading ? 0.7 : 1,
-        marginBottom: 6,
         transform: [{ scale: pressed ? 0.96 : 1 }],
       })}
     >
-      <Feather name={loading ? 'loader' : error ? 'alert-circle' : 'refresh-cw'} size={14} color={error ? colors.destructive : colors.secondary} />
+      <Feather name={loading ? 'loader' : error ? 'alert-circle' : 'refresh-cw'} size={13} color={error ? colors.destructive : colors.mutedForeground} />
       <Text style={{
         fontFamily: 'Nunito_700Bold',
         fontSize: 13,
-        color: error ? colors.destructive : colors.secondary,
+        color: error ? colors.destructive : colors.foreground,
       }}>
         Swap prompt
       </Text>
@@ -761,7 +813,7 @@ const soloStyles = StyleSheet.create({
 
 const FRESHNESS_CONFIG: Record<NonNullable<FreshnessTag>, { label: string; bg: string; text: string }> = {
   new:       { label: 'New for you',        bg: '#2DB872', text: '#FFF' },
-  returning: { label: 'Back again',         bg: '#7A5AF0', text: '#FFF' },
+  returning: { label: 'Back again',         bg: '#6B54D2', text: '#FFF' },
   favourite: { label: 'Family favourite',   bg: '#E3A008', text: '#FFF' },
 };
 
@@ -784,9 +836,8 @@ function FreshnessBadge({ tag }: { tag: NonNullable<FreshnessTag> }) {
 
 const freshStyles = StyleSheet.create({
   badge: {
-    alignSelf: 'center',
     borderRadius: 100,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 7,
   },
   badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#FFF' },
@@ -831,7 +882,6 @@ function AlphabetGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning
         <BigLetterCard letter={s.currentLetter} color={gameColor} />
       </View>
 
-      <TimerRow timerKey={timerKey} timerSeconds={s.timerSeconds} timerRunning={timerRunning} onToggle={onTimerToggle} onEnd={onTimerEnd} color={gameColor} />
       <ScoreTapGrid session={session} currentPlayer={currentPlayer} color={gameColor} onScore={handleScore} />
 
       <View style={styles.actionRow}>
@@ -1094,6 +1144,32 @@ function WhatAmIGame({ session, gameColor, voiceEnabled, onRevealClue, onAwardAn
   );
 }
 
+function ClueCard({ index, text, color }: { index: number; text: string; color: string }) {
+  const colors = useColors();
+  const enter = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(enter, { toValue: 1, delay: index * 60, useNativeDriver: true, speed: 16, bounciness: 6 }).start();
+  }, []);
+  return (
+    <Animated.View
+      style={[
+        styles.clueCardRow,
+        {
+          backgroundColor: colors.card,
+          shadowColor: colors.navy,
+          opacity: enter,
+          transform: [{ translateX: enter.interpolate({ inputRange: [0, 1], outputRange: [-16, 0] }) }],
+        },
+      ]}
+    >
+      <View style={[styles.catNum, { backgroundColor: color, borderBottomColor: darken(color, 0.22) }]}>
+        <Text style={styles.catNumText}>{index + 1}</Text>
+      </View>
+      <Text style={[styles.catText, { color: colors.foreground }]}>{text}</Text>
+    </Animated.View>
+  );
+}
+
 function CategoryDashGame({ session, gameColor, voiceKey, voiceEnabled, timerRunning, timerKey, onTimerToggle, onTimerEnd, onScore, onNewRound }: any) {
   const colors = useColors();
   const s = session.categoryDashState!;
@@ -1104,18 +1180,12 @@ function CategoryDashGame({ session, gameColor, voiceKey, voiceEnabled, timerRun
         <BigLetterCard letter={s.currentLetter} color={gameColor} />
       </View>
       <PromptFade triggerKey={s.currentRoundId}>
-        <View style={[styles.categoriesCard, { backgroundColor: gameColor + '14', borderRadius: 18 }]}>
+        <View style={styles.categoriesList}>
           {s.currentCategories.map((cat: string, i: number) => (
-            <View key={i} style={[styles.catRow, { borderBottomWidth: i < 4 ? 1 : 0, borderBottomColor: gameColor + '30' }]}>
-              <View style={[styles.catNum, { backgroundColor: gameColor }]}>
-                <Text style={styles.catNumText}>{i + 1}</Text>
-              </View>
-              <Text style={[styles.catText, { color: colors.foreground }]}>{cat}</Text>
-            </View>
+            <ClueCard key={`${s.currentRoundId}-${i}`} index={i} text={cat} color={gameColor} />
           ))}
         </View>
       </PromptFade>
-      <TimerRow timerKey={timerKey} timerSeconds={s.timerSeconds} timerRunning={timerRunning} onToggle={onTimerToggle} onEnd={onTimerEnd} color={gameColor} />
       <ScoreTapGrid session={session} currentPlayer={null} color={gameColor} />
       <View style={styles.actionRow}>
         <ActionBtn label="New Round" icon="refresh-cw" onPress={onNewRound} color={gameColor} size="lg" />
@@ -1150,7 +1220,6 @@ function ForbiddenWordGame({ session, gameColor, voiceKey, voiceEnabled, timerRu
           ))}
         </View>
       </PromptFade>
-      <TimerRow timerKey={timerKey} timerSeconds={s.timerSeconds} timerRunning={timerRunning} onToggle={onTimerToggle} onEnd={onTimerEnd} color={gameColor} />
       <View style={styles.actionRow}>
         <ActionBtn label="Got It!" icon="check-circle" onPress={onCorrect} color={colors.success} size="lg" />
         <ActionBtn label="Skip" icon="skip-forward" onPress={onSkip} color={colors.muted} textColor={colors.mutedForeground} size="lg" />
@@ -1267,7 +1336,6 @@ function RapidFireGame({ session, gameColor, timerRunning, timerKey, onTimerTogg
         </View>
       </PromptFade>
 
-      <TimerRow timerKey={timerKey} timerSeconds={s.timerSeconds} timerRunning={timerRunning} onToggle={onTimerToggle} onEnd={onTimerEnd} color={gameColor} />
 
       {isSolo ? (
         <View style={rfStyles.soloTally}>
@@ -1625,8 +1693,8 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingTop: 10,
-    gap: 18,
+    paddingTop: 14,
+    gap: 16,
   },
   gameBlock: { gap: 18 },
   centeredSection: { alignItems: 'center', gap: 12 },
@@ -1646,20 +1714,43 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   bigLetter: { fontFamily: 'Fredoka_600SemiBold', fontSize: 80, color: '#FFF' },
+  bigLetterShine: {
+    position: 'absolute', top: 6, left: 6, right: 6, height: '45%',
+    borderTopLeftRadius: 27, borderTopRightRadius: 27, borderBottomLeftRadius: 40, borderBottomRightRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
   timerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    justifyContent: 'center',
+    gap: 14,
   },
   timerToggle: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingVertical: 15,
+    borderRadius: 18,
+    borderBottomWidth: 4,
   },
-  timerToggleText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  timerToggleText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 17 },
+  timerDock: {
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  promptMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   scoreTapGrid: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   scoreTapCard: { minWidth: 70, padding: 14, alignItems: 'center', gap: 4 },
   actionRow: { flexDirection: 'row', gap: 10 },
@@ -1688,17 +1779,22 @@ const styles = StyleSheet.create({
   clueCard: { padding: 14, gap: 4 },
   clueNum: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
   clueText: { fontFamily: 'Nunito_600SemiBold', fontSize: 17, lineHeight: 24 },
-  categoriesCard: { overflow: 'hidden' },
-  catRow: {
+  categoriesList: { gap: 10 },
+  clueCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
+    gap: 14,
+    paddingVertical: 14,
     paddingHorizontal: 14,
+    borderRadius: 18,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  catNum: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  catNumText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 12, color: '#FFF' },
-  catText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, flex: 1 },
+  catNum: { width: 32, height: 32, borderRadius: 10, borderBottomWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  catNumText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: '#FFF' },
+  catText: { fontFamily: 'Nunito_700Bold', fontSize: 17, flex: 1 },
   targetCard: { padding: 28, alignItems: 'center', gap: 10 },
   targetHint: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: '#FFFFFFAA' },
   targetWord: { fontFamily: 'Fredoka_600SemiBold', fontSize: 48, color: '#FFF', textAlign: 'center', letterSpacing: -0.5 },

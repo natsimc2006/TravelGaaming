@@ -247,6 +247,8 @@ export default function HomeScreen() {
           {SITUATIONS.map(sit => (
             <FilterChip
               key={sit.value}
+              size="sm"
+              stretch
               label={sit.label}
               icon={sit.icon as any}
               selected={situation === sit.value}
@@ -347,7 +349,7 @@ const styles = StyleSheet.create({
   header: { gap: 10 },
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   tagline: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: -2 },
-  chipWrap: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  chipWrap: { flexDirection: 'row', gap: 6 },
   vibeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   vibeLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, marginRight: 4 },
   emptyRow: { borderRadius: 18, padding: 18 },

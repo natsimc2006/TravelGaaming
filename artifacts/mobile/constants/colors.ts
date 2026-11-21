@@ -77,12 +77,12 @@ const colors = {
     // Game icon tile colours — vivid, used only on 48–52px tiles
     gameAlphabet: '#F26B38',
     gameWhatAmI: '#18A39A',
-    gameCategoryDash: '#7A5AF0',
+    gameCategoryDash: '#6B54D2',
     gameForbiddenWord: '#E3A008',
     gameWouldYouRather: '#E8457E',
     gameRapidFire: '#2DB872',
-    gameGuessTheSound: '#2F7DF0',
-    gameThisOrThat: '#12A9D8',
+    gameGuessTheSound: '#3577D4',
+    gameThisOrThat: '#1C9AC0',
     gameRiddles: '#A24CC8',
 
     // Soft tones — lightly tinted chip backgrounds
