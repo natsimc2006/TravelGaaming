@@ -5,15 +5,20 @@ const path = require('path');
 
 const BUNDLE_ID = 'com.natsimc.gamehost';
 const iosDir = path.join(__dirname, '..', 'ios');
-const appDir = path.join(iosDir, 'GameHost');
-const pbxPath = path.join(iosDir, 'GameHost.xcodeproj', 'project.pbxproj');
+// Expo names the Xcode project after the app's name, so find it rather than hard-coding it.
+const projDir = fs.readdirSync(iosDir).find(f => f.endsWith('.xcodeproj'));
+if (!projDir) throw new Error('No .xcodeproj found in ' + iosDir);
+const IOS_NAME = projDir.replace(/\.xcodeproj$/, '');
+console.log('Xcode project:', IOS_NAME);
+const appDir = path.join(iosDir, IOS_NAME);
+const pbxPath = path.join(iosDir, projDir, 'project.pbxproj');
 const iconSrc = path.join(__dirname, '..', 'assets', 'images', 'icon.png');
 const iconSet = path.join(appDir, 'Images.xcassets', 'AppIcon.appiconset');
 
 let pbx = fs.readFileSync(pbxPath, 'utf8');
 
 // 1. Bundle ID
-pbx = pbx.replace(/org\.name\.GameHost/g, BUNDLE_ID);
+pbx = pbx.replace(/org\.name\.[A-Za-z0-9_-]+/g, BUNDLE_ID);
 
 // 2. App icon asset set
 fs.mkdirSync(iconSet, { recursive: true });
