@@ -59,8 +59,8 @@ export default function GameCard({ game, compact = false, variant = 'card' }: Ga
           <Text style={[styles.listMeta, { color: deep }]} numberOfLines={1}>
             {VIBE_LABEL[game.energyLevel]} · Ages {game.ageRange} · {game.estimatedRoundLength}
           </Text>
-          <Text style={[styles.listDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
-            {game.description}
+          <Text style={[styles.listDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {game.hook}
           </Text>
         </View>
         <View style={[styles.listPlay, { backgroundColor: gameColor }]}>
@@ -88,8 +88,8 @@ export default function GameCard({ game, compact = false, variant = 'card' }: Ga
         <Text style={[styles.meta, { color: deep }]} numberOfLines={1}>
           Ages {game.ageRange} · {game.estimatedRoundLength}
         </Text>
-        <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
-          {game.description}
+        <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={1}>
+          {game.hook}
         </Text>
         <View style={styles.cta}>
           <ChunkyButton label="Play" size="sm" color={gameColor} deep={deep} onPress={handlePress} />

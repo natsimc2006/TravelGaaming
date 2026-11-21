@@ -8,6 +8,8 @@ export interface GameMeta {
   id: string;
   name: string;
   description: string;
+  /** One-line hook for cards — must fit on a single line. */
+  hook: string;
   settings: GameSetting[];
   ageRange: string;
   minAge: number;
@@ -28,6 +30,7 @@ export const GAMES: GameMeta[] = [
     id: 'alphabet-showdown',
     name: 'Alphabet Showdown',
     description: 'Name something from the category that starts with the letter. Points for every valid answer.',
+    hook: 'Beat the clock from A to Z.',
     settings: ['Car', 'Dinner', 'Waiting'],
     ageRange: '6+',
     minAge: 6,
@@ -46,6 +49,7 @@ export const GAMES: GameMeta[] = [
     id: 'what-am-i',
     name: 'What Am I?',
     description: 'Clues are revealed one by one. Guess the mystery answer — fewer clues means more points.',
+    hook: 'Fewer clues, more points.',
     settings: ['Car', 'Dinner', 'Bedtime', 'Waiting'],
     ageRange: '5+',
     minAge: 5,
@@ -64,6 +68,7 @@ export const GAMES: GameMeta[] = [
     id: 'category-dash',
     name: 'Category Dash',
     description: 'One letter, five categories. Race to think of answers before anyone else does.',
+    hook: 'One letter. Five categories. Go!',
     settings: ['Dinner', 'Waiting', 'Car'],
     ageRange: '8+',
     minAge: 8,
@@ -82,6 +87,7 @@ export const GAMES: GameMeta[] = [
     id: 'forbidden-word',
     name: 'Forbidden Word',
     description: "Get your team to guess the word — without saying the forbidden words. A reader is needed.",
+    hook: "Describe it. Don't say it.",
     settings: ['Dinner', 'Waiting'],
     ageRange: '8+',
     minAge: 8,
@@ -100,6 +106,7 @@ export const GAMES: GameMeta[] = [
     id: 'would-you-rather',
     name: 'Would You Rather',
     description: 'Two impossible choices. Everyone picks one and defends it. No wrong answers — only questionable ones.',
+    hook: 'Pick one. Defend it.',
     settings: ['Car', 'Dinner', 'Waiting', 'Bedtime'],
     ageRange: '5+',
     minAge: 5,
@@ -118,6 +125,7 @@ export const GAMES: GameMeta[] = [
     id: 'rapid-fire',
     name: 'Rapid Fire',
     description: 'Name as many as you can before the timer runs out. Fast, frantic, and surprisingly competitive.',
+    hook: 'As many as you can, fast.',
     settings: ['Car', 'Dinner', 'Waiting'],
     ageRange: '5+',
     minAge: 5,
@@ -136,6 +144,7 @@ export const GAMES: GameMeta[] = [
     id: 'guess-the-sound',
     name: 'Guess the Sound',
     description: 'A sound is described. First to guess what makes it wins the round.',
+    hook: 'Guess what makes the noise.',
     settings: ['Car', 'Dinner', 'Waiting', 'Bedtime'],
     ageRange: '4+',
     minAge: 4,
@@ -154,6 +163,7 @@ export const GAMES: GameMeta[] = [
     id: 'this-or-that',
     name: 'This or That',
     description: 'Two options. No time to think. Just choose — and see if the family agrees.',
+    hook: 'No thinking. Just choose.',
     settings: ['Car', 'Dinner', 'Waiting'],
     ageRange: '5+',
     minAge: 5,
@@ -172,6 +182,7 @@ export const GAMES: GameMeta[] = [
     id: 'riddles',
     name: 'Riddles',
     description: 'Classic riddles read aloud. Guess before anyone else — or stump the whole family.',
+    hook: 'Stump the whole family.',
     settings: ['Car', 'Dinner', 'Waiting', 'Bedtime'],
     ageRange: '6+',
     minAge: 6,

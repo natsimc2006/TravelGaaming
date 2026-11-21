@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 
@@ -13,9 +13,12 @@ export default function HostMessageBanner({ message, color, visible }: HostMessa
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-8)).current;
   const accentColor = color ?? colors.secondary;
+  // Unmount once faded out so a hidden banner doesn't leave an empty gap in the layout.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (visible && message) {
+      setMounted(true);
       opacity.setValue(0);
       translateY.setValue(-8);
       Animated.parallel([
@@ -23,11 +26,13 @@ export default function HostMessageBanner({ message, color, visible }: HostMessa
         Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 30, bounciness: 2 }),
       ]).start();
     } else {
-      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(({ finished }) => {
+        if (finished) setMounted(false);
+      });
     }
   }, [message, visible]);
 
-  if (!message) return null;
+  if (!message || !mounted) return null;
 
   return (
     <Animated.View
